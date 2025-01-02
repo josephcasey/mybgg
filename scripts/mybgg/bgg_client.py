@@ -111,7 +111,7 @@ class BGGClient:
                 sleep_with_backoff_and_jitter(30, tries)
                 return self._make_request(url, params=params, tries=tries + 1)
             else:
-                raise BGGException(f"BGG returned status code {response.status_code} when requesting {response.url}")
+                raise BGGException("BGG returned status code {response.status_code} when requesting {response.url}")
 
         logger.debug("REQUEST: " + response.url)
         logger.debug("RESPONSE: \n" + prettify_if_xml(response.text))
@@ -126,8 +126,7 @@ class BGGClient:
                 raise BGGException("BGG API request not processed in time, please try again later.")
 
         if tree.tag == "errors":
-            raise BGGException(
-                f"BGG returned errors while requesting {response.url} - " +
+            raise BGGException("BGG returned errors while requesting {response.url} - " +
                 str([subnode.text for node in tree for subnode in node])
             )
 

@@ -8,7 +8,7 @@ class Downloader():
         if cache_bgg:
             self.client = BGGClient(
                 cache=CacheBackendSqlite(
-                    path=f"{project_name}-cache.sqlite",
+                    path="{project_name}-cache.sqlite",
                     ttl=60 * 60 * 24,
                 ),
                 debug=debug,
@@ -26,16 +26,16 @@ class Downloader():
             for params in extra_params:
                 collection_data += self.client.collection(
                     user_name=user_name,
-                    **params,
+                    **params
                 )
         else:
             collection_data = self.client.collection(
                 user_name=user_name,
-                **extra_params,
+                **extra_params
             )
 
         plays_data = self.client.plays(
-            user_name=user_name,
+            user_name=user_name
         )
 
         game_list_data = self.client.game_list([game_in_collection["id"] for game_in_collection in collection_data])

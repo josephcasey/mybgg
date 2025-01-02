@@ -18,7 +18,7 @@ def main(args):
     )
     num_games = len(collection)
     num_expansions = sum([len(game.expansions) for game in collection])
-    print(f"Imported {num_games} games and {num_expansions} expansions from boardgamegeek.")
+    print("Imported {num_games} games and {num_expansions} expansions from boardgamegeek.")
 
     if not len(collection):
         assert False, "No games imported, is the boardgamegeek part of config.json correctly set?"
@@ -34,7 +34,7 @@ def main(args):
         indexer.add_objects(collection)
         indexer.delete_objects_not_in(collection)
 
-        print(f"Indexed {num_games} games and {num_expansions} expansions in algolia, and removed everything else.")
+        print("Indexed {num_games} games and {num_expansions} expansions in algolia, and removed everything else.")
     else:
         print("Skipped indexing.")
 
@@ -54,18 +54,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--no_indexing',
         action='store_true',
-        help=(
-            "Skip indexing in algolia. This is useful during development"
-            ", when you want to fetch data från BGG over and over again, "
-            "and don't want to use up your indexing quota with Algolia."
-        )
+        help=("Skip indexing in algolia. This is useful during development, when you want to fetch data from BGG over and over again, and don't want to use up your indexing quota with Algolia.")
     )
     parser.add_argument(
         '--cache_bgg',
         action='store_true',
         help=(
-            "Enable a cache for all BGG calls. This makes script run very "
-            "fast the second time it's run."
+            "Enable a cache for all BGG calls. This makes script run very fast the second time it's run."
         )
     )
     parser.add_argument(
