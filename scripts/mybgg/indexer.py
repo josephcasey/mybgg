@@ -11,33 +11,35 @@ from PIL import Image, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class Indexer:
-
     def __init__(self, app_id, apikey, index_name, hits_per_page):
+        # Initialize the Algolia SearchClient with the provided app ID and API key
         client = SearchClient.create(
             app_id=app_id,
             api_key=apikey,
         )
+        # Initialize the index with the provided index name
         index = client.init_index(index_name)
 
+        # Set the index settings
         index.set_settings({
             'searchableAttributes': [
-                'name',
-                'description',
+                'name',  # Make the 'name' attribute searchable
+                'description',  # Make the 'description' attribute searchable
             ],
             'attributesForFaceting': [
-                'categories',
-                'mechanics',
-                'players',
-                'weight',
-                'playing_time',
-                'min_age',
-                'searchable(previous_players)',
-                'numplays',
+                'categories',  # Allow faceting by 'categories'
+                'mechanics',  # Allow faceting by 'mechanics'
+                'players',  # Allow faceting by 'players'
+                'weight',  # Allow faceting by 'weight'
+                'playing_time',  # Allow faceting by 'playing_time'
+                'min_age',  # Allow faceting by 'min_age'
+                'searchable(previous_players)',  # Make 'previous_players' searchable and allow faceting
+                'numplays',  # Allow faceting by 'numplays'
             ],
-            'customRanking': ['asc(name)'],
-            'highlightPreTag': '<strong class="highlight">',
-            'highlightPostTag': '</strong>',
-            'hitsPerPage': hits_per_page,
+            'customRanking': ['asc(name)'],  # Custom ranking by ascending 'name'
+            'highlightPreTag': '<strong class="highlight">',  # HTML tag to use before highlighted text
+            'highlightPostTag': '</strong>',  # HTML tag to use after highlighted text
+            'hitsPerPage': hits_per_page,  # Number of hits to display per page
         })
 
         self._init_replicas(client, index)
@@ -153,23 +155,30 @@ class Indexer:
 
     def fetch_image(self, url, tries=0):
         try:
+            # Attempt to fetch the image from the URL
             response = requests.get(url)
         except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError):
+            # Retry fetching the image up to 3 times if a connection error occurs
             if tries < 3:
                 time.sleep(2)
                 return self.fetch_image(url, tries=tries + 1)
 
+        # Return the image content if the request is successful
         if response.status_code == 200:
             return response.content
 
+        # Return None if the request fails
         return None
 
     def add_objects(self, collection):
+        # Convert the collection of games to dictionaries
         games = [Indexer.todict(game) for game in collection]
         for i, game in enumerate(games):
+            # Print progress every 25 games
             if i != 0 and i % 25 == 0:
                 print(f"Indexed {i} of {len(games)} games...")
 
+            # Fetch and process the game image if it exists
             if game["image"]:
                 image_data = self.fetch_image(game["image"])
                 if image_data:
@@ -186,17 +195,13 @@ class Indexer:
                             0.7152 * color_g / 255.0 +
                             0.0722 * color_b / 255.0
                         )
-                        if (
-                            luma > 0.2 and  # Not too dark
-                            luma < 0.8     # Not too light
-                        ):
-                            break
+                        if luma > 0.8 or luma < 0.2:
+                            continue
 
-                    else:
-                        # As a fallback, use the first color
-                        color_r, color_g, color_b = colors[0].rgb.r, colors[0].rgb.g, colors[0].rgb.b
-
-                    game["color"] = f"{color_r}, {color_g}, {color_b}"
+                        # Add the color to the game dictionary
+                        game[f"color_{i}_r"] = color_r
+                        game[f"color_{i}_g"] = color_g
+                        game[f"color_{i}_b"] = color_b
 
             game["objectID"] = f"bgg{game['id']}"
 

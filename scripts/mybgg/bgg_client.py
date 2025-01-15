@@ -1,3 +1,4 @@
+# Import necessary modules
 import logging
 import random
 import time
@@ -7,46 +8,67 @@ import declxml as xml
 import requests
 from requests_cache import CachedSession
 
+# Set up logging
 logger = logging.getLogger(__name__)
 
+# Define the BGGClient class
 class BGGClient:
+    # Base URL for the BoardGameGeek XML API
     BASE_URL = "https://www.boardgamegeek.com/xmlapi2"
 
     def __init__(self, cache=None, debug=False):
+        # Initialize the requester with a cached session if cache is provided, otherwise use a regular session
         if not cache:
             self.requester = requests.Session()
         else:
             self.requester = cache.cache
 
+        # Set logging level to DEBUG if debug is True
         if debug:
             logging.basicConfig(level=logging.DEBUG)
 
     def collection(self, user_name, **kwargs):
+        # Copy additional parameters and add the username to the parameters
         params = kwargs.copy()
         params["username"] = user_name
+        # Make a request to the collection endpoint with the provided parameters
         data = self._make_request("/collection?version=1", params)
+        # Convert the collection data to a list of games
         collection = self._collection_to_games(data)
+        # Return the collection of games
         return collection
 
     def plays(self, user_name):
+        # Initialize parameters for the plays request, starting with page 1
         params = {
             "username": user_name,
             "page": 1,
         }
+        # Initialize an empty list to store all plays
         all_plays = []
 
+        # Make the first request to the plays endpoint
         data = self._make_request("/plays?version=1", params)
+        # Convert the plays data to a list of games
         new_plays = self._plays_to_games(data)
 
+        # Continue fetching plays data while there are new plays
         while (len(new_plays) > 0):
+            # Add the new plays to the list of all plays
             all_plays = all_plays + new_plays
+            # Increment the page number for the next request
             params["page"] += 1
+            # Make the next request to the plays endpoint
             data = self._make_request("/plays?version=1", params)
             new_plays = self._plays_to_games(data)
 
+        # Debug print statement to indicate that plays data has been fetched
+        print("JCDEBUG: Got plays data")
+        # Return the list of all plays
         return all_plays
 
     def game_list(self, game_ids):
+        # Return an empty list if no game IDs are provided
         if not game_ids:
             return []
 
@@ -56,11 +78,16 @@ class BGGClient:
                 yield iterable[i:i + n]
 
         games = []
+        # Iterate over each chunk of game IDs
         for game_ids_subset in chunks(game_ids, 20):
+            # Construct the URL for the request with the current chunk of game IDs
             url = "/thing/?stats=1&id=" + ",".join([str(id_) for id_ in game_ids_subset])
+            # Make the request to the constructed URL
             data = self._make_request(url)
+            # Convert the game list data to a list of games and add to the games list
             games += self._games_list_to_games(data)
 
+        # Return the list of games
         return games
 
     def _make_request(self, url, params={}, tries=0):
@@ -93,19 +120,23 @@ class BGGClient:
             time.sleep(sleep_time)
 
         try:
+            # Make the request to the URL with the provided parameters
             response = self.requester.get(BGGClient.BASE_URL + url, params=params)
-            response.raise_for_status()  # This will raise an exception for 4xx and 5xx status codes
+            # Raise an HTTPError if the response contains an unsuccessful status code
+            response.raise_for_status()
         except (
             requests.exceptions.HTTPError,
             requests.exceptions.ConnectionError,
             requests.exceptions.ChunkedEncodingError
         ):
+            # Handle connection errors and retry the request with backoff and jitter
             if tries < 10:
                 sleep_with_backoff_and_jitter(1, tries)
                 return self._make_request(url, params=params, tries=tries + 1)
             else:
                 raise BGGException("BGG API closed the connection prematurely, please try again...")
         except requests.exceptions.TooManyRequests:
+            # Handle "Too Many Requests" errors and retry the request with backoff and jitter
             if tries < 3:
                 logger.debug("BGG returned \"Too Many Requests\", waiting 30 seconds before trying again...")
                 sleep_with_backoff_and_jitter(30, tries)
@@ -113,48 +144,94 @@ class BGGClient:
             else:
                 raise BGGException("BGG returned status code {response.status_code} when requesting {response.url}")
 
+        # Log the request URL and response
         logger.debug("REQUEST: " + response.url)
         logger.debug("RESPONSE: \n" + prettify_if_xml(response.text))
 
+        # Parse the response text into an XML tree
         tree = fromstring(response.text)
+        # Handle specific response messages
         if tree.tag == "message" and "Your request for this collection has been accepted" in tree.text:
             if tries < 10:
+                # Retry the request with backoff and jitter if the request is accepted but not processed
                 logger.debug("BGG returned \"Your request for this collection has been accepted\", waiting 10 seconds before trying again...")
                 sleep_with_backoff_and_jitter(10, tries)
                 return self._make_request(url, params=params, tries=tries + 1)
             else:
                 raise BGGException("BGG API request not processed in time, please try again later.")
 
+        # Handle errors in the response
         if tree.tag == "errors":
             raise BGGException("BGG returned errors while requesting {response.url} - " +
                 str([subnode.text for node in tree for subnode in node])
             )
 
+        # Return the response text
         return response.text
 
     def _plays_to_games(self, data):
+        # Define a hook function to process player data after parsing
         def after_players_hook(_, status):
-            return status["name"] if "name" in status else "Unknown"
+            # Return the player's name if it exists, otherwise return "Unknown"
+            if not status.get("name"):
+                #if "name" in status:
+                # print(status["name"])
+                #else:
+                status["name"] = "Unknown"
 
+            return status
+            # return status["name"] if "name" in status else "Unknown"
+        
+        def new_after_players_hook(parsed_data, status):
+            # Example conditional logic to modify the parsed data
+            for play in parsed_data["plays"]:
+                # Check if the player's name is missing or empty and set a default value
+                for player in play["players"]:
+                    if not player.get("name"):
+                        player["name"] = "Unknown"
+            return parsed_data
+
+        # Define the XML processor for parsing plays data
         plays_processor = xml.dictionary("plays", [
+            # Define an array of play dictionaries
             xml.array(
                 xml.dictionary('play', [
+                    # Parse the play ID as an integer
                     xml.integer(".", attribute="id", alias="playid"),
+                    # Parse the play date as a string
+                    xml.string(".", attribute="date", alias="playdate"),
+                    # Define a nested dictionary for the game item
                     xml.dictionary('item', [
+                        # Parse the game name as a string
                         xml.string(".", attribute="name", alias="gamename"),
+                        # Parse the game ID as an integer
                         xml.integer(".", attribute="objectid", alias="gameid")
                     ], alias='game'),
+                    # Parse the comments as a string, not required
+                    xml.string("comments", required=False, alias="gamecomments"),
+                    # Define an array of player dictionaries
                     xml.array(
                         xml.dictionary('players/player', [
-                            xml.string(".", attribute="name", required=False, default="Unknown")
+                            # Parse the player's name as a string, default to "Unknown" if not provided
+                            xml.string(".", attribute="name", required=False, default="Unknown"),
+                            # Parse the player's color as a string, default to "Unknown" if not provided
+                            xml.string(".", attribute="color", required=False, default="Unknown"),
+                            # Parse the player's win status as an integer, default to "Unknown" if not provided
+                            xml.integer(".", attribute="win", required=False, default="Unknown")
                         ], required=False, alias='players', hooks=xml.Hooks(after_parse=after_players_hook))
+                        #], required=False, alias='players')
                     )
-
                 ], required=False, alias="plays")
             )
         ])
 
-        plays = xml.parse_from_string(plays_processor, data)
+        # print(data)
+
+        try:
+            plays = xml.parse_from_string(plays_processor, data)
+        except xml.MissingValue as e:
+            print(f"Error: {e}")
+        
         plays = plays["plays"]
         return plays
 
@@ -306,8 +383,13 @@ class BGGClient:
                 )
             )
         ])
-        games = xml.parse_from_string(game_processor, data)
-        games = games["items"]
+
+        try:
+            games = xml.parse_from_string(game_processor, data)
+            games = games["items"]
+        except MissingValue as e:
+            print(f"Error: {e}")
+
         return games
 
 class CacheBackendSqlite:

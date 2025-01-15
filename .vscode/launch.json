@@ -1,0 +1,15 @@
+{
+    
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["--apikey", "7dd12c83cfd51484dbb5c479ff1d7462"]
+        }
+    ]
+}
