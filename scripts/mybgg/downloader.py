@@ -3,6 +3,7 @@ from mybgg.bgg_client import BGGClient
 from mybgg.bgg_client import CacheBackendSqlite
 # imports the BoardGame class from the mybgg.models module
 from mybgg.models import BoardGame
+import re
 
 class Downloader():
     def __init__(self, project_name, cache_bgg, debug=False):
@@ -20,7 +21,30 @@ class Downloader():
                 debug=debug,  # Enable debugging if debug flag is True
             )
 
-    def collection(self, user_name, extra_params):
+    def collection(self, user_name, extra_params):   
+        def extract_expansion_fragments(input_string):
+            # Define the regular expression pattern
+            pattern = r'\[geekurl=.*?\]\n(.*?)／(.*?)\n'
+            # Find all occurrences of the pattern in the input_strings
+            matches = re.findall(pattern, input_string)
+            # Split the matches by "/" and return the fragments
+            fragments = [match.split('/') for match in matches]
+            return fragments
+
+        def extract_fragments(input_string):
+            if "Played as expansion" in input_string: 
+                # Define the adjusted regular expression pattern
+                pattern = r'\[geekurl=.*?\]\.\n(.*?)／(.*?)\n'
+            else:
+                # Define the regular expression pattern
+                pattern = r'(.*?)／?(.*?)\n(?=#bgstats)'
+            # Find all occurrences of the pattern in the input_strings
+            matches = re.findall(pattern, input_string)
+            if matches == []:
+                print("No matches found")
+            # Split the matches by "/" and return the fragments
+            return matches
+    
         collection_data = []
         plays_data = []
 
@@ -55,19 +79,24 @@ class Downloader():
         game_id_to_players = {game["id"]: [] for game in collection_data}
         # Create a dictionary mapping game IDs to plays
         game_id_to_plays = {game["id"]: [] for game in collection_data}
+        villain_dictionary = {}
+
         # for each play in plays_data
         for play in plays_data:
             # if the game ID for this play is in game_id_to_players
             if play["game"]["gameid"] in game_id_to_players:
                 #game_id_to_players[play["game"]["gameid"]].extend(play["players"])
                 print(play["players"])
-                if "Marvel Champions" in play["gamecomments"]:
-                    print(play["gamecomments"])
-                if "Marvel Champions" in play["game"]["gamename"]:
-                    print(play["game"]["gamename"])
-                game_id_to_plays[play["game"]["gameid"]].append(play)  # Change extend to append
+                
+                if ("Marvel Champions" in play["game"]["gamename"]): #or "Marvel Champions" in play["gamecomments"]):
+                    print("\n\n",play["playid"],play["game"]["gamename"])
+                    print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
+                    game_id_to_plays[play["game"]["gameid"]].append(play)  # Change extend to append
+                    # Extract string fragments from gamecomments
+                    fragments = extract_fragments(play["gamecomments"])
+                    # Print the extracted fragments for debugging purposes
+                    print("fragments=", fragments)
                 #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
-                print(play["game"]["gameid"])
 
         games_data = list(filter(lambda x: x["type"] == "boardgame", game_list_data))
         expansions_data = list(filter(lambda x: x["type"] == "boardgameexpansion", game_list_data))
