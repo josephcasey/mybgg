@@ -1,3 +1,30 @@
+# Marvel Champions statistics tracker
+
+I wanted to create a deeeper statistic tracker for my played games of Marvel Champions (via bgstats application archived on boardgamegeek)
+
+The MyBGG project below from EmilStenstrom is the basis for my proof of concept so far.
+
+My approach has been:
+# Proof of Concept
+- Setup of Git, Algolia & VSCode environments (to allow me to debug the python)
+- Enhance the parsing of the plays_data structure:
+   - to capture the played role fields
+   - to parse the comments field & extract the villain set used & any non-standard modulars
+- I removed some parts of the code I didn't need (around players data) to simplify some of my changes & fixed some original bugs (i think)
+
+# Next steps
+- structure the villain & hero data from the plays to show data like:
+   - Most played hero/villain
+   - Most beaten/defeated villain for each hero
+   - Most successful team ups
+   - Campaigns played (& how many tries it took)
+
+# Future enhancements
+- Producing these data as infographics (with hero/villain art sourced from cardgamedb or similar)
+
+
+I Include original instructions for MyBGG below:
+
 # MyBGG - Search and filter your boardgame collection
 
 _This project is meant to be forked. The original project is available here: https://github.com/EmilStenstrom/mybgg_
