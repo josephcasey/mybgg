@@ -32,14 +32,17 @@ class Downloader():
             return fragments
 
         def extract_fragments(input_string):
-            if "Played as expansion" in input_string: 
-                # Define the adjusted regular expression pattern
-                pattern = r'\[geekurl=.*?\]\.\n(.*?)／(.*?)\n'
-            else:
-                # Define the regular expression pattern
-                pattern = r'(.*?)／?(.*?)\n(?=#bgstats)'
-            # Find all occurrences of the pattern in the input_strings
+            pattern = r'(.*)#bgstats'
             matches = re.findall(pattern, input_string)
+            if matches == []:
+                if "Played as expansion" in input_string: 
+                    # Define the adjusted regular expression pattern
+                    pattern = r'\n?(.*)\n'
+                else:
+                    # Define the regular expression pattern
+                    pattern = r'\n\n(.*)\s#bgstats'
+                # Find all occurrences of the pattern in the input_strings
+                matches = re.findall(pattern, input_string)
             if matches == []:
                 print("No matches found")
             # Split the matches by "/" and return the fragments
