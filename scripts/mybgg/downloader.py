@@ -5,6 +5,18 @@ from mybgg.bgg_client import CacheBackendSqlite
 from mybgg.models import BoardGame
 import re
 
+# Define ANSI escape codes for colors
+class Colors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 class Downloader():
     def __init__(self, project_name, cache_bgg, debug=False):
         # Initialize the BGGClient with or without caching based on cache_bgg flag
@@ -46,7 +58,19 @@ class Downloader():
             if matches == []:
                 print("No matches found")
             # Split the matches by "/" and return the fragments
+
+          #  print("\nVillain :",re.findall(r'[\w+\s*]+1/2', matches),"\n")
             return matches
+        
+        def extract_villain(fragment_input):
+            # Define the regular expression pattern
+            pattern = r'[\w+\s*]+1/2'
+            # Find all occurrences of the pattern in the input_strings
+            villain = re.findall(pattern, fragment_input)
+            #print(f"{Colors.FAIL}This is red text{Colors.ENDC}")
+            print(f"{Colors.FAIL}\nVillain :",villain,"\n")
+            print(f"{Colors.ENDC}")
+            return villain
     
         collection_data = []
         plays_data = []
@@ -98,7 +122,8 @@ class Downloader():
                     # Extract string fragments from gamecomments
                     fragments = extract_fragments(play["gamecomments"])
                     # Print the extracted fragments for debugging purposes
-                    print("fragments=", fragments)
+                    print("--Fragments--", fragments,"\n--EndFragments--\n")
+                    found_villain = extract_villain(fragments[0])
                 #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
 
         games_data = list(filter(lambda x: x["type"] == "boardgame", game_list_data))
