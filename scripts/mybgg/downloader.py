@@ -58,8 +58,7 @@ class Downloader():
             if matches == []:
                 print("No matches found")
             # Split the matches by "/" and return the fragments
-
-          #  print("\nVillain :",re.findall(r'[\w+\s*]+1/2', matches),"\n")
+            # print("\nVillain :",re.findall(r'[\w+\s*]+1/2', matches),"\n")
             return matches
         
         def extract_villain(fragment_input):
@@ -68,9 +67,25 @@ class Downloader():
             # Find all occurrences of the pattern in the input_strings
             villain = re.findall(pattern, fragment_input)
             #print(f"{Colors.FAIL}This is red text{Colors.ENDC}")
-            print(f"{Colors.FAIL}\nVillain :",villain,"\n")
-            print(f"{Colors.ENDC}")
-            return villain
+            if villain == []:
+                print("No villain found1")
+                pattern = r'／([\w\s\(\)A\d/]+)?'
+                villain = re.findall(pattern, fragment_input)
+                if villain == []:
+                    print("No villain found2")
+                    pattern = r'(.*)\s'    
+                    villain = re.findall(pattern, fragment_input)
+                    if villain == []:
+                        print("No villain found3")
+                return ''
+            return villain[0]
+        
+        def extract_heros(players_array):
+            # Define the regular expression pattern
+            pattern = r'[\w+\s*]+'
+            # Find all occurrences of the pattern in the input_strings
+            heros = re.findall(pattern, players_array)
+            return heros
     
         collection_data = []
         plays_data = []
@@ -113,17 +128,42 @@ class Downloader():
             # if the game ID for this play is in game_id_to_players
             if play["game"]["gameid"] in game_id_to_players:
                 #game_id_to_players[play["game"]["gameid"]].extend(play["players"])
-                print(play["players"])
+                print("Players:", play["players"])
                 
                 if ("Marvel Champions" in play["game"]["gamename"]): #or "Marvel Champions" in play["gamecomments"]):
-                    print("\n\n",play["playid"],play["game"]["gamename"])
+                    print("\n\nPlayID Game & GameName:",play["playid"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
                     game_id_to_plays[play["game"]["gameid"]].append(play)  # Change extend to append
                     # Extract string fragments from gamecomments
                     fragments = extract_fragments(play["gamecomments"])
                     # Print the extracted fragments for debugging purposes
                     print("--Fragments--", fragments,"\n--EndFragments--\n")
-                    found_villain = extract_villain(fragments[0])
+                    if (not fragments or fragments == [] or fragments == [' '] or fragments == ['']):
+                        print("No fragments found")
+                    else:
+                        found_villain = extract_villain(fragments[0])
+                        print(f"{Colors.FAIL}\nVillain :",found_villain,"\n")
+                        print(f"{Colors.ENDC}")
+                        if found_villain == []:
+                            print("No villain found")
+                        else:
+                            # Extract the heros from the fragments
+                            for player in play["players"]:
+                                print(f"{Colors.OKGREEN}Hero:",player["color"])
+                                print(f"{Colors.ENDC}")
+                                # Update the villain dictionary
+                                #for villain in found_villain:
+                                if found_villain not in villain_dictionary:
+                                    villain_dictionary[found_villain] = {}
+                                if player["color"] not in villain_dictionary[found_villain]:
+                                    #villain_dictionary[found_villain]player["color"] = 0
+                                    print(f"{Colors.OKBLUE}Add Hero:",player["color"])
+                                else:
+                                    print(f"{Colors.OKBLUE}Increment Hero:",player["color"])
+                                #villain_dictionary[found_villain]player["color"] += 1
+
+                    # Print the villain dictionary for debugging purposes
+                    print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
                 #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
 
         games_data = list(filter(lambda x: x["type"] == "boardgame", game_list_data))
