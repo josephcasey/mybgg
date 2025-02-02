@@ -151,16 +151,17 @@ class Downloader():
                             for player in play["players"]:
                                 print(f"{Colors.OKGREEN}Hero:",player["color"])
                                 print(f"{Colors.ENDC}")
+                                hero = player["color"]
                                 # Update the villain dictionary
                                 #for villain in found_villain:
                                 if found_villain not in villain_dictionary:
                                     villain_dictionary[found_villain] = {}
-                                if player["color"] not in villain_dictionary[found_villain]:
-                                    #villain_dictionary[found_villain]player["color"] = 0
-                                    print(f"{Colors.OKBLUE}Add Hero:",player["color"])
+                                if hero not in villain_dictionary[found_villain]:
+                                    villain_dictionary[found_villain][hero] = 0
+                                    print(f"{Colors.OKBLUE}Add Hero:", hero)
                                 else:
-                                    print(f"{Colors.OKBLUE}Increment Hero:",player["color"])
-                                #villain_dictionary[found_villain]player["color"] += 1
+                                    print(f"{Colors.OKBLUE}Increment Hero:", hero)
+                            villain_dictionary[found_villain][hero] += 1
 
                     # Print the villain dictionary for debugging purposes
                     print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
