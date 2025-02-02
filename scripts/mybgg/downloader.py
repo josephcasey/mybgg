@@ -64,7 +64,7 @@ class Downloader():
         
         def extract_villain(fragment_input):
             # Define the regular expression pattern
-            pattern = r'[\w+\s*]+1/2'
+            pattern = r'[\w+\s*]+\d/\d'
             # Find all occurrences of the pattern in the input_strings
             villain = re.findall(pattern, fragment_input)
             #print(f"{Colors.FAIL}This is red text{Colors.ENDC}")
