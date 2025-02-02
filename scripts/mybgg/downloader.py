@@ -86,6 +86,19 @@ class Downloader():
             # Find all occurrences of the pattern in the input_strings
             heros = re.findall(pattern, players_array)
             return heros
+        
+        def most_battled_hero(villain_dictionary, villain):
+            # Create a dictionary mapping heroes to the number of battles
+            hero_battles = {}
+            # Iterate over the heroes and battles in the villain dictionary
+            for hero, battles in villain_dictionary[villain].items():
+                # Update the hero_battles dictionary with the hero and battles
+                hero_battles[hero] = battles
+            # Sort the hero_battles dictionary by the number of battles in descending order
+            sorted_hero_battles = sorted(hero_battles.items(), key=lambda x: x[1], reverse=True)
+            # Return the sorted hero_battles dictionary
+            return sorted_hero_battles
+    
     
         collection_data = []
         plays_data = []
@@ -123,14 +136,17 @@ class Downloader():
         game_id_to_plays = {game["id"]: [] for game in collection_data}
         villain_dictionary = {}
 
+        champions_plays = 0
         # for each play in plays_data
         for play in plays_data:
             # if the game ID for this play is in game_id_to_players
             if play["game"]["gameid"] in game_id_to_players:
+                
                 #game_id_to_players[play["game"]["gameid"]].extend(play["players"])
                 print("Players:", play["players"])
                 
                 if ("Marvel Champions" in play["game"]["gamename"]): #or "Marvel Champions" in play["gamecomments"]):
+                    champions_plays += 1
                     print("\n\nPlayID Game & GameName:",play["playid"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
                     game_id_to_plays[play["game"]["gameid"]].append(play)  # Change extend to append
@@ -161,12 +177,16 @@ class Downloader():
                                     print(f"{Colors.OKBLUE}Add Hero:", hero)
                                 else:
                                     print(f"{Colors.OKBLUE}Increment Hero:", hero)
-                            villain_dictionary[found_villain][hero] += 1
+                                    villain_dictionary[found_villain][hero] += 1
 
-                    # Print the villain dictionary for debugging purposes
-                    print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
-                #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
-
+        # Print the villain dictionary for debugging purposes
+        print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
+        for villain in villain_dictionary:
+            print(f"{Colors.OKBLUE}\n\nVillain",villain)
+            print(f"{Colors.ENDC}")
+            print(" : ", most_battled_hero(villain_dictionary, villain))
+            #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
+        print("Champions plays processed:", champions_plays)
         games_data = list(filter(lambda x: x["type"] == "boardgame", game_list_data))
         expansions_data = list(filter(lambda x: x["type"] == "boardgameexpansion", game_list_data))
 
