@@ -54,6 +54,7 @@ class BGGClient:
 
         # Continue fetching plays data while there are new plays
         while (len(new_plays) > 0):
+            print(f"\rFetching plays data, page {params['page']}", end="")
             # Add the new plays to the list of all plays
             all_plays = all_plays + new_plays
             # Increment the page number for the next request
@@ -62,6 +63,7 @@ class BGGClient:
             data = self._make_request("/plays?version=1", params)
             new_plays = self._plays_to_games(data)
 
+        print(f"\n\n")
         # Debug print statement to indicate that plays data has been fetched
         print("JCDEBUG: Got plays data")
         # Return the list of all plays

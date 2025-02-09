@@ -44,40 +44,42 @@ class Downloader():
             return fragments
 
         def extract_fragments(input_string):
-            pattern = r'(.*)#bgstats'
+            #pattern = r'(.*)#bgstats'
+            pattern = r'(.*)[\n]?#bgstats'
             matches = re.findall(pattern, input_string)
-            if matches == []:
+            if (matches == [] or matches == [''] or matches == [' ']):
                 if "Played as expansion" in input_string: 
                     # Define the adjusted regular expression pattern
-                    pattern = r'\n?(.*)\n'
+                    pattern = r'\n(.*)\n'
                 else:
                     # Define the regular expression pattern
                     pattern = r'\n\n(.*)\s#bgstats'
                 # Find all occurrences of the pattern in the input_strings
                 matches = re.findall(pattern, input_string)
-            if matches == []:
+            if (matches == [] or matches == [''] or matches == [' ']):
                 print("No matches found")
             # Split the matches by "/" and return the fragments
             # print("\nVillain :",re.findall(r'[\w+\s*]+1/2', matches),"\n")
             return matches
         
         def extract_villain(fragment_input):
-            # Define the regular expression pattern
+            # Define the regular expression pattern to match Nebula 1/2 eg
             pattern = r'[\w+\s*]+\d/\d'
             # Find all occurrences of the pattern in the input_strings
             villain = re.findall(pattern, fragment_input)
             #print(f"{Colors.FAIL}This is red text{Colors.ENDC}")
-            if villain == []:
+            if (not villain or villain == [] or villain == [''] or villain == [' ']):
                 print("No villain found1")
-                pattern = r'／([\w\s\(\)A\d/]+)?'
+                # Define the regular expression pattern to match Magog A eg
+                pattern = r'(\w+\s[A-C])'
                 villain = re.findall(pattern, fragment_input)
-                if villain == []:
+                if (not villain or villain == [] or villain == [''] or villain == [' ']):
                     print("No villain found2")
                     pattern = r'(.*)\s'    
                     villain = re.findall(pattern, fragment_input)
-                    if villain == []:
+                    if (not villain or villain == [] or villain == [''] or villain == [' ']):
                         print("No villain found3")
-                return ''
+                        return ''
             return villain[0]
         
         def extract_heros(players_array):
@@ -147,8 +149,10 @@ class Downloader():
                 
                 if ("Marvel Champions" in play["game"]["gamename"]): #or "Marvel Champions" in play["gamecomments"]):
                     champions_plays += 1
-                    print("\n\nPlayID Game & GameName:",play["playid"],play["game"]["gamename"])
+                    print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
+                    if 94716724 == play["playid"]:
+                        print("\nPlayID 94716724\n")
                     game_id_to_plays[play["game"]["gameid"]].append(play)  # Change extend to append
                     # Extract string fragments from gamecomments
                     fragments = extract_fragments(play["gamecomments"])
@@ -160,7 +164,7 @@ class Downloader():
                         found_villain = extract_villain(fragments[0])
                         print(f"{Colors.FAIL}\nVillain :",found_villain,"\n")
                         print(f"{Colors.ENDC}")
-                        if found_villain == []:
+                        if ( not found_villain or found_villain == [] or found_villain == [' '] or found_villain  == ['']):
                             print("No villain found")
                         else:
                             # Extract the heros from the fragments
@@ -173,7 +177,7 @@ class Downloader():
                                 if found_villain not in villain_dictionary:
                                     villain_dictionary[found_villain] = {}
                                 if hero not in villain_dictionary[found_villain]:
-                                    villain_dictionary[found_villain][hero] = 0
+                                    villain_dictionary[found_villain][hero] = 1
                                     print(f"{Colors.OKBLUE}Add Hero:", hero)
                                 else:
                                     print(f"{Colors.OKBLUE}Increment Hero:", hero)
