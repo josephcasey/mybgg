@@ -1,4 +1,5 @@
 import json
+import sys
 
 from mybgg.downloader import Downloader
 from mybgg.indexer import Indexer
@@ -7,6 +8,7 @@ from setup_logging import setup_logging
 def main(args):
     SETTINGS = json.load(open("config.json", "rb"))
 
+    sys.stdout = open('output.txt', 'w')
     downloader = Downloader(
         project_name=SETTINGS["project"]["name"],
         cache_bgg=args.cache_bgg,
@@ -37,6 +39,13 @@ def main(args):
         print("Indexed {num_games} games and {num_expansions} expansions in algolia, and removed everything else.")
     else:
         print("Skipped indexing.")
+       # Close the file
+    sys.stdout.close()
+
+    # Restore standard output to the console
+    sys.stdout = sys.__stdout__
+
+    print("Done!")
 
 
 if __name__ == '__main__':
