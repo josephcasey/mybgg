@@ -95,9 +95,11 @@ class Downloader():
             # Iterate over the heroes and battles in the villain dictionary
             for hero, battles in villain_dictionary[villain].items():
                 # Update the hero_battles dictionary with the hero and battles
-                hero_battles[hero] = battles
+                # hero_battles[hero] = battles["count"]
+                # Update the hero_battles dictionary with the hero, count of battles, and play IDs
+                hero_battles[hero] = {"count": battles["count"], "play_ids": battles["play_ids"]} 
             # Sort the hero_battles dictionary by the number of battles in descending order
-            sorted_hero_battles = sorted(hero_battles.items(), key=lambda x: x[1], reverse=True)
+            sorted_hero_battles = sorted(hero_battles.items(), key=lambda x: x[1]["count"], reverse=True)
             # Return the sorted hero_battles dictionary
             return sorted_hero_battles
     
@@ -151,8 +153,8 @@ class Downloader():
                     champions_plays += 1
                     print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
-                    if 94716724 == play["playid"]:
-                        print("\nPlayID 94716724\n")
+                    if 93657508== play["playid"]:
+                        print("\nPlayID 93657508\n")
                     game_id_to_plays[play["game"]["gameid"]].append(play)  # Change extend to append
                     # Extract string fragments from gamecomments
                     fragments = extract_fragments(play["gamecomments"])
@@ -168,20 +170,22 @@ class Downloader():
                             print("No villain found")
                         else:
                             # Extract the heros from the fragments
+                            
                             for player in play["players"]:
-                                print(f"{Colors.OKGREEN}Hero:",player["color"])
+                                print(f"{Colors.OKGREEN}Hero:", player["color"])
                                 print(f"{Colors.ENDC}")
                                 hero = player["color"]
+                                play_id = play["playid"]
                                 # Update the villain dictionary
-                                #for villain in found_villain:
                                 if found_villain not in villain_dictionary:
                                     villain_dictionary[found_villain] = {}
                                 if hero not in villain_dictionary[found_villain]:
-                                    villain_dictionary[found_villain][hero] = 1
+                                    villain_dictionary[found_villain][hero] = {"count": 1, "play_ids": [play_id]}
                                     print(f"{Colors.OKBLUE}Add Hero:", hero)
                                 else:
                                     print(f"{Colors.OKBLUE}Increment Hero:", hero)
-                                    villain_dictionary[found_villain][hero] += 1
+                                    villain_dictionary[found_villain][hero]["count"] += 1
+                                    villain_dictionary[found_villain][hero]["play_ids"].append(play_id)
 
         # Print the villain dictionary for debugging purposes
         print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
