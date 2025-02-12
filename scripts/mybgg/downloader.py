@@ -50,36 +50,75 @@ class Downloader():
             if (matches == [] or matches == [''] or matches == [' ']):
                 if "Played as expansion" in input_string: 
                     # Define the adjusted regular expression pattern
-                    pattern = r'\n(.*)\n'
+                    pattern = r'\n?／?(\w+\s\d/\d).*#bgstats'
                 else:
                     # Define the regular expression pattern
-                    pattern = r'\n\n(.*)\s#bgstats'
+                    pattern = r'\n(.*?1/2)'
                 # Find all occurrences of the pattern in the input_strings
                 matches = re.findall(pattern, input_string)
-            if (matches == [] or matches == [''] or matches == [' ']):
-                print("No matches found")
+                if (matches == [] or matches == [''] or matches == [' ']):
+                    print("No matches found")
+                    # Define the regular expression pattern
+                    pattern = r'\n(.*?1/2)'
+                    matches = re.findall(pattern, input_string)
+                    if (matches == [] or matches == [''] or matches == [' ']):
+                        print("No matches found")
+                        pattern = r'(\S.*?／.*?／.*?\(.*?\))\s#bgstats'
+                        matches = re.findall(pattern, input_string)
+                        if (matches == [] or matches == [''] or matches == [' ']):
+                            print("No matches found")
+                            pattern = r'\n(.*?)\n\s#bgstats'
+                            matches = re.findall(pattern, input_string)
+                            if (matches == [] or matches == [''] or matches == [' ']):
+                                print("No matches found")
             # Split the matches by "/" and return the fragments
             # print("\nVillain :",re.findall(r'[\w+\s*]+1/2', matches),"\n")
             return matches
         
         def extract_villain(fragment_input):
             # Define the regular expression pattern to match Nebula 1/2 eg
-            pattern = r'[\w+\s*]+\d/\d'
+            pattern = r'／?([^／]*?\d/\d)'
             # Find all occurrences of the pattern in the input_strings
             villain = re.findall(pattern, fragment_input)
             #print(f"{Colors.FAIL}This is red text{Colors.ENDC}")
             if (not villain or villain == [] or villain == [''] or villain == [' ']):
                 print("No villain found1")
                 # Define the regular expression pattern to match Magog A eg
-                pattern = r'(\w+\s[A-C])'
+                #pattern = r'(\w+\s[A-C]\d?)'
+                #pattern = r'(\w+\s[A-C]{1}\d?)(?=／|\n)'
+                pattern = r'([\w\s\(\)]+[A-C]\d?)(?=／|\s?$)'
                 villain = re.findall(pattern, fragment_input)
                 if (not villain or villain == [] or villain == [''] or villain == [' ']):
                     print("No villain found2")
-                    pattern = r'(.*)\s'    
+                    # Define the regular expression pattern to match Magog A eg elsewhere in string
+                    pattern = r'(\w+\s[A-C]\d?)(?=／|$)'
                     villain = re.findall(pattern, fragment_input)
                     if (not villain or villain == [] or villain == [''] or villain == [' ']):
                         print("No villain found3")
-                        return ''
+                        # Define the regular expression pattern to match just Nebula 1/2 (or at start of string eg Ebony Maw 1/2／Standard)
+                        pattern = r'(.*?1/2)/?'    
+                        villain = re.findall(pattern, fragment_input)
+                        if (not villain or villain == [] or villain == [''] or villain == [' ']):
+                            print("No villain found4")
+                            # Define the regular expression pattern to match just Sinister 6 from Standard III／Sinister 6
+                            pattern='／([^／]*?\d)$'
+                            villain = re.findall(pattern, fragment_input)
+                            if (not villain or villain == [] or villain == [''] or villain == [' ']):
+                                print("No villain found5")
+                                # Define the regular expression pattern to match just Sinister 6 from Standard III／Sinister 6 & 'Captain America Leadership／Sinister 6／Standard Core '
+                                pattern='／?([^／]*?\d)(?=／|$)'
+                                villain = re.findall(pattern, fragment_input)
+                                if (not villain or villain == [] or villain == [''] or villain == [' ']):
+                                    print("No villain found6")
+                                    pattern='(\w+\s[A-C]\d?)(?=／|\s?$)'
+                                    villain = re.findall(pattern, fragment_input)
+                                    if (not villain or villain == [] or villain == [''] or villain == [' ']):
+                                        print("No villain found7")
+                                        pattern='([\w\s\(\)]+[A-C]\d/\d)(?=／|\s?$)'
+                                        villain = re.findall(pattern, fragment_input)
+                                        if (not villain or villain == [] or villain == [''] or villain == [' ']):
+                                            print("No villain found8")
+                                            return fragment_input
             return villain[0]
         
         def extract_heros(players_array):
@@ -153,8 +192,8 @@ class Downloader():
                     champions_plays += 1
                     print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
-                    if 93657508== play["playid"]:
-                        print("\nPlayID 93657508\n")
+                    if 87396724 == play["playid"]:
+                        print("\nProblem PlayID breakpoint\n")
                     game_id_to_plays[play["game"]["gameid"]].append(play)  # Change extend to append
                     # Extract string fragments from gamecomments
                     fragments = extract_fragments(play["gamecomments"])
@@ -190,7 +229,7 @@ class Downloader():
         # Print the villain dictionary for debugging purposes
         print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
         for villain in villain_dictionary:
-            print(f"{Colors.OKBLUE}\n\nVillain",villain)
+            print(f"{Colors.OKBLUE}\n\nVillain: '",villain,"'")
             print(f"{Colors.ENDC}")
             print(" : ", most_battled_hero(villain_dictionary, villain))
             #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
