@@ -4,6 +4,7 @@ from mybgg.bgg_client import CacheBackendSqlite
 # imports the BoardGame class from the mybgg.models module
 from mybgg.models import BoardGame
 import re
+import sys
 
 # Define ANSI escape codes for colors
 class Colors:
@@ -129,19 +130,27 @@ class Downloader():
             return heros
         
         def most_battled_hero(villain_dictionary, villain):
-            # Create a dictionary mapping heroes to the number of battles
+            # Create a dictionary mapping heroes to the number of battles and play IDs
             hero_battles = {}
-            # Iterate over the heroes and battles in the villain dictionary
-            for hero, battles in villain_dictionary[villain].items():
-                # Update the hero_battles dictionary with the hero and battles
-                # hero_battles[hero] = battles["count"]
+            total_plays = 0
+            unique_play_ids = set()
+    
+             # Iterate over the heroes and battles in the villain dictionary
+            for hero, data in villain_dictionary[villain].items():
                 # Update the hero_battles dictionary with the hero, count of battles, and play IDs
-                hero_battles[hero] = {"count": battles["count"], "play_ids": battles["play_ids"]} 
+                hero_battles[hero] = {"count": data["count"], "play_ids": data["play_ids"]}
+                # Increment the total plays only if the play ID is unique
+                for play_id in data["play_ids"]:
+                    if play_id not in unique_play_ids:
+                        unique_play_ids.add(play_id)
+                        total_plays += 1
             # Sort the hero_battles dictionary by the number of battles in descending order
             sorted_hero_battles = sorted(hero_battles.items(), key=lambda x: x[1]["count"], reverse=True)
-            # Return the sorted hero_battles dictionary
+            # Add the total number of plays to the villain dictionary
+            villain_dictionary[villain]["total_plays"] = total_plays
+            # Return the sorted hero_battles list
             return sorted_hero_battles
-    
+            
     
         collection_data = []
         plays_data = []
@@ -190,7 +199,7 @@ class Downloader():
                 
                 if ("Marvel Champions" in play["game"]["gamename"]): #or "Marvel Champions" in play["gamecomments"]):
                     champions_plays += 1
-                    print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["game"]["gamename"])
+                    print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["playdate"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
                     if 87396724 == play["playid"]:
                         print("\nProblem PlayID breakpoint\n")
@@ -228,10 +237,15 @@ class Downloader():
 
         # Print the villain dictionary for debugging purposes
         print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
+        plays_processed = 0
         for villain in villain_dictionary:
             print(f"{Colors.OKBLUE}\n\nVillain: '",villain,"'")
             print(f"{Colors.ENDC}")
             print(" : ", most_battled_hero(villain_dictionary, villain))
+            print("Total Plays: ", villain_dictionary[villain]["total_plays"])    
+            plays_processed += villain_dictionary[villain]["total_plays"]
+            print("plays processed: ", plays_processed,"\n")
+
             #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
         print("Champions plays processed:", champions_plays)
         games_data = list(filter(lambda x: x["type"] == "boardgame", game_list_data))
@@ -257,4 +271,10 @@ class Downloader():
             )
             for game_data in games_data
         ]
+
+        sys.stdout.close()
+
+        # Restore standard output to the console
+        sys.stdout = sys.__stdout__
+
         return games

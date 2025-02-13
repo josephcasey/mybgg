@@ -1,5 +1,6 @@
 import json
 import sys
+import datetime  # Import the datetime module
 
 from mybgg.downloader import Downloader
 from mybgg.indexer import Indexer
@@ -9,6 +10,8 @@ def main(args):
     SETTINGS = json.load(open("config.json", "rb"))
 
     sys.stdout = open('output.txt', 'w')
+
+    print(datetime.datetime.now())
     downloader = Downloader(
         project_name=SETTINGS["project"]["name"],
         cache_bgg=args.cache_bgg,
@@ -40,10 +43,10 @@ def main(args):
     else:
         print("Skipped indexing.")
        # Close the file
-    sys.stdout.close()
+    #sys.stdout.close()
 
     # Restore standard output to the console
-    sys.stdout = sys.__stdout__
+    #sys.stdout = sys.__stdout__
 
     print("Done!")
 
