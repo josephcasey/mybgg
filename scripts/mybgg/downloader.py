@@ -136,16 +136,22 @@ class Downloader():
             unique_play_ids = set()
     
              # Iterate over the heroes and battles in the villain dictionary
-            for hero, data in villain_dictionary[villain].items():
+            for hero, hero_data in villain_dictionary[villain].items():
                 # Update the hero_battles dictionary with the hero, count of battles, and play IDs
-                hero_battles[hero] = {"count": data["count"], "play_ids": data["play_ids"]}
+                hero_battles[hero] = {"count": hero_data["count"], "play_ids": hero_data["play_ids"]}
                 # Increment the total plays only if the play ID is unique
-                for play_id in data["play_ids"]:
+                for play_id in hero_data["play_ids"]:
                     if play_id not in unique_play_ids:
                         unique_play_ids.add(play_id)
                         total_plays += 1
             # Sort the hero_battles dictionary by the number of battles in descending order
             sorted_hero_battles = sorted(hero_battles.items(), key=lambda x: x[1]["count"], reverse=True)
+
+            # Update the villain dictionary with sorted heroes
+            sorted_hero_battles_dict = {hero: data for hero, data in sorted_hero_battles}
+            #villain_dictionary[villain].update(sorted_hero_battles_dict)
+            villain_dictionary[villain] = sorted_hero_battles_dict
+           
             # Add the total number of plays to the villain dictionary
             villain_dictionary[villain]["total_plays"] = total_plays
             # Return the sorted hero_battles list
@@ -174,6 +180,7 @@ class Downloader():
             user_name=user_name
         )
 
+
         # Fetch game list data for the games in the collection
         game_list_data = self.client.game_list([game_in_collection["id"] for game_in_collection in collection_data])
         # Create a dictionary mapping game IDs to tags
@@ -197,7 +204,7 @@ class Downloader():
                 #game_id_to_players[play["game"]["gameid"]].extend(play["players"])
                 print("Players:", play["players"])
                 
-                if ("Marvel Champions" in play["game"]["gamename"]): #or "Marvel Champions" in play["gamecomments"]):
+                if ("Marvel Champions" in play["game"]["gamename"] and not 'parent play' in play["gamecomments"]): #or "Marvel Champions" in play["gamecomments"]):
                     champions_plays += 1
                     print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["playdate"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
@@ -237,8 +244,9 @@ class Downloader():
 
         # Print the villain dictionary for debugging purposes
         print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
+
         plays_processed = 0
-        for villain in villain_dictionary:
+        for villain, data in villain_dictionary.items():
             print(f"{Colors.OKBLUE}\n\nVillain: '",villain,"'")
             print(f"{Colors.ENDC}")
             print(" : ", most_battled_hero(villain_dictionary, villain))
@@ -246,7 +254,26 @@ class Downloader():
             plays_processed += villain_dictionary[villain]["total_plays"]
             print("plays processed: ", plays_processed,"\n")
 
-            #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
+
+        # Sort the villain dictionary by total plays
+        villain_dictionary = sorted(villain_dictionary.items(), key=lambda x: x[1]["total_plays"], reverse=True)
+
+        for villain, data in villain_dictionary:
+            print(f"{Colors.OKBLUE}\n\nVillain: '",villain," (",data["total_plays"],")'")
+            print(f"{Colors.ENDC}")
+            #print(" : ", most_battled_hero(villain_dictionary, villain))
+            #Iterate through the heroes played for the villain and print them
+            for hero, hero_data in data.items():
+                if hero != "total_plays":
+                    hero_name = hero.replace("Team 1 - ", "")  # Remove the "Team 1 -" prefix
+                    print(f"  Hero: {hero_name} ({hero_data['count']})")
+               # if hero != "total_plays":
+                   # print(f"( {hero_data['count']})")
+
+        #Print the villain dictionary for debugging purposes
+        print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
+
+        #game_id_to_players[play["game"]["gameid"]] = list(set(game_id_to_players[play["game"]["gameid"]]))
         print("Champions plays processed:", champions_plays)
         games_data = list(filter(lambda x: x["type"] == "boardgame", game_list_data))
         expansions_data = list(filter(lambda x: x["type"] == "boardgameexpansion", game_list_data))
