@@ -138,7 +138,7 @@ class Downloader():
              # Iterate over the heroes and battles in the villain dictionary
             for hero, hero_data in villain_dictionary[villain].items():
                 # Update the hero_battles dictionary with the hero, count of battles, and play IDs
-                hero_battles[hero] = {"count": hero_data["count"], "play_ids": hero_data["play_ids"]}
+                hero_battles[hero] = {"count": hero_data["count"], "play_ids": hero_data["play_ids"], "wins": hero_data["wins"]}
                 # Increment the total plays only if the play ID is unique
                 for play_id in hero_data["play_ids"]:
                     if play_id not in unique_play_ids:
@@ -231,16 +231,18 @@ class Downloader():
                                 print(f"{Colors.ENDC}")
                                 hero = player["color"]
                                 play_id = play["playid"]
+                                win = player["win"]  # Get the win status, default to 0 if not present
                                 # Update the villain dictionary
                                 if found_villain not in villain_dictionary:
                                     villain_dictionary[found_villain] = {}
                                 if hero not in villain_dictionary[found_villain]:
-                                    villain_dictionary[found_villain][hero] = {"count": 1, "play_ids": [play_id]}
+                                    villain_dictionary[found_villain][hero] = {"count": 1, "play_ids": [play_id], "wins": win}
                                     print(f"{Colors.OKBLUE}Add Hero:", hero)
                                 else:
                                     print(f"{Colors.OKBLUE}Increment Hero:", hero)
                                     villain_dictionary[found_villain][hero]["count"] += 1
                                     villain_dictionary[found_villain][hero]["play_ids"].append(play_id)
+                                    villain_dictionary[found_villain][hero]["wins"] += win
 
         # Print the villain dictionary for debugging purposes
         print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
@@ -266,7 +268,7 @@ class Downloader():
             for hero, hero_data in data.items():
                 if hero != "total_plays":
                     hero_name = hero.replace("Team 1 - ", "")  # Remove the "Team 1 -" prefix
-                    print(f"  Hero: {hero_name} ({hero_data['count']})")
+                    print(f"- {hero_name} (Won {hero_data['wins']}/{hero_data['count']})")
                # if hero != "total_plays":
                    # print(f"( {hero_data['count']})")
 
