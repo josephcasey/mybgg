@@ -133,6 +133,7 @@ class Downloader():
             # Create a dictionary mapping heroes to the number of battles and play IDs
             hero_battles = {}
             total_plays = 0
+            
             unique_play_ids = set()
     
              # Iterate over the heroes and battles in the villain dictionary
@@ -144,6 +145,7 @@ class Downloader():
                     if play_id not in unique_play_ids:
                         unique_play_ids.add(play_id)
                         total_plays += 1
+                        
             # Sort the hero_battles dictionary by the number of battles in descending order
             sorted_hero_battles = sorted(hero_battles.items(), key=lambda x: x[1]["count"], reverse=True)
 
@@ -205,6 +207,10 @@ class Downloader():
                 print("Players:", play["players"])
                 
                 if ("Marvel Champions" in play["game"]["gamename"] and not 'parent play' in play["gamecomments"]): #or "Marvel Champions" in play["gamecomments"]):
+                    # Omit plays with more than one hero
+                    if len(play["players"]) > 1:
+                        continue
+                    
                     champions_plays += 1
                     print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["playdate"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
