@@ -269,15 +269,20 @@ class Downloader():
         for villain, data in villain_dictionary:
             print(f"{Colors.OKBLUE}\n\nVillain: '",villain," (",data["total_plays"],")'")
             print(f"{Colors.ENDC}")
+
+            villain_wins = 0
+            total_hero_wins = 0
             #print(" : ", most_battled_hero(villain_dictionary, villain))
             #Iterate through the heroes played for the villain and print them
             for hero, hero_data in data.items():
                 if hero != "total_plays":
                     hero_name = hero.replace("Team 1 - ", "")  # Remove the "Team 1 -" prefix
                     print(f"- {hero_name} (Won {hero_data['wins']}/{hero_data['count']})")
-               # if hero != "total_plays":
-                   # print(f"( {hero_data['count']})")
-
+                    total_hero_wins += hero_data['wins']
+            
+            villain_wins = data["total_plays"] - total_hero_wins
+            print(f"{Colors.OKBLUE}\n\nVillain Wins: {villain_wins} of {data['total_plays']}")
+            
         #Print the villain dictionary for debugging purposes
         print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
 
