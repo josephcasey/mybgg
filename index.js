@@ -5,27 +5,28 @@ const search = instantsearch({
     searchClient,
     initialUiState: {
         [ALGOLIA_INDEX_NAME]: {
-            // Set initial query to match all documents
             query: '',
-            // Set initial menu selection
             menu: {
-                date: undefined // No initial date filter
+                date: undefined
             }
         }
     }
 });
 
-// Add search box
-search.addWidget(
+// Single configure widget with correct settings
+search.addWidgets([
+    instantsearch.widgets.configure({
+        hitsPerPage: 1000,  // Set high enough to get all plays
+        distinct: true,
+        clickAnalytics: true
+    }),
+    
     instantsearch.widgets.searchBox({
         container: '#searchbox',
         placeholder: 'Search plays...'
-    })
-);
+    }),
 
-// Configure the hits widget first
-search.addWidget(
-    instantsearch.widgets.hits({
+    instantsearch.widgets.infiniteHits({
         container: '.hits',
         templates: {
             empty: 'No results found.',
@@ -38,13 +39,19 @@ search.addWidget(
                         <p>Date: {{date}}</p>
                     </div>
                 </div>
-            `
+            `,
+            showMoreText: 'Load more'
+        },
+        escapeHTML: true,
+        transformItems(items) {
+            return items;
+        },
+        cssClasses: {
+            root: 'infinite-hits',
+            loadMore: 'infinite-hits-loadmore'
         }
-    })
-);
+    }),
 
-// Configure menu widget with proper settings
-search.addWidget(
     instantsearch.widgets.menuSelect({
         container: '#time-period',
         attribute: 'date',
@@ -54,17 +61,78 @@ search.addWidget(
             item: ({ label, value, count }) => `${label} (${count})`,
             defaultOption: 'All Time'
         }
-    })
-);
+    }),
 
-// Add debug widget to track search state
-search.addWidget(
-    instantsearch.widgets.configure({
-        hitsPerPage: 24,
-        distinct: true,
-        clickAnalytics: true
+    instantsearch.widgets.stats({
+        container: '#stats-container',
+        templates: {
+            text(results) {
+                const allHits = search.helper?.lastResults?.hits || [];
+                
+                // Wait for initial load
+                if (!allHits.length) {
+                    return '<p>Loading statistics...</p>';
+                }
+
+                const stats = computeStats(allHits);
+                
+                console.log('Stats computation:', {
+                    totalHits: results.nbHits,
+                    processedHits: allHits.length,
+                    heroCount: stats.heroes.length,
+                    villainCount: stats.villains.length
+                });
+
+                // Return the stats template
+                return `
+                    <div class="statistics">
+                        <div class="hero-stats">
+                            <h3>Hero Statistics (${stats.heroes.length} heroes)</h3>
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Hero</th>
+                                        <th>Plays</th>
+                                        <th>Wins</th>
+                                        <th>Win Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${renderHeroStats(stats.heroes)}</tbody>
+                            </table>
+                        </div>
+                        <div class="villain-stats">
+                            <h3>Villain Statistics (${stats.villains.length} villains)</h3>
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Villain</th>
+                                        <th>Plays</th>
+                                        <th>Hero Wins</th>
+                                        <th>Win Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${renderVillainStats(stats.villains)}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+        }
     })
-);
+]);
+
+// Single render event listener
+search.on('render', () => {
+    const results = search.helper?.lastResults;
+    if (results?.hits) {
+        console.log('Search state:', {
+            totalHits: results.nbHits,
+            processedHits: results.hits.length,
+            currentPage: results.page,
+            totalPages: results.nbPages
+        });
+    }
+});
 
 // Helper function to compute statistics
 function computeStats(hits) {
@@ -141,96 +209,6 @@ function getDifficultyLabel(winRate) {
     return 'Hard';
 }
 
-// Add stats widget with proper data access
-search.addWidget(
-    instantsearch.widgets.stats({
-        container: '#stats-container',
-        templates: {
-            text(results) {
-                // Get hits from the search results helper
-                const searchResults = search.helper?.lastResults;
-                const hits = searchResults?.hits || [];
-                console.log('Processing hits from search results:', hits.length);
-                
-                if (hits.length === 0) {
-                    return '<p>Loading statistics...</p>';
-                }
-                
-                // Compute stats
-                const stats = computeStats(hits);
-                
-                return `
-                    <div class="statistics">
-                        <div class="hero-stats">
-                            <h3>Hero Statistics (${stats.heroes.length} heroes)</h3>
-                            <table class="stats-table">
-                                <thead>
-                                    <tr>
-                                        <th>Hero</th>
-                                        <th>Plays</th>
-                                        <th>Wins</th>
-                                        <th>Win Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${stats.heroes.map(hero => `
-                                        <tr>
-                                            <td>${hero.name}</td>
-                                            <td>${hero.plays}</td>
-                                            <td>${hero.wins}</td>
-                                            <td class="win-rate-${hero.winRate >= 50 ? 'high' : 'low'}">
-                                                ${hero.winRate}%
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="villain-stats">
-                            <h3>Villain Statistics (${stats.villains.length} villains)</h3>
-                            <table class="stats-table">
-                                <thead>
-                                    <tr>
-                                        <th>Villain</th>
-                                        <th>Plays</th>
-                                        <th>Hero Wins</th>
-                                        <th>Win Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${stats.villains.map(villain => `
-                                        <tr>
-                                            <td>${villain.name}</td>
-                                            <td>${villain.plays}</td>
-                                            <td>${villain.wins}</td>
-                                            <td class="win-rate-${villain.winRate >= 50 ? 'high' : 'low'}">
-                                                ${villain.winRate}%
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-    })
-);
-
-// Move this BEFORE search.start()
-search.on('render', () => {
-    const results = search.helper?.lastResults;
-    if (results?.hits) {
-        // Force refresh of stats when we have hits
-        const statsContainer = document.querySelector('#stats-container');
-        if (statsContainer) {
-            const stats = computeStats(results.hits);
-            console.log('Stats computed:', stats);
-        }
-    }
-});
-
 function renderHeroStats(heroes) {
     return heroes.map(hero => `
         <tr>
@@ -251,18 +229,7 @@ function renderVillainStats(villains) {
             <td class="${getDifficultyClass(villain.winRate)}">${getDifficultyLabel(villain.winRate)}</td>
         </tr>
     `).join('');
-};
-
-// Debug listener for all events
-search.on('render', () => {
-    const results = search.helper?.lastResults;
-    console.log('Current search results:', {
-        totalHits: results?.nbHits,
-        currentPage: results?.page,
-        totalPages: results?.nbPages,
-        hits: results?.hits
-    });
-});
+}
 
 // Add error handling for search
 search.on('error', (error) => {
