@@ -8,15 +8,18 @@ const search = instantsearch({
             query: '',
             menu: {
                 date: undefined
+            },
+            configure: {
+                hitsPerPage: 1000  // Get all hits in one page for stats
             }
         }
     }
 });
 
-// Single configure widget with correct settings
+// Add configure widget first
 search.addWidgets([
     instantsearch.widgets.configure({
-        hitsPerPage: 1000,  // Set high enough to get all plays
+        hitsPerPage: 1000,
         distinct: true,
         clickAnalytics: true
     }),
@@ -66,35 +69,42 @@ search.addWidgets([
     instantsearch.widgets.stats({
         container: '#stats-container',
         templates: {
-            text(results) {
-                const allHits = search.helper?.lastResults?.hits || [];
+            text(results, { html }) {
+                // Debug logging
+                console.log('Stats widget state:', {
+                    hasResults: Boolean(results),
+                    hasHits: Boolean(results?.hits),
+                    hitCount: results?.hits?.length,
+                    totalHits: results?.nbHits,
+                    helper: Boolean(search.helper),
+                    helperResults: Boolean(search.helper?.lastResults)
+                });
+
+                // Use helper results if widget results aren't available yet
+                const hits = results?.hits || search.helper?.lastResults?.hits || [];
                 
-                // Wait for initial load
-                if (!allHits.length) {
+                if (!hits.length) {
                     return '<p>Loading statistics...</p>';
                 }
 
-                const stats = computeStats(allHits);
-                
-                console.log('Stats computation:', {
-                    totalHits: results.nbHits,
-                    processedHits: allHits.length,
-                    heroCount: stats.heroes.length,
-                    villainCount: stats.villains.length
-                });
+                const stats = computeStats(hits);
+                console.log('Computed stats:', stats);
 
-                // Return the stats template
+                if (!stats.heroes.length && !stats.villains.length) {
+                    return '<p>No statistics available</p>';
+                }
+
                 return `
                     <div class="statistics">
                         <div class="hero-stats">
                             <h3>Hero Statistics (${stats.heroes.length} heroes)</h3>
-                            <table class="stats-table">
+                            <table class="stats-table sortable">
                                 <thead>
                                     <tr>
-                                        <th>Hero</th>
-                                        <th>Plays</th>
-                                        <th>Wins</th>
-                                        <th>Win Rate</th>
+                                        <th data-sort="string">Hero</th>
+                                        <th data-sort="number">Plays</th>
+                                        <th data-sort="number">Wins</th>
+                                        <th data-sort="number">Win Rate</th>
                                     </tr>
                                 </thead>
                                 <tbody>${renderHeroStats(stats.heroes)}</tbody>
@@ -102,13 +112,13 @@ search.addWidgets([
                         </div>
                         <div class="villain-stats">
                             <h3>Villain Statistics (${stats.villains.length} villains)</h3>
-                            <table class="stats-table">
+                            <table class="stats-table sortable">
                                 <thead>
                                     <tr>
-                                        <th>Villain</th>
-                                        <th>Plays</th>
-                                        <th>Hero Wins</th>
-                                        <th>Win Rate</th>
+                                        <th data-sort="string">Villain</th>
+                                        <th data-sort="number">Plays</th>
+                                        <th data-sort="number">Hero Wins</th>
+                                        <th data-sort="number">Win Rate</th>
                                     </tr>
                                 </thead>
                                 <tbody>${renderVillainStats(stats.villains)}</tbody>
@@ -121,6 +131,72 @@ search.addWidgets([
     })
 ]);
 
+// Add sorting functionality first
+function initTableSort() {
+    document.querySelectorAll('table.sortable th').forEach(headerCell => {
+        headerCell.addEventListener('click', () => {
+            const tableElement = headerCell.parentElement.parentElement.parentElement;
+            const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
+            const currentIsAscending = headerCell.classList.contains('th-sort-asc');
+            const sortType = headerCell.getAttribute('data-sort') || 'string';
+
+            // Clear sort indicators from other columns
+            tableElement.querySelectorAll('th').forEach(th => {
+                if (th !== headerCell) {
+                    th.classList.remove('th-sort-asc', 'th-sort-desc');
+                }
+            });
+
+            sortTableByColumn(tableElement, headerIndex, !currentIsAscending, sortType);
+        });
+    });
+}
+
+function sortTableByColumn(table, column, asc = true, sortType = 'string') {
+    const dirModifier = asc ? 1 : -1;
+    const tBody = table.tBodies[0];
+    const rows = Array.from(tBody.querySelectorAll('tr'));
+
+    const sortedRows = rows.sort((a, b) => {
+        const aCol = a.querySelector(`td:nth-child(${column + 1})`);
+        const bCol = b.querySelector(`td:nth-child(${column + 1})`);
+        let aColText = aCol.textContent.trim();
+        let bColText = bCol.textContent.trim();
+
+        if (sortType === 'number') {
+            // Remove % and convert to number
+            const aNum = parseFloat(aColText.replace('%', ''));
+            const bNum = parseFloat(bColText.replace('%', ''));
+            if (aNum === bNum) {
+                return 0;
+            }
+            return aNum > bNum ? dirModifier : -dirModifier;
+        } else {
+            // String comparison
+            if (aColText === bColText) {
+                return 0;
+            }
+            return aColText > bColText ? dirModifier : -dirModifier;
+        }
+    });
+
+    // Remove existing rows
+    while (tBody.firstChild) {
+        tBody.removeChild(tBody.firstChild);
+    }
+
+    // Add sorted rows
+    tBody.append(...sortedRows);
+
+    // Update sort indicators
+    table.querySelectorAll('th').forEach(th => {
+        th.classList.remove('th-sort-asc', 'th-sort-desc');
+    });
+    const headerCell = table.querySelector(`th:nth-child(${column + 1})`);
+    headerCell.classList.toggle('th-sort-asc', asc);
+    headerCell.classList.toggle('th-sort-desc', !asc);
+}
+
 // Single render event listener
 search.on('render', () => {
     const results = search.helper?.lastResults;
@@ -132,40 +208,43 @@ search.on('render', () => {
             totalPages: results.nbPages
         });
     }
+
+    // Initialize table sorting
+    setTimeout(initTableSort, 100);
 });
 
-// Helper function to compute statistics
+// Add debug logging for stats computation
 function computeStats(hits) {
-    if (!Array.isArray(hits) || hits.length === 0) {
-        return { heroes: [], villains: [] };
-    }
-
+    console.log('Computing stats for hits:', hits.length);
+    
     const heroStats = {};
     const villainStats = {};
 
     hits.forEach(hit => {
-        // Process hero stats
         const hero = hit.hero;
+        const villain = hit.villain;
+        const win = hit.win;
+
+        // Process hero stats
         if (hero) {
             if (!heroStats[hero]) {
                 heroStats[hero] = { plays: 0, wins: 0 };
             }
             heroStats[hero].plays++;
-            if (hit.win) heroStats[hero].wins++;
+            if (win) heroStats[hero].wins++;
         }
 
         // Process villain stats
-        const villain = hit.villain;
         if (villain) {
             if (!villainStats[villain]) {
                 villainStats[villain] = { plays: 0, wins: 0 };
             }
             villainStats[villain].plays++;
-            if (hit.win) villainStats[villain].wins++;
+            if (win) villainStats[villain].wins++;
         }
     });
 
-    // Convert to sorted arrays
+    // Convert to arrays and sort by plays
     const heroes = Object.entries(heroStats)
         .map(([name, stats]) => ({
             name,
@@ -183,6 +262,11 @@ function computeStats(hits) {
             winRate: ((stats.wins / stats.plays) * 100).toFixed(1)
         }))
         .sort((a, b) => b.plays - a.plays);
+
+    console.log('Stats computed:', { 
+        heroCount: heroes.length, 
+        villainCount: villains.length 
+    });
 
     return { heroes, villains };
 }
@@ -226,7 +310,7 @@ function renderVillainStats(villains) {
             <td>${villain.name}</td>
             <td>${villain.plays}</td>
             <td>${villain.wins}</td>
-            <td class="${getDifficultyClass(villain.winRate)}">${getDifficultyLabel(villain.winRate)}</td>
+            <td class="${getDifficultyClass(villain.winRate)}">${villain.winRate}%</td>
         </tr>
     `).join('');
 }

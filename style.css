@@ -404,46 +404,89 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 2rem;
     margin: 2rem 0;
+    color: #333;
+}
+
+.statistics h3 {
+    margin: 1rem 0;
+    color: #000;
 }
 
 .stats-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 1rem;
+    margin: 1rem 0;
 }
 
 .stats-table th,
 .stats-table td {
-    padding: 0.5rem;
+    padding: 8px;
     text-align: left;
     border-bottom: 1px solid #ddd;
 }
 
 .stats-table th {
+    position: relative;
+    cursor: pointer;
     background: #f5f5f5;
-    font-weight: bold;
+    padding-right: 25px;
 }
 
-.win-rate-high {
-    color: #2e7d32;
+.stats-table td {
+    color: #333;
 }
 
-.win-rate-low {
-    color: #c62828;
+/* Ensure text is visible */
+.statistics {
+    color: #333;
 }
 
-.win-rate-medium {
-    color: #f57c00;
+.statistics h3 {
+    margin: 1rem 0;
+    color: #000;
 }
 
+/* Hover effect */
+.stats-table th:hover {
+    background: #e5e5e5;
+}
+
+/* Sort indicators */
+.stats-table th::after {
+    position: absolute;
+    right: 8px;
+    content: "▼";
+    opacity: 0.3;
+}
+
+.stats-table th.th-sort-asc::after {
+    content: "▲";
+    opacity: 1;
+}
+
+.stats-table th.th-sort-desc::after {
+    content: "▼";
+    opacity: 1;
+}
+
+/* Selected sort column */
+.stats-table th.th-sort-asc,
+.stats-table th.th-sort-desc {
+    background: #e5e5e5;
+}
+
+/* Win rate and difficulty colors */
+.win-rate-high,
 .difficulty-easy {
     color: #2e7d32;
 }
 
+.win-rate-medium,
 .difficulty-medium {
     color: #f57c00;
 }
 
+.win-rate-low,
 .difficulty-hard {
     color: #c62828;
 }
