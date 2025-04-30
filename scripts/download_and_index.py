@@ -17,16 +17,15 @@ def main(args):
         cache_bgg=args.cache_bgg,
         debug=args.debug,
     )
-    collection = downloader.collection(
+    play_data = downloader.collection(
         user_name=SETTINGS["boardgamegeek"]["user_name"],
         extra_params=SETTINGS["boardgamegeek"]["extra_params"],
     )
-    num_games = len(collection)
-    num_expansions = sum([len(game.expansions) for game in collection])
-    print("Imported {num_games} games and {num_expansions} expansions from boardgamegeek.")
+    num_plays = len(play_data)
+    print(f"Imported {num_plays} Marvel Champions plays from boardgamegeek.")
 
-    if not len(collection):
-        assert False, "No games imported, is the boardgamegeek part of config.json correctly set?"
+    if not len(play_data):
+        assert False, "No plays imported, is the boardgamegeek part of config.json correctly set?"
 
     if not args.no_indexing:
         hits_per_page = SETTINGS["algolia"].get("hits_per_page", 48)
@@ -36,10 +35,10 @@ def main(args):
             index_name=SETTINGS["algolia"]["index_name"],
             hits_per_page=hits_per_page,
         )
-        indexer.add_objects(collection)
-        indexer.delete_objects_not_in(collection)
+        indexer.add_objects(play_data)
+        indexer.delete_objects_not_in(play_data)
 
-        print("Indexed {num_games} games and {num_expansions} expansions in algolia, and removed everything else.")
+        print(f"Indexed {num_plays} Marvel Champions plays in algolia, and removed everything else.")
     else:
         print("Skipped indexing.")
        # Close the file

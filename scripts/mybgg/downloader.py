@@ -18,6 +18,15 @@ class Colors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+class PlayDataDTO:
+    def __init__(self, id, villain, hero, win, date, location):
+        self.id = id
+        self.villain = villain
+        self.hero = hero
+        self.win = win
+        self.date = date
+        self.location = location
+
 class Downloader():
     def __init__(self, project_name, cache_bgg, debug=False):
         # Initialize the BGGClient with or without caching based on cache_bgg flag
@@ -197,6 +206,8 @@ class Downloader():
         game_id_to_plays = {game["id"]: [] for game in collection_data}
         villain_dictionary = {}
 
+        play_data_list = []
+
         champions_plays = 0
         # for each play in plays_data
         for play in plays_data:
@@ -249,6 +260,16 @@ class Downloader():
                                     villain_dictionary[found_villain][hero]["count"] += 1
                                     villain_dictionary[found_villain][hero]["play_ids"].append(play_id)
                                     villain_dictionary[found_villain][hero]["wins"] += win
+
+                                play_data = PlayDataDTO(
+                                    id=play["playid"],
+                                    villain=found_villain,
+                                    hero=hero,
+                                    win=win,
+                                    date=play["playdate"],
+                                    location=play.get("location", "Unknown")
+                                )
+                                play_data_list.append(play_data)
 
         # Print the villain dictionary for debugging purposes
         print(f"{Colors.OKCYAN}Villain Dictionary:{Colors.ENDC}", villain_dictionary)
@@ -317,4 +338,5 @@ class Downloader():
         # Restore standard output to the console
         sys.stdout = sys.__stdout__
 
-        return games
+        ##JC return games
+        return play_data_list

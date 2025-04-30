@@ -1,6 +1,8 @@
 import io
 import re
 import time
+import json
+import datetime
 
 import colorgram
 import requests
@@ -20,26 +22,32 @@ class Indexer:
         # Initialize the index with the provided index name
         index = client.init_index(index_name)
 
+        # Print the Algolia credentials for config.js
+        print("\nAlgolia credentials for config.js:")
+        print("---------------------------------")
+        print(f"ALGOLIA_APP_ID = '{app_id}';")
+        print(f"ALGOLIA_SEARCH_API_KEY = '{apikey}';")
+        print(f"ALGOLIA_INDEX_NAME = '{index_name}';\n")
+
         # Set the index settings
         index.set_settings({
             'searchableAttributes': [
-                'name',  # Make the 'name' attribute searchable
-                'description',  # Make the 'description' attribute searchable
+                'villain',
+                'hero',
+                'date',
+                'location'
             ],
             'attributesForFaceting': [
-                'categories',  # Allow faceting by 'categories'
-                'mechanics',  # Allow faceting by 'mechanics'
-                'players',  # Allow faceting by 'players'
-                'weight',  # Allow faceting by 'weight'
-                'playing_time',  # Allow faceting by 'playing_time'
-                'min_age',  # Allow faceting by 'min_age'
-                'searchable(previous_players)',  # Make 'previous_players' searchable and allow faceting
-                'numplays',  # Allow faceting by 'numplays'
+                'searchable(villain)',
+                'searchable(hero)',
+                'date',
+                'win',
+                'location'
             ],
-            'customRanking': ['asc(name)'],  # Custom ranking by ascending 'name'
-            'highlightPreTag': '<strong class="highlight">',  # HTML tag to use before highlighted text
-            'highlightPostTag': '</strong>',  # HTML tag to use after highlighted text
-            'hitsPerPage': hits_per_page,  # Number of hits to display per page
+            'customRanking': ['desc(date)'],
+            'highlightPreTag': '<strong class="highlight">',
+            'highlightPostTag': '</strong>',
+            'hitsPerPage': hits_per_page,
         })
 
         self._init_replicas(client, index)
@@ -170,7 +178,7 @@ class Indexer:
         # Return None if the request fails
         return None
 
-    def add_objects(self, collection):
+    def add_objects_old(self, collection):
         # Convert the collection of games to dictionaries
         games = [Indexer.todict(game) for game in collection]
         for i, game in enumerate(games):
@@ -232,6 +240,36 @@ class Indexer:
             game["description"] = self._prepare_description(game["description"])
 
         self.index.save_objects(games)
+
+    def add_objects(self, play_data):
+        # Convert the play data to dictionaries
+        plays = [self.todict(play) for play in play_data]
+        
+        print(f"\nProcessing {len(plays)} plays for indexing...")
+        
+        for i, play in enumerate(plays):
+            # Add objectID
+            play["objectID"] = f"play{play.get('id', i)}"
+            
+            # Ensure required fields exist
+            if not all(key in play for key in ['hero', 'villain', 'win', 'date']):
+                print(f"Warning: Play missing required fields: {play}")
+                continue
+                
+            # Format date consistently
+            if isinstance(play['date'], str):
+                try:
+                    date_obj = datetime.datetime.strptime(play['date'], '%Y-%m-%d')
+                    play['date'] = date_obj.strftime('%Y-%m-%d')
+                    play['timestamp'] = int(date_obj.timestamp())
+                except ValueError:
+                    print(f"Warning: Invalid date format in play: {play['date']}")
+
+        print("\nSample play data being indexed:")
+        print(json.dumps(plays[0], indent=2))
+        
+        # Save objects to index
+        self.index.save_objects(plays)
 
     def delete_objects_not_in(self, collection):
         delete_filter = " AND ".join([f"id != {game.id}" for game in collection])
