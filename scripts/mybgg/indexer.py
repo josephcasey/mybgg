@@ -241,38 +241,128 @@ class Indexer:
 
         self.index.save_objects(games)
 
-    def add_objects(self, play_data):
-        # Convert the play data to dictionaries
-        plays = [self.todict(play) for play in play_data]
-        
-        print(f"\nProcessing {len(plays)} plays for indexing...")
-        
-        for i, play in enumerate(plays):
-            # Add objectID
-            play["objectID"] = f"play{play.get('id', i)}"
+    def _is_multi_hero(self, hero_str):
+        """Helper to detect multi-hero plays"""
+        if not hero_str:
+            return False
             
-            # Ensure required fields exist
-            if not all(key in play for key in ['hero', 'villain', 'win', 'date']):
-                print(f"Warning: Play missing required fields: {play}")
+        # Convert to string and clean up
+        hero = str(hero_str).strip()
+        
+        # Remove 'Team 1 - ' prefix for checking
+        if hero.startswith('Team 1 - '):
+            hero = hero[9:]
+        elif hero.startswith('Team: '):
+            hero = hero[6:]
+        
+        # List of indicators for actual multi-hero games
+        multi_hero_indicators = [
+            '/',           # Regular slash
+            '／',          # Full-width slash
+            '//',         # Double slash
+            '\\',         # Backslash
+            '，',         # Full-width comma
+            ',',          # Regular comma
+            ' and ',      # Text conjunction
+        ]
+        
+        # Check for multi-hero indicators in the cleaned hero name
+        return any(ind in hero for ind in multi_hero_indicators)
+
+    def add_objects(self, play_data):
+        # Initialize variables
+        filtered_plays = []
+        skipped_count = 0
+        multi_hero_examples = set()
+        
+        # Filter out multi-hero games
+        print("\nStarting play data filtering...")
+        for play in play_data:
+            hero = getattr(play, 'hero', '')
+            if self._is_multi_hero(hero):
+                multi_hero_examples.add(hero)
+                skipped_count += 1
                 continue
                 
-            # Format date consistently
-            if isinstance(play['date'], str):
-                try:
-                    date_obj = datetime.datetime.strptime(play['date'], '%Y-%m-%d')
-                    play['date'] = date_obj.strftime('%Y-%m-%d')
-                    play['timestamp'] = int(date_obj.timestamp())
-                except ValueError:
-                    print(f"Warning: Invalid date format in play: {play['date']}")
-
-        print("\nSample play data being indexed:")
-        print(json.dumps(plays[0], indent=2))
+            # Clean up hero name by removing team prefix
+            if isinstance(hero, str):
+                if hero.startswith('Team 1 - '):
+                    hero = hero[9:]
+                elif hero.startswith('Team: '):
+                    hero = hero[6:]
+                setattr(play, 'hero', hero)
+                
+            filtered_plays.append(play)
         
-        # Save objects to index
-        self.index.save_objects(plays)
+        # Print filtering summary with examples
+        print(f"\nFiltering summary:")
+        print(f"- Original count: {len(play_data)}")
+        print(f"- Skipped {skipped_count} multi-hero plays")
+        print(f"- Final count: {len(filtered_plays)}")
+        if multi_hero_examples:
+            print("\nExamples of filtered multi-hero plays:")
+            for example in sorted(list(multi_hero_examples))[:10]:
+                print(f"  - {example}")
+        
+        # Convert the filtered play data to dictionaries
+        plays = []
+        for play in filtered_plays:
+            play_dict = self.todict(play)
+            
+            # Add objectID
+            play_dict["objectID"] = f"play{play_dict.get('id', len(plays))}"
+            
+            # Format date consistently
+            if isinstance(play_dict.get('date'), str):
+                try:
+                    date_obj = datetime.datetime.strptime(play_dict['date'], '%Y-%m-%d')
+                    play_dict['date'] = date_obj.strftime('%Y-%m-%d')
+                    play_dict['timestamp'] = int(date_obj.timestamp())
+                except ValueError:
+                    print(f"Warning: Invalid date format in play: {play_dict['date']}")
+            
+            plays.append(play_dict)
 
-    def delete_objects_not_in(self, collection):
-        delete_filter = " AND ".join([f"id != {game.id}" for game in collection])
-        self.index.delete_by({
-            'filters': delete_filter,
-        })
+        if plays:
+            print("\nSending to Algolia:")
+            print(f"- Total plays being indexed: {len(plays)}")
+            print("\nSample play data:")
+            print(json.dumps(plays[0], indent=2))
+            
+            # Save objects to index
+            self.index.save_objects(plays)
+        else:
+            print("\nNo plays to index after filtering")
+
+        return len(plays)  # Return count of indexed plays
+
+    def delete_objects_not_in(self, play_data):
+        """
+        Delete objects from the index that are not in the provided play_data
+        """
+        try:
+            # Try to get all objectIDs from the current index
+            existing_objects = self.index.browse_objects()
+            existing_ids = set()
+            for obj in existing_objects:
+                if 'objectID' in obj:
+                    existing_ids.add(obj['objectID'])
+            
+            # Get all objectIDs from the new play_data
+            new_ids = set(f"play{play.id}" for play in play_data)
+            
+            # Find objects to delete (in existing but not in new)
+            ids_to_delete = existing_ids - new_ids
+            
+            if ids_to_delete:
+                print(f"\nDeleting {len(ids_to_delete)} obsolete objects from index")
+                self.index.delete_objects(list(ids_to_delete))
+            else:
+                print("\nNo obsolete objects to delete from index")
+                
+        except Exception as e:
+            if 'Index mygames does not exist' in str(e):
+                print("\nIndex does not exist yet - skipping deletion step")
+            else:
+                # Re-raise other exceptions
+                raise

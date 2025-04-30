@@ -35,10 +35,10 @@ def main(args):
             index_name=SETTINGS["algolia"]["index_name"],
             hits_per_page=hits_per_page,
         )
-        indexer.add_objects(play_data)
+        indexed_count = indexer.add_objects(play_data)
         indexer.delete_objects_not_in(play_data)
 
-        print(f"Indexed {num_plays} Marvel Champions plays in algolia, and removed everything else.")
+        print(f"Indexed {indexed_count} Marvel Champions plays in algolia (filtered from {num_plays} total plays).")
     else:
         print("Skipped indexing.")
        # Close the file
