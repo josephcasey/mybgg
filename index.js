@@ -197,14 +197,89 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     headerCell.classList.toggle('th-sort-desc', !asc);
 }
 
-function initVillainDetails() {
-    document.querySelectorAll('.hero-name').forEach(cell => {
-        cell.addEventListener('mouseenter', (e) => {
-            const details = unescape(cell.dataset.villainDetails);
-            const popup = cell.querySelector('.villain-details-popup');
-            popup.innerHTML = `<strong>Villain Record:</strong><br>${details}`;
-        });
+function computeHeroVillainStats(heroName, hits) {
+    // Initialize villain stats
+    const villainStats = {};
+    
+    // Process all hits for this hero
+    hits.forEach(hit => {
+        if (hit.hero === heroName) {
+            if (!villainStats[hit.villain]) {
+                villainStats[hit.villain] = { plays: 0, wins: 0 };
+            }
+            villainStats[hit.villain].plays++;
+            if (hit.win) {
+                villainStats[hit.villain].wins++;
+            }
+        }
     });
+    
+    // Convert to array and sort by plays
+    return Object.entries(villainStats)
+        .map(([villain, stats]) => ({
+            villain,
+            plays: stats.plays,
+            wins: stats.wins,
+            winRate: ((stats.wins / stats.plays) * 100).toFixed(1)
+        }))
+        .sort((a, b) => b.plays - a.plays);
+}
+
+function renderHeroStats(heroes) {
+    return heroes.map(hero => {
+        // Get villain stats for this hero
+        const villainStats = computeHeroVillainStats(hero.name, search.helper?.lastResults?.hits || []);
+        
+        // Create villain stats table with title
+        const villainDetails = `
+            <div class="villain-details-header">
+                <h4>${hero.name}'s Villain Record</h4>
+            </div>
+            <table class="villain-details-table">
+                <thead>
+                    <tr>
+                        <th>Villain</th>
+                        <th>Plays</th>
+                        <th>Wins</th>
+                        <th>Win%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${villainStats.map(v => `
+                        <tr>
+                            <td>${v.villain}</td>
+                            <td>${v.plays}</td>
+                            <td>${v.wins}</td>
+                            <td class="${getWinRateClass(v.winRate)}">${v.winRate}%</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        return `
+            <tr>
+                <td class="hero-name">
+                    ${hero.name}
+                    <div class="villain-details-popup">${villainDetails}</div>
+                </td>
+                <td>${hero.plays}</td>
+                <td>${hero.wins}</td>
+                <td class="${getWinRateClass(hero.winRate)}">${hero.winRate}%</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderVillainStats(villains) {
+    return villains.map(villain => `
+        <tr>
+            <td>${villain.name}</td>
+            <td>${villain.plays}</td>
+            <td>${villain.wins}</td>
+            <td class="${getDifficultyClass(villain.winRate)}">${villain.winRate}%</td>
+        </tr>
+    `).join('');
 }
 
 // Single render event listener
@@ -219,10 +294,9 @@ search.on('render', () => {
         });
     }
 
-    // Initialize table sorting
+    // Initialize table sorting only
     setTimeout(() => {
         initTableSort();
-        initVillainDetails();
     }, 100);
 });
 
@@ -304,61 +378,6 @@ function getDifficultyLabel(winRate) {
     if (rate >= 70) return 'Easy';
     if (rate >= 40) return 'Medium';
     return 'Hard';
-}
-
-function renderHeroStats(heroes) {
-    return heroes.map(hero => {
-        // Calculate villain stats for this hero
-        const villainStats = computeHeroVillainStats(hero.name, search.helper?.lastResults?.hits || []);
-        const villainDetails = villainStats.map(v => 
-            `${v.villain}: ${v.wins}/${v.plays} (${((v.wins/v.plays)*100).toFixed(1)}%)`
-        ).join('<br>');
-        
-        return `
-            <tr>
-                <td class="hero-name" data-villain-details="${escape(villainDetails)}">
-                    ${hero.name}
-                    <div class="villain-details-popup"></div>
-                </td>
-                <td>${hero.plays}</td>
-                <td>${hero.wins}</td>
-                <td class="${getWinRateClass(hero.winRate)}">${hero.winRate}%</td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function computeHeroVillainStats(heroName, hits) {
-    const villainStats = {};
-    
-    hits.forEach(hit => {
-        if (hit.hero === heroName) {
-            if (!villainStats[hit.villain]) {
-                villainStats[hit.villain] = { plays: 0, wins: 0 };
-            }
-            villainStats[hit.villain].plays++;
-            if (hit.win) villainStats[hit.villain].wins++;
-        }
-    });
-    
-    return Object.entries(villainStats)
-        .map(([villain, stats]) => ({
-            villain,
-            plays: stats.plays,
-            wins: stats.wins
-        }))
-        .sort((a, b) => b.plays - a.plays);
-}
-
-function renderVillainStats(villains) {
-    return villains.map(villain => `
-        <tr>
-            <td>${villain.name}</td>
-            <td>${villain.plays}</td>
-            <td>${villain.wins}</td>
-            <td class="${getDifficultyClass(villain.winRate)}">${villain.winRate}%</td>
-        </tr>
-    `).join('');
 }
 
 // Add error handling for search
