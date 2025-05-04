@@ -16,6 +16,9 @@ const search = instantsearch({
     }
 });
 
+// Add at the top of the file with other state variables
+let isEditing = false;
+
 // Add configure widget first
 search.addWidgets([
     instantsearch.widgets.configure({
@@ -101,11 +104,10 @@ search.addWidgets([
                             <table class="stats-table sortable">
                                 <thead>
                                     <tr>
-                                        <th data-sort="string">Hero</th>
-                                        <th data-sort="number">Plays</th>
-                                        <th data-sort="number">Wins</th>
-                                        <th data-sort="number">Win Rate</th>
-                                        <th>Plays Bar</th>
+                                        <th data-sort="string" class="hero-col">Hero</th>
+                                        <th data-sort="number" class="number-col">Plays</th>
+                                        <th data-sort="number" class="number-col">Wins</th>
+                                        <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
                                     </tr>
                                 </thead>
                                 <tbody>${renderHeroStats(stats.heroes)}</tbody>
@@ -116,10 +118,10 @@ search.addWidgets([
                             <table class="stats-table sortable">
                                 <thead>
                                     <tr>
-                                        <th data-sort="string">Villain</th>
-                                        <th data-sort="number">Plays</th>
-                                        <th data-sort="number">Hero Wins</th>
-                                        <th data-sort="number">Win Rate</th>
+                                        <th data-sort="string" class="villain-col">Villain</th>
+                                        <th data-sort="number" class="number-col">Plays</th>
+                                        <th data-sort="number" class="number-col">Hero Wins</th>
+                                        <th data-sort="number" class="number-col">Win %</th>
                                     </tr>
                                 </thead>
                                 <tbody>${renderVillainStats(stats.villains)}</tbody>
@@ -132,10 +134,26 @@ search.addWidgets([
     })
 ]);
 
-// Add sorting functionality first
+// Modify the initTableSort function
 function initTableSort() {
-    document.querySelectorAll('table.sortable th').forEach(headerCell => {
+    const headers = document.querySelectorAll('table.sortable th');
+    console.log('Table headers found:', {
+        count: headers.length,
+        headers: Array.from(headers).map(h => ({
+            text: h.textContent,
+            classes: h.className,
+            sortType: h.getAttribute('data-sort')
+        }))
+    });
+
+    headers.forEach(headerCell => {
         headerCell.addEventListener('click', () => {
+            // Don't sort if currently editing
+            if (isEditing) {
+                console.log('Sorting prevented - editing in progress');
+                return;
+            }
+
             const tableElement = headerCell.parentElement.parentElement.parentElement;
             const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
             const currentIsAscending = headerCell.classList.contains('th-sort-asc');
@@ -156,43 +174,53 @@ function initTableSort() {
 function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     const dirModifier = asc ? 1 : -1;
     const tBody = table.tBodies[0];
-    const rows = Array.from(tBody.querySelectorAll('tr'));
-
-    const sortedRows = rows.sort((a, b) => {
-        const aCol = a.querySelector(`td:nth-child(${column + 1})`);
-        const bCol = b.querySelector(`td:nth-child(${column + 1})`);
-        let aColText = aCol.textContent.trim();
-        let bColText = bCol.textContent.trim();
-
+    const rowPairs = [];
+    const rows = Array.from(tBody.querySelectorAll('tr:not(.bar-row)'));
+    
+    // Create pairs of rows and their data
+    rows.forEach(row => {
+        const col = row.querySelector(`td:nth-child(${column + 1})`);
+        const value = col?.textContent?.trim() || '';
+        let sortValue;
+        
         if (sortType === 'number') {
-            // Remove % and convert to number
-            const aNum = parseFloat(aColText.replace('%', ''));
-            const bNum = parseFloat(bColText.replace('%', ''));
-            if (aNum === bNum) {
-                return 0;
-            }
-            return aNum > bNum ? dirModifier : -dirModifier;
+            // Extract only numbers and decimal points
+            sortValue = parseFloat(value.match(/[\d.]+/)?.[0]) || 0;
         } else {
-            // String comparison
-            if (aColText === bColText) {
-                return 0;
-            }
-            return aColText > bColText ? dirModifier : -dirModifier;
+            sortValue = value;
+        }
+        
+        const barRow = row.nextElementSibling;
+        if (barRow?.classList.contains('bar-row')) {
+            rowPairs.push({ row, barRow, sortValue });
+        } else {
+            rowPairs.push({ row, sortValue });
         }
     });
 
-    // Remove existing rows
+    // Sort the pairs
+    rowPairs.sort((a, b) => {
+        if (sortType === 'number') {
+            return (a.sortValue - b.sortValue) * dirModifier;
+        }
+        return a.sortValue.localeCompare(b.sortValue) * dirModifier;
+    });
+
+    // Clear and rebuild table
     while (tBody.firstChild) {
         tBody.removeChild(tBody.firstChild);
     }
 
-    // Add sorted rows
-    tBody.append(...sortedRows);
+    // Add sorted rows back
+    rowPairs.forEach(pair => {
+        tBody.appendChild(pair.row);
+        if (pair.barRow) {
+            tBody.appendChild(pair.barRow);
+        }
+    });
 
     // Update sort indicators
-    table.querySelectorAll('th').forEach(th => {
-        th.classList.remove('th-sort-asc', 'th-sort-desc');
-    });
+    table.querySelectorAll('th').forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
     const headerCell = table.querySelector(`th:nth-child(${column + 1})`);
     headerCell.classList.toggle('th-sort-asc', asc);
     headerCell.classList.toggle('th-sort-desc', !asc);
@@ -227,24 +255,24 @@ function computeHeroVillainStats(heroName, hits) {
 }
 
 function renderHeroStats(heroes) {
-    // Find maximum plays for scaling
-    const maxPlays = Math.max(...heroes.map(h => h.plays));
+    // Calculate maximum plays for scaling
+    const maxPlays = Math.max(...heroes.map(hero => hero.plays));
     
     return heroes.map(hero => {
-        // Calculate bar widths based on plays
+        const winRate = hero.plays > 0 ? ((hero.wins / hero.plays) * 100).toFixed(1) : '0.0';
+        // Calculate widths as percentage of max plays
         const totalWidth = (hero.plays / maxPlays) * 100;
         const winsWidth = (hero.wins / maxPlays) * 100;
         const lossesWidth = ((hero.plays - hero.wins) / maxPlays) * 100;
         
         return `
             <tr class="hero-row">
-                <td class="hero-name">
-                    ${hero.name}
+                <td class="hero-name">${hero.name}
                     <div class="villain-details-popup">${renderVillainDetails(hero)}</div>
                 </td>
-                <td>${hero.plays}</td>
-                <td>${hero.wins}</td>
-                <td class="${getWinRateClass(hero.winRate)}">${hero.winRate}%</td>
+                <td class="number-col">${hero.plays}</td>
+                <td class="number-col">${hero.wins}</td>
+                <td class="number-col">${winRate}%</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="4">
@@ -257,14 +285,17 @@ function renderHeroStats(heroes) {
 }
 
 function renderVillainStats(villains) {
-    return villains.map(villain => `
-        <tr>
-            <td>${villain.name}</td>
-            <td>${villain.plays}</td>
-            <td>${villain.wins}</td>
-            <td class="${getDifficultyClass(villain.winRate)}">${villain.winRate}%</td>
-        </tr>
-    `).join('');
+    return villains.map(villain => {
+        const winRate = villain.plays > 0 ? ((villain.wins / villain.plays) * 100).toFixed(1) : '0.0';
+        return `
+            <tr class="villain-row">
+                <td>${villain.name}</td>
+                <td class="number-col">${villain.plays}</td>
+                <td class="number-col">${villain.wins}</td>
+                <td class="number-col ${getDifficultyClass(winRate)}">${winRate}%</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderVillainDetails(hero) {
@@ -403,3 +434,6 @@ search.on('error', (error) => {
 
 // Start search
 search.start();
+search.on('error', (error) => {
+    console.error('Search error:', error);
+});

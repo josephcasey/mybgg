@@ -429,11 +429,43 @@ body {
     position: relative;
     cursor: pointer;
     background: #f5f5f5;
-    padding-right: 25px;
+    padding: 8px 25px 8px 8px;  /* Adjust padding to accommodate sort icon */
+    user-select: none;
+    white-space: nowrap;  /* Prevent header text from wrapping */
+    z-index: 1;  /* Ensure headers are clickable */
+}
+
+.stats-table th.number-col,
+.stats-table td.number-col {
+    text-align: right;
+}
+
+.stats-table th.villain-col,
+.stats-table th.hero-col {
+    text-align: left;
+}
+
+.stats-table th.number-col,
+.stats-table td.number-col {
+    text-align: right;
+}
+
+.stats-table th {
+    position: relative;
+    padding: 8px 25px 8px 8px;
+}
+
+.stats-table th.number-col {
+    text-align: right;
 }
 
 .stats-table td {
     color: #333;
+    padding: 8px;
+}
+
+.stats-table td:not(:first-child) {
+    text-align: right;
 }
 
 /* Ensure text is visible */
@@ -449,30 +481,60 @@ body {
 /* Hover effect */
 .stats-table th:hover {
     background: #e5e5e5;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 /* Sort indicators */
 .stats-table th::after {
     position: absolute;
     right: 8px;
-    content: "▼";
+    top: 50%;
+    transform: translateY(-50%);
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #999;
     opacity: 0.3;
 }
 
+.stats-table th.th-sort-asc::after,
+.stats-table th.th-sort-desc::after {
+    content: "";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+}
+
 .stats-table th.th-sort-asc::after {
-    content: "▲";
-    opacity: 1;
+    border-bottom: 4px solid #333;
+    margin-top: -6px;
 }
 
 .stats-table th.th-sort-desc::after {
-    content: "▼";
-    opacity: 1;
+    border-top: 4px solid #333;
+    margin-top: -2px;
 }
 
-/* Selected sort column */
-.stats-table th.th-sort-asc,
-.stats-table th.th-sort-desc {
-    background: #e5e5e5;
+/* Ensure the Win % column is properly aligned */
+.stats-table th:last-child,
+.stats-table td:last-child {
+    padding-right: 25px;
+    text-align: right;
+}
+
+/* Fix sort indicators position */
+.stats-table th.th-sort-asc::after,
+.stats-table th.th-sort-desc::after {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 /* Win rate and difficulty colors */
@@ -673,4 +735,39 @@ body {
     z-index: 1;
     padding: 8px;
     background: transparent;
+}
+
+.stats-table th.win-rate-col,
+.stats-table td.win-rate-col {
+    text-align: right;
+    white-space: nowrap;
+    min-width: 70px;  /* Ensure enough space for the percentage */
+}
+
+.stats-table th {
+    position: relative;
+    cursor: pointer;
+    background: #f5f5f5;
+    padding: 8px 25px 8px 8px;
+    user-select: none;
+    white-space: nowrap;
+}
+
+/* Ensure consistent alignment for all numeric columns */
+.stats-table th.number-col,
+.stats-table td.number-col {
+    text-align: right;
+    padding-right: 15px;
+}
+
+/* Ensure win rate column is visible */
+.stats-table th.win-rate-col {
+    text-align: right;
+    min-width: 80px;  /* Give enough space for the text */
+    background-color: #f5f5f5;  /* Match other headers */
+}
+
+/* Add hover state */
+.stats-table th:hover {
+    background-color: #e5e5e5;
 }
