@@ -231,8 +231,10 @@ function renderHeroStats(heroes) {
     const maxPlays = Math.max(...heroes.map(h => h.plays));
     
     return heroes.map(hero => {
-        // Calculate bar width percentage based on plays
-        const barWidth = (hero.plays / maxPlays) * 100;
+        // Calculate bar widths based on plays
+        const totalWidth = (hero.plays / maxPlays) * 100;
+        const winsWidth = (hero.wins / maxPlays) * 100;
+        const lossesWidth = ((hero.plays - hero.wins) / maxPlays) * 100;
         
         return `
             <tr class="hero-row">
@@ -246,7 +248,8 @@ function renderHeroStats(heroes) {
             </tr>
             <tr class="bar-row">
                 <td colspan="4">
-                    <div class="play-bar" style="width: ${barWidth}%"></div>
+                    <div class="play-bar wins" style="width: ${winsWidth}%"></div>
+                    <div class="play-bar losses" style="width: ${lossesWidth}%; left: ${winsWidth}%"></div>
                 </td>
             </tr>
         `;

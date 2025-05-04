@@ -641,24 +641,30 @@ body {
 .bar-row td {
     padding: 0;
     border-bottom: 1px solid #ddd;
-    position: relative;  /* Added for better bar positioning */
+    position: relative;
 }
 
 .play-bar {
     height: 2px;
-    background: #b71c1c;
-    opacity: 0.3;
-    transition: width 0.3s ease-in-out;
-    position: absolute;  /* Keep bar properly aligned */
-    left: 0;
+    position: absolute;
     top: 0;
+    transition: all 0.2s ease-in-out;
+    opacity: 0.3;
+}
+
+.play-bar.wins {
+    background: #2e7d32;  /* Green for wins */
+    left: 0;
+}
+
+.play-bar.losses {
+    background: #c62828;  /* Red for losses */
 }
 
 /* Optional hover effect */
 .bar-row:hover .play-bar {
     opacity: 0.5;
     height: 3px;
-    transition: all 0.2s ease-in-out;
 }
 
 /* Ensure text is above bars */
