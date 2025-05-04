@@ -1,0 +1,25 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.exclude": {
+            "**/.git": true,
+            "**/node_modules": true,
+            "**/*.log": true,
+            "**/.DS_Store": true
+        },
+        "search.exclude": {
+            "**/node_modules": true,
+            "dist": true
+        },
+        "editor.bracketPairColorization.enabled": false,
+        "editor.semanticHighlighting.enabled": false,
+        "editor.formatOnSave": false,
+        "editor.minimap.enabled": false,
+        "editor.wordWrap": "off",
+        "workbench.enableExperiments": false
+    }
+}
