@@ -105,6 +105,7 @@ search.addWidgets([
                                         <th data-sort="number">Plays</th>
                                         <th data-sort="number">Wins</th>
                                         <th data-sort="number">Win Rate</th>
+                                        <th>Plays Bar</th>
                                     </tr>
                                 </thead>
                                 <tbody>${renderHeroStats(stats.heroes)}</tbody>
@@ -226,46 +227,27 @@ function computeHeroVillainStats(heroName, hits) {
 }
 
 function renderHeroStats(heroes) {
+    // Find maximum plays for scaling
+    const maxPlays = Math.max(...heroes.map(h => h.plays));
+    
     return heroes.map(hero => {
-        // Get villain stats for this hero
-        const villainStats = computeHeroVillainStats(hero.name, search.helper?.lastResults?.hits || []);
+        // Calculate bar width percentage based on plays
+        const barWidth = (hero.plays / maxPlays) * 100;
         
-        // Create villain stats table with title
-        const villainDetails = `
-            <div class="villain-details-header">
-                <h4>${hero.name}'s Villain Record</h4>
-            </div>
-            <table class="villain-details-table">
-                <thead>
-                    <tr>
-                        <th>Villain</th>
-                        <th>Plays</th>
-                        <th>Wins</th>
-                        <th>Win%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${villainStats.map(v => `
-                        <tr>
-                            <td>${v.villain}</td>
-                            <td>${v.plays}</td>
-                            <td>${v.wins}</td>
-                            <td class="${getWinRateClass(v.winRate)}">${v.winRate}%</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-
         return `
-            <tr>
+            <tr class="hero-row">
                 <td class="hero-name">
                     ${hero.name}
-                    <div class="villain-details-popup">${villainDetails}</div>
+                    <div class="villain-details-popup">${renderVillainDetails(hero)}</div>
                 </td>
                 <td>${hero.plays}</td>
                 <td>${hero.wins}</td>
                 <td class="${getWinRateClass(hero.winRate)}">${hero.winRate}%</td>
+            </tr>
+            <tr class="bar-row">
+                <td colspan="4">
+                    <div class="play-bar" style="width: ${barWidth}%"></div>
+                </td>
             </tr>
         `;
     }).join('');
@@ -280,6 +262,37 @@ function renderVillainStats(villains) {
             <td class="${getDifficultyClass(villain.winRate)}">${villain.winRate}%</td>
         </tr>
     `).join('');
+}
+
+function renderVillainDetails(hero) {
+    // Get villain stats for this hero
+    const villainStats = computeHeroVillainStats(hero.name, search.helper?.lastResults?.hits || []);
+    
+    return `
+        <div class="villain-details-header">
+            <h4>${hero.name}'s Villain Record</h4>
+        </div>
+        <table class="villain-details-table">
+            <thead>
+                <tr>
+                    <th>Villain</th>
+                    <th>Plays</th>
+                    <th>Wins</th>
+                    <th>Win%</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${villainStats.map(v => `
+                    <tr>
+                        <td>${v.villain}</td>
+                        <td>${v.plays}</td>
+                        <td>${v.wins}</td>
+                        <td class="${getWinRateClass(v.winRate)}">${v.winRate}%</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
 }
 
 // Single render event listener
