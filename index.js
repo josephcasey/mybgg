@@ -18,6 +18,12 @@ const search = instantsearch({
 
 // Add at the top of the file with other state variables
 let isEditing = false;
+let currentHeroData = [];
+let currentSortState = {
+    column: 1, // Default sort by Plays
+    asc: false, // Default descending
+    sortType: 'number'
+};
 
 // Add configure widget first
 search.addWidgets([
@@ -97,6 +103,8 @@ search.addWidgets([
                     return '<p>No statistics available</p>';
                 }
 
+                currentHeroData = stats.heroes; // Store hero data for sorting
+
                 return `
                     <div class="statistics">
                         <div class="hero-stats">
@@ -110,7 +118,7 @@ search.addWidgets([
                                         <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
                                     </tr>
                                 </thead>
-                                <tbody>${renderHeroStats(stats.heroes)}</tbody>
+                                <tbody>${renderSortedHeroStats(stats.heroes, currentSortState)}</tbody>
                             </table>
                         </div>
                         <div class="villain-stats">
@@ -136,37 +144,33 @@ search.addWidgets([
 
 // Modify the initTableSort function
 function initTableSort() {
-    const headers = document.querySelectorAll('table.sortable th');
-    console.log('Table headers found:', {
-        count: headers.length,
-        headers: Array.from(headers).map(h => ({
-            text: h.textContent,
-            classes: h.className,
-            sortType: h.getAttribute('data-sort')
-        }))
-    });
-
-    headers.forEach(headerCell => {
+    const heroHeaders = document.querySelectorAll('.hero-stats table.sortable th');
+    
+    heroHeaders.forEach((headerCell, idx) => {
         headerCell.addEventListener('click', () => {
-            // Don't sort if currently editing
-            if (isEditing) {
-                console.log('Sorting prevented - editing in progress');
-                return;
+            if (isEditing) return;
+
+            const sortType = headerCell.getAttribute('data-sort') || 'string';
+            
+            // Update sort state
+            if (currentSortState.column === idx) {
+                currentSortState.asc = !currentSortState.asc;
+            } else {
+                currentSortState.column = idx;
+                currentSortState.asc = sortType === 'string';
+                currentSortState.sortType = sortType;
             }
 
-            const tableElement = headerCell.parentElement.parentElement.parentElement;
-            const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
-            const currentIsAscending = headerCell.classList.contains('th-sort-asc');
-            const sortType = headerCell.getAttribute('data-sort') || 'string';
+            // Update table content
+            const heroTbody = document.querySelector('.hero-stats table.sortable tbody');
+            if (heroTbody) {
+                heroTbody.innerHTML = renderSortedHeroStats(currentHeroData, currentSortState);
+            }
 
-            // Clear sort indicators from other columns
-            tableElement.querySelectorAll('th').forEach(th => {
-                if (th !== headerCell) {
-                    th.classList.remove('th-sort-asc', 'th-sort-desc');
-                }
-            });
-
-            sortTableByColumn(tableElement, headerIndex, !currentIsAscending, sortType);
+            // Update sort indicators
+            heroHeaders.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+            headerCell.classList.toggle('th-sort-asc', currentSortState.asc);
+            headerCell.classList.toggle('th-sort-desc', !currentSortState.asc);
         });
     });
 }
@@ -308,6 +312,63 @@ function renderHeroStats(heroes) {
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
                 <td class="number-col">${winRate}%</td>
+            </tr>
+            <tr class="bar-row">
+                <td colspan="4">
+                    <div class="play-bar wins" style="width: ${winsWidth}%"></div>
+                    <div class="play-bar losses" style="width: ${lossesWidth}%; left: ${winsWidth}%"></div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderSortedHeroStats(heroes, sortState) {
+    const { column, asc, sortType } = sortState;
+    
+    // Sort heroes array
+    const sorted = [...heroes].sort((a, b) => {
+        let aVal, bVal;
+        
+        switch(column) {
+            case 0: // Hero name
+                return asc ? 
+                    a.name.localeCompare(b.name) : 
+                    b.name.localeCompare(a.name);
+            case 1: // Plays
+                return asc ? 
+                    a.plays - b.plays : 
+                    b.plays - a.plays;
+            case 2: // Wins
+                return asc ? 
+                    a.wins - b.wins : 
+                    b.wins - a.wins;
+            case 3: // Win %
+                const aRate = parseFloat(a.winRate);
+                const bRate = parseFloat(b.winRate);
+                return asc ? 
+                    aRate - bRate : 
+                    bRate - aRate;
+            default:
+                return 0;
+        }
+    });
+
+    // Calculate max plays for bar scaling
+    const maxPlays = Math.max(...sorted.map(hero => hero.plays));
+    
+    return sorted.map(hero => {
+        const winsWidth = (hero.wins / maxPlays) * 100;
+        const lossesWidth = ((hero.plays - hero.wins) / maxPlays) * 100;
+        
+        return `
+            <tr class="hero-row">
+                <td class="hero-name">${hero.name}
+                    <div class="villain-details-popup">${renderVillainDetails(hero)}</div>
+                </td>
+                <td class="number-col">${hero.plays}</td>
+                <td class="number-col">${hero.wins}</td>
+                <td class="number-col">${hero.winRate}%</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="4">
