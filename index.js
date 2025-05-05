@@ -136,8 +136,8 @@ search.addWidgets([
                                     <tr>
                                         <th data-sort="string" class="villain-col">Villain</th>
                                         <th data-sort="number" class="number-col">Plays</th>
-                                        <th data-sort="number" class="number-col">Wins</th>
-                                        <th data-sort="number" class="number-col">Win %</th>
+                                        <th data-sort="number" class="number-col">Hero Wins</th>
+                                        <th data-sort="number" class="number-col win-rate-col number-col" style="display: table-cell;">Win %</th>
                                     </tr>
                                 </thead>
                                 <tbody>${renderSortedVillainStats(stats.villains, currentVillainSortState)}</tbody>
