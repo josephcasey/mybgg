@@ -175,36 +175,51 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     const dirModifier = asc ? 1 : -1;
     const tBody = table.tBodies[0];
     const rowPairs = [];
-    const rows = Array.from(tBody.querySelectorAll('tr:not(.bar-row)'));
-    
-    // Find maximum plays for bar scaling
-    const maxPlays = Math.max(...Array.from(table.querySelectorAll('td:nth-child(2)'))
-        .map(cell => parseInt(cell.textContent) || 0));
-    
-    // Create pairs of rows and their data
-    rows.forEach(row => {
+
+    // Only select hero and bar rows for sorting
+    const rows = Array.from(tBody.querySelectorAll('tr.hero-row, tr.bar-row'));
+
+    // Find maximum plays for bar scaling (only from hero rows)
+    const maxPlays = Math.max(
+        ...rows
+            .filter(row => row.classList.contains('hero-row'))
+            .map(row => parseInt(row.querySelector('td:nth-child(2)')?.textContent) || 0)
+    );
+
+    // Pair hero rows with their bar rows
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row.classList.contains('hero-row')) continue;
+
         const col = row.querySelector(`td:nth-child(${column + 1})`);
         const value = col?.textContent?.trim() || '';
         let sortValue;
-        
+
         if (sortType === 'number') {
-            // Extract only numbers and decimal points
-            sortValue = parseFloat(value.match(/[\d.]+/)?.[0]) || 0;
+            // column: 1 = Plays, 2 = Wins, 3 = Win %
+            if (column === 1 || column === 2) {
+                // Plays or Wins: parse as integer
+                sortValue = parseInt(value.replace(/,/g, ''), 10) || 0;
+            } else if (column === 3) {
+                // Win %: parse as float, remove %
+                sortValue = parseFloat(value.replace('%', '')) || 0;
+            } else {
+                // fallback
+                sortValue = parseFloat(value) || 0;
+            }
         } else {
             sortValue = value;
         }
-        
-        const barRow = row.nextElementSibling;
-        if (barRow?.classList.contains('bar-row')) {
-            // Get plays and wins for this hero
-            const plays = parseInt(row.querySelector('td:nth-child(2)').textContent) || 0;
-            const wins = parseInt(row.querySelector('td:nth-child(3)').textContent) || 0;
-            
-            // Calculate bar widths relative to maxPlays
+
+        // The next row should be the bar-row
+        const barRow = rows[i + 1] && rows[i + 1].classList.contains('bar-row') ? rows[i + 1] : null;
+
+        // Update bar widths if barRow exists
+        if (barRow) {
+            const plays = parseInt(row.querySelector('td:nth-child(2)')?.textContent) || 0;
+            const wins = parseInt(row.querySelector('td:nth-child(3)')?.textContent) || 0;
             const winsWidth = (wins / maxPlays) * 100;
             const lossesWidth = ((plays - wins) / maxPlays) * 100;
-            
-            // Update bar widths
             const winsBar = barRow.querySelector('.play-bar.wins');
             const lossesBar = barRow.querySelector('.play-bar.losses');
             if (winsBar) winsBar.style.width = `${winsWidth}%`;
@@ -212,12 +227,11 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
                 lossesBar.style.width = `${lossesWidth}%`;
                 lossesBar.style.left = `${winsWidth}%`;
             }
-            
-            rowPairs.push({ row, barRow, sortValue });
-        } else {
-            rowPairs.push({ row, sortValue });
         }
-    });
+
+        rowPairs.push({ row, barRow, sortValue });
+        if (barRow) i++; // Skip the bar row in the next iteration
+    }
 
     // Sort the pairs
     rowPairs.sort((a, b) => {
