@@ -25,6 +25,13 @@ let currentSortState = {
     sortType: 'number'
 };
 
+let currentVillainData = [];
+let currentVillainSortState = {
+    column: 1, // Default sort by Plays
+    asc: false, // Default descending
+    sortType: 'number'
+};
+
 // Add configure widget first
 search.addWidgets([
     instantsearch.widgets.configure({
@@ -104,6 +111,7 @@ search.addWidgets([
                 }
 
                 currentHeroData = stats.heroes; // Store hero data for sorting
+                currentVillainData = stats.villains;
 
                 return `
                     <div class="statistics">
@@ -128,11 +136,11 @@ search.addWidgets([
                                     <tr>
                                         <th data-sort="string" class="villain-col">Villain</th>
                                         <th data-sort="number" class="number-col">Plays</th>
-                                        <th data-sort="number" class="number-col">Hero Wins</th>
+                                        <th data-sort="number" class="number-col">Wins</th>
                                         <th data-sort="number" class="number-col">Win %</th>
                                     </tr>
                                 </thead>
-                                <tbody>${renderVillainStats(stats.villains)}</tbody>
+                                <tbody>${renderSortedVillainStats(stats.villains, currentVillainSortState)}</tbody>
                             </table>
                         </div>
                     </div>
@@ -156,9 +164,45 @@ function renderVillainStats(villains) {
     }).join('');
 }
 
+function renderSortedVillainStats(villains, sortState) {
+    const { column, asc, sortType } = sortState;
+    const colMap = ['name', 'plays', 'wins', 'winRate'];
+
+    const sorted = [...villains].sort((a, b) => {
+        const aVal = column === 0 ? a.name :
+                    column === 1 ? a.plays :
+                    column === 2 ? a.wins :
+                    parseFloat(a.winRate);
+        const bVal = column === 0 ? b.name :
+                    column === 1 ? b.plays :
+                    column === 2 ? b.wins :
+                    parseFloat(b.winRate);
+
+        // Descending by default
+        const baseResult = column === 0 ?
+            bVal.localeCompare(aVal) :  // Strings: Z to A
+            bVal - aVal;                // Numbers: High to Low
+
+        // Flip for ascending, default is descending
+        return asc ? -baseResult : baseResult;
+    });
+
+    return sorted.map(villain => {
+        return `
+            <tr class="villain-row">
+                <td class="villain-name">${villain.name}</td>
+                <td class="number-col">${villain.plays}</td>
+                <td class="number-col">${villain.wins}</td>
+                <td class="number-col">${villain.winRate}%</td>
+            </tr>
+        `;
+    }).join('');
+}
+
 // Modify the initTableSort function
 function initTableSort() {
     const heroHeaders = document.querySelectorAll('.hero-stats table.sortable th');
+    const villainHeaders = document.querySelectorAll('.villain-stats table.sortable th');
 
     heroHeaders.forEach((headerCell, idx) => {
         headerCell.addEventListener('click', () => {
@@ -185,6 +229,34 @@ function initTableSort() {
             heroHeaders.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
             headerCell.classList.toggle('th-sort-asc', currentSortState.asc);
             headerCell.classList.toggle('th-sort-desc', !currentSortState.asc);
+        });
+    });
+
+    villainHeaders.forEach((headerCell, idx) => {
+        headerCell.addEventListener('click', () => {
+            if (isEditing) return;
+
+            const sortType = headerCell.getAttribute('data-sort') || 'string';
+
+            // Update sort state - default to descending on first click
+            if (currentVillainSortState.column === idx) {
+                currentVillainSortState.asc = !currentVillainSortState.asc;
+            } else {
+                currentVillainSortState.column = idx;
+                currentVillainSortState.asc = false; // Default to descending for new column
+                currentVillainSortState.sortType = sortType;
+            }
+
+            // Re-render the table with the new sort state
+            const villainTbody = document.querySelector('.villain-stats table.sortable tbody');
+            if (villainTbody) {
+                villainTbody.innerHTML = renderSortedVillainStats(currentVillainData, currentVillainSortState);
+            }
+
+            // Update sort indicators
+            villainHeaders.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+            headerCell.classList.toggle('th-sort-asc', currentVillainSortState.asc);
+            headerCell.classList.toggle('th-sort-desc', !currentVillainSortState.asc);
         });
     });
 }
@@ -338,9 +410,9 @@ function renderHeroStats(heroes) {
 }
 
 function renderSortedHeroStats(heroes, sortState) {
- const { column, asc, sortType } = sortState;
+    const { column, asc, sortType } = sortState;
     const colMap = ['name', 'plays', 'wins', 'winRate'];
-    
+
     console.group('Sorting Heroes');
     console.log('Sort Config:', {
         column,
@@ -357,11 +429,11 @@ function renderSortedHeroStats(heroes, sortState) {
         const aVal = column === 0 ? a.name :
                     column === 1 ? a.plays :
                     column === 2 ? a.wins :
-                    parseFloat(a.winRate);
+                    parseFloat(a.winRate); // Access winRate here
         const bVal = column === 0 ? b.name :
                     column === 1 ? b.plays :
                     column === 2 ? b.wins :
-                    parseFloat(b.winRate);
+                    parseFloat(b.winRate); // Access winRate here
 
         // Descending by default
         const baseResult = column === 0 ? 
@@ -474,11 +546,17 @@ search.on('render', () => {
         // Compute stats and store hero data
         const stats = computeStats(results.hits);
         currentHeroData = stats.heroes;
+        currentVillainData = stats.villains;
 
         // Re-render the table with the new sort state
         const heroTableBody = document.querySelector('.hero-stats .stats-table tbody');
         if (heroTableBody) {
             heroTableBody.innerHTML = renderSortedHeroStats(stats.heroes, currentSortState);
+        }
+
+        const villainTableBody = document.querySelector('.villain-stats .stats-table tbody');
+        if (villainTableBody) {
+            villainTableBody.innerHTML = renderSortedVillainStats(stats.villains, currentVillainSortState);
         }
     }
 
@@ -519,12 +597,15 @@ function computeStats(hits) {
 
     // Convert to arrays and deduplicate
     const heroes = Object.entries(heroStats)
-        .map(([name, stats]) => ({
-            name,
-            plays: stats.plays,
-            wins: stats.wins,
-            winRate: ((stats.wins / stats.plays) * 100).toFixed(1)
-        }))
+        .map(([name, stats]) => {
+            const winRate = stats.plays > 0 ? ((stats.wins / stats.plays) * 100).toFixed(1) : '0.0';
+            return {
+                name,
+                plays: stats.plays,
+                wins: stats.wins,
+                winRate: winRate // Attach winRate here
+            };
+        })
         .filter(hero => !hero.name.includes('1/2') && !hero.name.includes('2/3'))  // Filter out villain patterns
         .sort((a, b) => b.plays - a.plays);
 
