@@ -188,9 +188,38 @@ function renderSortedVillainStats(villains, sortState) {
     });
 
     return sorted.map(villain => {
+        const heroStats = computeVillainHeroStats(villain.name, search.helper?.lastResults?.hits || []);
+
         return `
             <tr class="villain-row">
-                <td class="villain-name">${villain.name}</td>
+                <td class="villain-name" style="position: relative;">
+                    ${villain.name}
+                    <div class="hero-details-popup" style="display: none; position: absolute; top: 100%; left: 0; background-color: white; border: 1px solid #ccc; padding: 10px; z-index: 10;">
+                        <div class="hero-details-header">
+                            <h4>Heroes Faced by ${villain.name}</h4>
+                        </div>
+                        <table class="hero-details-table">
+                            <thead>
+                                <tr>
+                                    <th>Hero</th>
+                                    <th>Plays</th>
+                                    <th>Wins</th>
+                                    <th>Win%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${heroStats.map(h => `
+                                    <tr>
+                                        <td>${h.hero}</td>
+                                        <td>${h.plays}</td>
+                                        <td>${h.wins}</td>
+                                        <td>${h.winRate}%</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col">${villain.winRate}%</td>
@@ -203,6 +232,7 @@ function renderSortedVillainStats(villains, sortState) {
 function initTableSort() {
     const heroHeaders = document.querySelectorAll('.hero-stats table.sortable th');
     const villainHeaders = document.querySelectorAll('.villain-stats table.sortable th');
+    const villainTable = document.querySelector('.villain-stats table.sortable');
 
     heroHeaders.forEach((headerCell, idx) => {
         headerCell.addEventListener('click', () => {
@@ -259,6 +289,29 @@ function initTableSort() {
             headerCell.classList.toggle('th-sort-desc', !currentVillainSortState.asc);
         });
     });
+
+    // Attach hover event listeners
+    if (villainTable) {
+        villainTable.addEventListener('mouseover', (e) => {
+            const target = e.target;
+            if (target.classList.contains('villain-name')) {
+                const popup = target.querySelector('.hero-details-popup');
+                if (popup) {
+                    popup.style.display = 'block';
+                }
+            }
+        });
+
+        villainTable.addEventListener('mouseout', (e) => {
+            const target = e.target;
+            if (target.classList.contains('villain-name')) {
+                const popup = target.querySelector('.hero-details-popup');
+                if (popup) {
+                    popup.style.display = 'none';
+                }
+            }
+        });
+    }
 }
 
 function sortTableByColumn(table, column, asc = true, sortType = 'string') {
@@ -433,7 +486,7 @@ function renderSortedHeroStats(heroes, sortState) {
         const bVal = column === 0 ? b.name :
                     column === 1 ? b.plays :
                     column === 2 ? b.wins :
-                    parseFloat(b.winRate); // Access winRate here
+                    parseFloat(a.winRate); // Access winRate here
 
         // Descending by default
         const baseResult = column === 0 ? 
@@ -530,6 +583,65 @@ function renderVillainDetails(hero) {
             </tbody>
         </table>
     `;
+}
+
+function renderHeroDetails(villain) {
+    // Get hero stats for this villain
+    const heroStats = computeVillainHeroStats(villain.name, search.helper?.lastResults?.hits || []);
+    
+    return `
+        <div class="hero-details-header">
+            <h4>${villain.name}'s Hero Record</h4>
+        </div>
+        <table class="hero-details-table">
+            <thead>
+                <tr>
+                    <th>Hero</th>
+                    <th>Plays</th>
+                    <th>Wins</th>
+                    <th>Win%</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${heroStats.map(h => `
+                    <tr>
+                        <td>${h.hero}</td>
+                        <td>${h.plays}</td>
+                        <td>${h.wins}</td>
+                        <td class="${getWinRateClass(h.winRate)}">${h.winRate}%</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function computeVillainHeroStats(villainName, hits) {
+    // Initialize hero stats
+    const heroStats = {};
+    
+    // Process all hits for this villain
+    hits.forEach(hit => {
+        if (hit.villain === villainName) {
+            if (!heroStats[hit.hero]) {
+                heroStats[hit.hero] = { plays: 0, wins: 0 };
+            }
+            heroStats[hit.hero].plays++;
+            if (!hit.win) { //Hero Wins
+                heroStats[hit.hero].wins++;
+            }
+        }
+    });
+    
+    // Convert to array and sort by plays
+    return Object.entries(heroStats)
+        .map(([hero, stats]) => ({
+            hero,
+            plays: stats.plays,
+            wins: stats.wins,
+            winRate: ((stats.wins / stats.plays) * 100).toFixed(1)
+        }))
+        .sort((a, b) => b.plays - a.plays);
 }
 
 // Single render event listener
