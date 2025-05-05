@@ -177,6 +177,10 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     const rowPairs = [];
     const rows = Array.from(tBody.querySelectorAll('tr:not(.bar-row)'));
     
+    // Find maximum plays for bar scaling
+    const maxPlays = Math.max(...Array.from(table.querySelectorAll('td:nth-child(2)'))
+        .map(cell => parseInt(cell.textContent) || 0));
+    
     // Create pairs of rows and their data
     rows.forEach(row => {
         const col = row.querySelector(`td:nth-child(${column + 1})`);
@@ -192,6 +196,23 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
         
         const barRow = row.nextElementSibling;
         if (barRow?.classList.contains('bar-row')) {
+            // Get plays and wins for this hero
+            const plays = parseInt(row.querySelector('td:nth-child(2)').textContent) || 0;
+            const wins = parseInt(row.querySelector('td:nth-child(3)').textContent) || 0;
+            
+            // Calculate bar widths relative to maxPlays
+            const winsWidth = (wins / maxPlays) * 100;
+            const lossesWidth = ((plays - wins) / maxPlays) * 100;
+            
+            // Update bar widths
+            const winsBar = barRow.querySelector('.play-bar.wins');
+            const lossesBar = barRow.querySelector('.play-bar.losses');
+            if (winsBar) winsBar.style.width = `${winsWidth}%`;
+            if (lossesBar) {
+                lossesBar.style.width = `${lossesWidth}%`;
+                lossesBar.style.left = `${winsWidth}%`;
+            }
+            
             rowPairs.push({ row, barRow, sortValue });
         } else {
             rowPairs.push({ row, sortValue });
@@ -355,30 +376,30 @@ function computeStats(hits) {
     const villainStats = {};
 
     hits.forEach(hit => {
-        const hero = hit.hero;
-        const villain = hit.villain;
-        const win = hit.win;
-
-        // Process hero stats
-        if (hero) {
-            if (!heroStats[hero]) {
-                heroStats[hero] = { plays: 0, wins: 0 };
-            }
-            heroStats[hero].plays++;
-            if (win) heroStats[hero].wins++;
+        // Validate data first
+        if (!hit.hero || !hit.villain) {
+            console.log('Invalid hit data:', hit);
+            return;
         }
 
-        // Process villain stats
-        if (villain) {
-            if (!villainStats[villain]) {
-                villainStats[villain] = { plays: 0, wins: 0 };
-            }
-            villainStats[villain].plays++;
-            if (win) villainStats[villain].wins++;
+        // Process hero stats - ensure we're only counting unique hero names
+        const heroName = hit.hero.trim();
+        if (!heroStats[heroName]) {
+            heroStats[heroName] = { plays: 0, wins: 0 };
         }
+        heroStats[heroName].plays++;
+        if (hit.win) heroStats[heroName].wins++;
+
+        // Process villain stats - ensure we're only counting unique villain names
+        const villainName = hit.villain.trim();
+        if (!villainStats[villainName]) {
+            villainStats[villainName] = { plays: 0, wins: 0 };
+        }
+        villainStats[villainName].plays++;
+        if (hit.win) villainStats[villainName].wins++;
     });
 
-    // Convert to arrays and sort by plays
+    // Convert to arrays and deduplicate
     const heroes = Object.entries(heroStats)
         .map(([name, stats]) => ({
             name,
@@ -386,6 +407,7 @@ function computeStats(hits) {
             wins: stats.wins,
             winRate: ((stats.wins / stats.plays) * 100).toFixed(1)
         }))
+        .filter(hero => !hero.name.includes('1/2') && !hero.name.includes('2/3'))  // Filter out villain patterns
         .sort((a, b) => b.plays - a.plays);
 
     const villains = Object.entries(villainStats)
@@ -399,7 +421,8 @@ function computeStats(hits) {
 
     console.log('Stats computed:', { 
         heroCount: heroes.length, 
-        villainCount: villains.length 
+        villainCount: villains.length,
+        heroNames: heroes.map(h => h.name)  // Debug output
     });
 
     return { heroes, villains };
