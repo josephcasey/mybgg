@@ -32,6 +32,20 @@ let currentVillainSortState = {
     sortType: 'number'
 };
 
+// Utility function to escape HTML characters
+function escapeHTML(str) {
+    str = String(str); // Ensure it's a string
+    return str.replace(/[&<>"']/g, function (match) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[match];
+    });
+}
+
 // Add configure widget first
 search.addWidgets([
     instantsearch.widgets.configure({
@@ -113,6 +127,14 @@ search.addWidgets([
                 currentHeroData = stats.heroes; // Store hero data for sorting
                 currentVillainData = stats.villains;
 
+                // Generate main table HTML
+                const heroTableHtml = renderSortedHeroStats(stats.heroes, currentSortState);
+                const villainTableHtml = renderSortedVillainStats(stats.villains, currentVillainSortState, hits); // Pass hits for modal generation
+
+                // Call fixVillainModals here, ensuring it has access to currentVillainData and the correct hits
+                // Use a setTimeout to allow the DOM to update with modals before fixing them.
+                setTimeout(() => fixVillainModals(currentVillainData, hits), 0); 
+
                 return `
                     <div class="statistics">
                         <div class="hero-stats">
@@ -126,7 +148,7 @@ search.addWidgets([
                                         <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
                                     </tr>
                                 </thead>
-                                <tbody>${renderSortedHeroStats(stats.heroes, currentSortState)}</tbody>
+                                <tbody>${heroTableHtml}</tbody>
                             </table>
                         </div>
                         <div class="villain-stats">
@@ -140,7 +162,7 @@ search.addWidgets([
                                         <th data-sort="number" class="number-col win-rate-col number-col" style="display: table-cell;">Win %</th>
                                     </tr>
                                 </thead>
-                                <tbody>${renderSortedVillainStats(stats.villains, currentVillainSortState)}</tbody>
+                                <tbody>${villainTableHtml}</tbody>
                             </table>
                         </div>
                     </div>
@@ -210,12 +232,53 @@ function computeStats(hits) {
  * Computes statistics for how a specific villain performed against different heroes
  */
 function computeVillainHeroStats(villainName, hits) {
-    // Filter hits for this villain
-    const villainHits = hits.filter(hit => hit.villain === villainName);
+    // Cache check is done by callers like ensureVillainDataAndGetStats or renderSortedVillainStats
+
+    console.log(`COMPUTE_VILLAIN_HERO_STATS: Computing for villainName: "${villainName}" (length ${villainName.length})`);
+    let villainNameCharCodes = "";
+    for (let i = 0; i < villainName.length; i++) {
+        villainNameCharCodes += villainName.charCodeAt(i) + " ";
+    }
+    console.log(`COMPUTE_VILLAIN_HERO_STATS: villainName "${villainName}" char codes: [${villainNameCharCodes.trim()}]`);
+
+    let matchEverFoundDuringFilter = false;
+    const villainHits = hits.filter(hit => {
+        if (!hit || typeof hit.villain !== 'string') return false; // Guard against undefined/null hit.villain
+        const match = hit.villain === villainName;
+        if (match) matchEverFoundDuringFilter = true;
+        return match;
+    });
+
+    console.log(`COMPUTE_VILLAIN_HERO_STATS: Found ${villainHits.length} hits for villain "${villainName}" from ${hits.length} total hits. Match during filter: ${matchEverFoundDuringFilter}`);
+
+    if (villainHits.length === 0 && hits.length > 0 && !matchEverFoundDuringFilter) {
+        console.log(`COMPUTE_VILLAIN_HERO_STATS: No hits found for "${villainName}". Comparing with sample hit.villain values:`);
+        let potentialMatches = 0;
+        for (let i = 0; i < Math.min(hits.length, 500); i++) { // Check more samples if needed
+            if (!hits[i] || typeof hits[i].villain !== 'string') continue;
+            
+            // Direct comparison log for the specific villain we are looking for
+            if (hits[i].villain.toUpperCase().includes(villainName.substring(0,4).toUpperCase())) { // Log if first few chars match, case insensitive
+                potentialMatches++;
+                let hitVillainCharCodes = "";
+                for (let j = 0; j < hits[i].villain.length; j++) {
+                    hitVillainCharCodes += hits[i].villain.charCodeAt(j) + " ";
+                }
+                console.log(`  - Sample hit.villain: "${hits[i].villain}" (len ${hits[i].villain.length}, codes: [${hitVillainCharCodes.trim()}])`);
+                if (hits[i].villain.trim() === villainName.trim() && hits[i].villain !== villainName) {
+                    console.log(`    WARNING: Exact match if trimmed: source="${hits[i].villain}", target="${villainName}"`);
+                }
+                if (hits[i].villain.toLowerCase() === villainName.toLowerCase() && hits[i].villain !== villainName) {
+                    console.log(`    WARNING: Exact match if lowercased: source="${hits[i].villain}", target="${villainName}"`);
+                }
+            }
+        }
+        if(potentialMatches === 0) {
+            console.log(`COMPUTE_VILLAIN_HERO_STATS: No potential matches found even with relaxed search for "${villainName.substring(0,4)}" in samples.`);
+        }
+    }
     
-    // Group by hero
     const heroStats = {};
-    
     villainHits.forEach(hit => {
         const hero = hit.hero;
         const win = Boolean(hit.win);
@@ -230,11 +293,17 @@ function computeVillainHeroStats(villainName, hits) {
         }
     });
     
-    // Calculate win rates and convert to array
-    return Object.values(heroStats).map(h => {
+    // Calculate win rates and convert to array in one step
+    const result = Object.values(heroStats).map(h => {
         h.winRate = h.plays > 0 ? Math.round((h.wins / h.plays) * 100) : 0;
         return h;
-    }).sort((a, b) => b.plays - a.plays); // Sort by most played heroes first
+    }).sort((a, b) => b.plays - a.plays); // Sort by most played heroes
+    
+    // Cache the results
+    if (!window.heroStatsCache) window.heroStatsCache = {};
+    window.heroStatsCache[villainName] = result;
+    
+    return result;
 }
 
 /**
@@ -307,32 +376,41 @@ function renderVillainStats(villains) {
     }).join('');
 }
 
-function renderSortedVillainStats(villains, sortState) {
+// Optimize the renderSortedVillainStats function for performance
+// Here's an updated version of your modal template with better CSS specificity
+// Fixed implementation of renderSortedVillainStats
+// Fixed renderSortedVillainStats function
+function renderSortedVillainStats(villains, sortState, allHits) { // Added allHits parameter
     const { column, asc, sortType } = sortState;
-    const colMap = ['name', 'plays', 'wins', 'winRate'];
 
+    // Make sure we have the heroStatsCache
+    window.heroStatsCache = window.heroStatsCache || {};
+    
+    // Sort the villains
     const sorted = [...villains].sort((a, b) => {
         const aVal = column === 0 ? a.name :
                     column === 1 ? a.plays :
                     column === 2 ? a.wins :
                     parseFloat(a.winRate);
         const bVal = column === 0 ? b.name :
-                    column === 1 ? b.plays :
-                    column === 2 ? b.wins :
+                    column === 1 ? a.plays :
+                    column === 2 ? a.wins :
                     parseFloat(b.winRate);
 
-        // Descending by default
         const baseResult = column === 0 ?
-            bVal.localeCompare(aVal) :  // Strings: Z to A
-            bVal - aVal;                // Numbers: High to Low
-
-        // Flip for ascending, default is descending
+            bVal.localeCompare(aVal) :
+            bVal - aVal;
+            
         return asc ? -baseResult : baseResult;
     });
 
-    return sorted.map((villain, index) => {
-        const heroStats = computeVillainHeroStats(villain.name, search.helper?.lastResults?.hits || []);
-        const villainId = `villain-${index}-${villain.name.replace(/\W+/g, '')}`;
+    // Get hits from search helper
+    const hits = search.helper?.lastResults?.hits || [];
+
+    // Generate villain rows for the main table
+    const rows = sorted.map((villain, index) => {
+        const safeVillainName = villain.name.replace(/[^a-zA-Z0-9]/g, '');
+        const villainId = `villain-${index}-${safeVillainName}`;
         
         return `
             <tr class="villain-row">
@@ -346,43 +424,99 @@ function renderSortedVillainStats(villains, sortState) {
                 <td class="number-col">${villain.winRate}%</td>
             </tr>
         `;
-    }).join('') + `
-        ${sorted.map((villain, index) => {
-            const heroStats = computeVillainHeroStats(villain.name, search.helper?.lastResults?.hits || []);
-            const villainId = `villain-${index}-${villain.name.replace(/\W+/g, '')}`;
-            return `
-            <div id="${villainId}" class="villain-modal" style="
-                display: none; 
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: transparent;
-                z-index: 10000;
-                pointer-events: none;
+    }).join('');
+    
+    // Force computation of all hero stats before generating modals
+    for (const villain of sorted) {
+        const villainName = villain.name;
+        if (!window.heroStatsCache[villainName]) {
+            try {
+                // Use the existing computeVillainHeroStats function
+                const result = computeVillainHeroStats(villainName, allHits); // Use allHits
+                // Cache is already handled in computeVillainHeroStats
+                console.log(`Pre-computed stats for ${villainName}: ${result.length} heroes`);
+            } catch (e) {
+                console.error(`Failed to compute stats for ${villainName}:`, e);
+                window.heroStatsCache[villainName] = [];
+            }
+        }
+    }
+    
+    // Generate popup modals for each villain
+    const modals = sorted.map((villain, index) => {
+        const safeVillainName = villain.name.replace(/[^a-zA-Z0-9]/g, '');
+        const villainId = `villain-${index}-${safeVillainName}`;
+        
+        // Get hero stats for this villain
+        const heroStats = window.heroStatsCache[villain.name] || [];
+        
+        // Debug for Crossbones specifically
+        const isCrossbones = villain.name.includes("Crossbones");
+        if (isCrossbones) {
+            console.log(`Modal for ${villain.name} - heroStats:`, {
+                isCached: Boolean(window.heroStatsCache[villain.name]),
+                length: heroStats.length,
+                firstThree: heroStats.slice(0, 3).map(h => h.hero)
+            });
+        }
+        
+        // Generate hero rows HTML
+        let heroRowsHtml = '';
+        if (heroStats && heroStats.length > 0) {
+            heroRowsHtml = heroStats.map(h => `
+                <tr style="background-color: white; border-bottom: 1px solid #dddddd;">
+                    <td style="padding: 8px; text-align: left; color: black; border: 1px solid #eeeeee;">${h.hero || 'Unknown'}</td>
+                    <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.plays || 0}</td>
+                    <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.wins || 0}</td>
+                    <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
+                </tr>
+            `).join('');
+        } else {
+            heroRowsHtml = `
+                <tr style="background-color: white;">
+                    <td colspan="4" style="padding: 15px; text-align: center; color: black;">
+                        No hero data available for this villain
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Complete rebuilt modal HTML structure for all villains
+        return `
+        <div id="${villainId}" class="villain-modal" data-villain-name="${escapeHTML(villain.name)}" style="
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            z-index: 10000;
+            pointer-events: none;
+        ">
+            <div class="villain-modal-content" style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: white;
+                border: 2px solid #990000;
+                border-radius: 8px;
+                padding: 15px;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+                min-width: 350px;
+                max-width: 90%;
+                max-height: 90%;
+                overflow: auto;
+                pointer-events: auto;
+                color: black;
             ">
-                <div style="
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background-color: white;
-                    border: 2px solid #990000;
-                    border-radius: 8px;
-                    padding: 15px;
-                    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-                    min-width: 300px;
-                    max-width: 90%;
-                    max-height: 90%;
-                    overflow: auto;
-                    pointer-events: auto;
-                ">
-                    <div style="background-color: #e0e8ff; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #0000aa; border-radius: 5px;">
-                        <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center;">HEROES FACED BY ${villain.name.toUpperCase()}</h3>
-                    </div>
-                    <div style="padding: 10px; background-color: white;">
-                        <table style="width: 100%; border-collapse: collapse; background-color: white;">
+                <div class="villain-modal-header" style="background-color: #e0e8ff; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #0000aa; border-radius: 5px;">
+                    <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center;">HEROES FACED BY ${villain.name.toUpperCase()}</h3>
+                </div>
+                <div class="villain-modal-body" style="padding: 10px; background-color: white;">
+                    <div class="table-container">
+                        <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse;">
                             <thead style="background-color: #cccccc;">
                                 <tr>
                                     <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
@@ -391,36 +525,138 @@ function renderSortedVillainStats(villains, sortState) {
                                     <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                ${heroStats.map(h => `
-                                    <tr style="background-color: white; border-bottom: 1px solid #dddddd;">
-                                        <td style="padding: 8px; text-align: left; color: black; border: 1px solid #eeeeee;">${h.hero}</td>
-                                        <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.plays}</td>
-                                        <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.wins}</td>
-                                        <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.winRate}%</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
+                            <tbody>${heroRowsHtml}</tbody>
                         </table>
                     </div>
-                    <div style="margin-top: 15px; text-align: right; display: none;">
-                        <button style="padding: 8px 15px; background-color: #f0f0f0; color: black; border: 1px solid #ddd; border-radius: 5px;">
-                            Close
-                        </button>
-                    </div>
                 </div>
-            </div>`;
-        }).join('')}
-    `;
+            </div>
+        </div>`;
+    }).join('');
+    
+    return rows + modals;
 }
 
-// Update only this function to make it more efficient and cleaner
+// Also implement a fixed showVillainDetail function
 function showVillainDetail(id) {
+    console.log(`Showing villain detail for ID: ${id}`);
     const modal = document.getElementById(id);
-    if (modal) {
-        // Show modal without affecting page scroll
-        modal.style.display = 'block';
+    if (!modal) {
+        console.error(`Modal NOT found for ID ${id}`);
+        return;
     }
+    
+    // For Crossbones, add special debugging
+    if (id.includes('Crossbones')) {
+        console.log("CROSSBONES POPUP:", {
+            modal: modal,
+            table: modal.querySelector('table'),
+            tbody: modal.querySelector('tbody'),
+            rows: modal.querySelectorAll('tbody tr'),
+            html: modal.innerHTML
+        });
+        
+        // Emergency fix for Crossbones table if it's missing
+        if (!modal.querySelector('table')) {
+            const contentDiv = modal.querySelector('.villain-modal-content');
+            const bodyDiv = modal.querySelector('.villain-modal-body');
+            
+            if (bodyDiv && contentDiv) {
+                // Retrieve the hero stats data
+                const villainName = id.includes('Crossbones1') ? 'Crossbones1/2' : 'Crossbones 2/3';
+                const heroStats = window.heroStatsCache[villainName] || [];
+                
+                console.log(`Emergency rebuild for ${villainName} popup with ${heroStats.length} heroes`);
+                
+                // Generate hero rows HTML
+                let heroRowsHtml = '';
+                if (heroStats && heroStats.length > 0) {
+                    heroRowsHtml = heroStats.map(h => `
+                        <tr style="background-color: white; border-bottom: 1px solid #dddddd;">
+                            <td style="padding: 8px; text-align: left; color: black; border: 1px solid #eeeeee;">${h.hero || 'Unknown'}</td>
+                            <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.plays || 0}</td>
+                            <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.wins || 0}</td>
+                            <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    heroRowsHtml = `
+                        <tr style="background-color: white;">
+                            <td colspan="4" style="padding: 15px; text-align: center; color: black;">
+                                No hero data available for this villain
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // Replace the body content with a properly formed table
+                bodyDiv.innerHTML = `
+                    <div class="table-container">
+                        <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse;">
+                            <thead style="background-color: #cccccc;">
+                                <tr>
+                                    <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
+                                    <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
+                                    <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Wins</th>
+                                    <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
+                                </tr>
+                            </thead>
+                            <tbody>${heroRowsHtml}</tbody>
+                        </table>
+                    </div>
+                `;
+                
+                console.log("Table emergency fixed, new structure:", modal.innerHTML);
+            }
+        }
+    }
+    
+    // Make modal visible
+    modal.style.display = 'block';
+    console.log(`Modal found for ID ${id}, displaying it`);
+}
+
+// And debug computeVillainHeroStats function
+function computeVillainHeroStats(villainName, hits) {
+    // Cache check - avoid reprocessing if we've computed this before
+    if (window.heroStatsCache?.[villainName]) {
+        return window.heroStatsCache[villainName];
+    }
+    
+    console.log(`Computing hero stats for villain: ${villainName}`);
+    
+    // Filter hits for this villain - use more efficient map/object approach
+    const villainHits = hits.filter(hit => hit.villain === villainName);
+    console.log(`Found ${villainHits.length} hits for villain ${villainName}`);
+    
+    // Group by hero using object
+    const heroStats = {};
+    
+    // Process all hits in a single pass
+    villainHits.forEach(hit => {
+        const hero = hit.hero;
+        const win = Boolean(hit.win);
+        
+        if (!heroStats[hero]) {
+            heroStats[hero] = { hero, plays: 0, wins: 0, winRate: 0 };
+        }
+        
+        heroStats[hero].plays++;
+        if (win) {
+            heroStats[hero].wins++;
+        }
+    });
+    
+    // Calculate win rates and convert to array in one step
+    const result = Object.values(heroStats).map(h => {
+        h.winRate = h.plays > 0 ? Math.round((h.wins / h.plays) * 100) : 0;
+        return h;
+    }).sort((a, b) => b.plays - a.plays); // Sort by most played heroes
+    
+    // Cache the results
+    if (!window.heroStatsCache) window.heroStatsCache = {};
+    window.heroStatsCache[villainName] = result;
+    
+    return result;
 }
 
 function hideVillainDetail(id, event) {
@@ -433,30 +669,36 @@ function hideVillainDetail(id, event) {
     if (event && event.relatedTarget && 
         (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
         
-        // Use a unique identifier for this handler to avoid multiple attachments
         const handlerId = `handler-${id}`;
         
-        // Remove any existing handler to prevent duplicates
-        if (contentContainer[handlerId]) {
-            contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
+        // Debounce the mouseout handler to avoid excessive processing
+        if (!contentContainer[handlerId]) {
+            contentContainer[handlerId] = function(e) {
+                // Debounce the actual hiding
+                if (contentContainer._hideTimeout) {
+                    clearTimeout(contentContainer._hideTimeout);
+                }
+                
+                contentContainer._hideTimeout = setTimeout(() => {
+                    if (!contentContainer.contains(e.relatedTarget)) {
+                        requestAnimationFrame(() => {
+                            modal.style.display = 'none';
+                        });
+                        contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
+                        delete contentContainer[handlerId];
+                    }
+                }, 50); // Small delay to reduce processing
+            };
+            
+            contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
         }
-        
-        // Create handler function
-        contentContainer[handlerId] = function(e) {
-            if (!contentContainer.contains(e.relatedTarget)) {
-                modal.style.display = 'none';
-                contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
-                delete contentContainer[handlerId];
-            }
-        };
-        
-        // Add the handler
-        contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
         return;
     }
     
-    // Otherwise, hide the modal
-    modal.style.display = 'none';
+    // Use requestAnimationFrame for DOM updates
+    requestAnimationFrame(() => {
+        modal.style.display = 'none';
+    });
 }
 
 // Update the initTableSort function to be more efficient
@@ -538,11 +780,246 @@ function initTableSort() {
     });
 }
 
-// Update initialization to be more robust
-document.addEventListener('DOMContentLoaded', function() {
-    // Start the search
-    search.start();
+// Add this function to fix any villain modal that might be missing its table
+function fixVillainModals(currentVillainDataFromStats, allHitsFromStats) {
+    console.log("FIX_MODALS: Starting comprehensive villain modal fix cycle...");
     
-    // Initialize table sorting with better approach
+    if (!window.heroStatsCache) {
+        console.warn("FIX_MODALS: heroStatsCache not found, initializing.");
+        window.heroStatsCache = {};
+    }
+    
+    const villainModals = document.querySelectorAll('.villain-modal');
+    
+    if (villainModals.length === 0) {
+        console.log("FIX_MODALS: No villain modals found in DOM yet. This shouldn't happen if called from stats widget.");
+        return; 
+    }
+    
+    console.log(`FIX_MODALS: Found ${villainModals.length} villain modals to process.`);
+    
+    const ensureVillainDataAndGetStats = (villainName) => { // villainName must be original case
+        if (!villainName) {
+            console.error("FIX_MODALS: ensureVillainDataAndGetStats called with no villainName.");
+            return [];
+        }
+        if (!window.heroStatsCache) window.heroStatsCache = {};
+
+        // Check cache first (original case)
+        if (window.heroStatsCache[villainName] && window.heroStatsCache[villainName].length > 0) {
+            console.log(`FIX_MODALS: Cache hit for "${villainName}", ${window.heroStatsCache[villainName].length} heroes.`);
+            return window.heroStatsCache[villainName];
+        }
+        
+        // If not in cache or cache is empty, recompute using allHitsFromStats
+        console.log(`FIX_MODALS: Cache miss or empty for "${villainName}". Recomputing using allHitsFromStats (${allHitsFromStats.length} hits)...`);
+        try {
+            // computeVillainHeroStats will set the cache with original cased key
+            const computedStats = computeVillainHeroStats(villainName, allHitsFromStats) || []; 
+            console.log(`FIX_MODALS: Recomputed stats for "${villainName}", ${computedStats.length} heroes.`);
+            return computedStats;
+        } catch (e) {
+            console.error(`FIX_MODALS: Error recomputing stats for "${villainName}":`, e);
+            return [];
+        }
+    };
+    
+    villainModals.forEach(modal => {
+        const modalId = modal.id;
+        const bodyDiv = modal.querySelector('.villain-modal-body');
+        
+        if (!bodyDiv) {
+            console.error(`FIX_MODALS: Modal ${modalId} is missing its bodyDiv. Skipping.`);
+            return; 
+        }
+        
+        let villainName = modal.dataset.villainName; // PRIMARY: Use data attribute (original casing)
+ 
+        if (!villainName) {
+            console.warn(`FIX_MODALS: modal.dataset.villainName not found for ${modalId}. Falling back to header parsing.`);
+            const headerText = modal.querySelector('.villain-modal-header h3')?.textContent || '';
+            const headerMatch = headerText.match(/HEROES FACED BY (.+)/i);
+            const parsedNameFromHeader = headerMatch ? headerMatch[1].trim() : null; // This is UPPERCASE
+
+            if (parsedNameFromHeader && currentVillainDataFromStats) {
+                console.log(`FIX_MODALS: Parsed "${parsedNameFromHeader}" (UPPERCASE) from header for ${modalId}. Attempting to find original case in currentVillainDataFromStats.`);
+                // Find the original cased name from the passed currentVillainDataFromStats
+                const foundVillain = currentVillainDataFromStats.find(v => v.name.toUpperCase() === parsedNameFromHeader.toUpperCase());
+                if (foundVillain) {
+                    villainName = foundVillain.name; // Assign original cased name
+                    console.log(`FIX_MODALS: Matched header to original name: "${villainName}" for ${modalId}`);
+                } else {
+                    console.warn(`FIX_MODALS: Could not match parsed header name "${parsedNameFromHeader}" to any known villain in currentVillainDataFromStats for ${modalId}.`);
+                }
+            }
+        }
+        
+        if (!villainName) {
+            console.warn(`FIX_MODALS: Header parsing failed for ${modalId}. Trying index from ID into currentVillainDataFromStats.`);
+            const idParts = modalId.split('-');
+            const villainIndexStr = idParts[1];
+            const villainIndex = parseInt(villainIndexStr, 10);
+            if (currentVillainDataFromStats && !isNaN(villainIndex) && currentVillainDataFromStats[villainIndex]) {
+                villainName = currentVillainDataFromStats[villainIndex].name; // This will be original case
+                console.log(`FIX_MODALS: Fallback success: Got villain name "${villainName}" from currentVillainDataFromStats index ${villainIndex} for ${modalId}`);
+            }
+        }
+
+        if (!villainName) {
+            console.error(`FIX_MODALS: CRITICAL - Cannot determine villain name for modal ${modalId}. Aborting fix for this modal.`);
+            bodyDiv.innerHTML = `<p style="color:red; text-align:center;">Error: Could not identify villain to load data for modal ${modalId}.</p>`;
+            return; 
+        }
+        
+        console.log(`FIX_MODALS: Processing modal ${modalId} for villain: "${villainName}" (expected original case)`);
+        // Use the passed allHitsFromStats for re-computation if needed
+        const heroStats = ensureVillainDataAndGetStats(villainName);
+        
+        console.log(`FIX_MODALS: For villain "${villainName}", heroStats length: ${heroStats.length}. Rebuilding modal content.`);
+        
+        let heroRowsHtml = '';
+        if (heroStats && heroStats.length > 0) {
+            heroRowsHtml = heroStats.map(h => `
+                <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
+                    <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${h.hero || 'Unknown'}</td>
+                    <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.plays || 0}</td>
+                    <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.wins || 0}</td>
+                    <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
+                </tr>
+            `).join('');
+        } else {
+            heroRowsHtml = `
+                <tr style="background-color: white !important;">
+                    <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
+                        No hero data available for this villain (${escapeHTML(villainName)})
+                    </td>
+                </tr>
+            `;
+        }
+        
+        bodyDiv.innerHTML = `
+            <div class="table-container">
+                <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse; background-color: white;">
+                    <thead style="background-color: #cccccc;">
+                        <tr>
+                            <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
+                            <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
+                            <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Wins</th>
+                            <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
+                        </tr>
+                    </thead>
+                    <tbody>${heroRowsHtml}</tbody>
+                </table>
+            </div>
+        `;
+        
+        const finalTableExists = bodyDiv.querySelector('table') !== null;
+        const finalRowCount = bodyDiv.querySelectorAll('tbody tr').length;
+        console.log(`FIX_MODALS: Modal ${modalId} ("${villainName}") update complete: hasTable=${finalTableExists}, rowCount=${finalRowCount}`);
+    });
+    
+    console.log("FIX_MODALS: Villain modal fix cycle finished.");
+}
+
+// Update your showVillainDetail function to check for missing tables in any villain modal
+function showVillainDetail(id) {
+    console.log(`SHOW_DETAIL: Showing villain detail for ID: ${id}`);
+    const modal = document.getElementById(id);
+    if (!modal) {
+        console.error(`SHOW_DETAIL: Modal NOT found for ID ${id}`);
+        return;
+    }
+
+    let villainName = modal.dataset.villainName; // Original case from data attribute
+
+    // Fallback logic for villainName if data attribute is missing (should be rare now)
+    if (!villainName) {
+        console.warn(`SHOW_DETAIL: modal.dataset.villainName not found for ${id}. Attempting fallbacks.`);
+        const headerText = modal.querySelector('.villain-modal-header h3')?.textContent || '';
+        const headerMatch = headerText.match(/HEROES FACED BY (.+)/i);
+        const parsedNameFromHeader = headerMatch ? headerMatch[1].trim() : null; // UPPERCASE
+
+        if (parsedNameFromHeader && currentVillainData) { // currentVillainData should be available globally
+            const foundVillain = currentVillainData.find(v => v.name.toUpperCase() === parsedNameFromHeader.toUpperCase());
+            if (foundVillain) {
+                villainName = foundVillain.name; // Original case
+                console.log(`SHOW_DETAIL: Matched header to original name: "${villainName}" for ${id}`);
+            }
+        }
+        // Further fallbacks if needed, e.g., from ID, ensuring original case for cache keys
+        if (!villainName && id.includes('Crossbones12')) villainName = 'Crossbones1/2';
+        if (!villainName && id.includes('Crossbones23')) villainName = 'Crossbones 2/3';
+    }
+
+    if (!villainName) {
+        console.error(`SHOW_DETAIL: CRITICAL - Cannot determine original-cased villain name for modal ${id}. Displaying error.`);
+        const bodyDiv = modal.querySelector('.villain-modal-body');
+        if (bodyDiv) {
+            bodyDiv.innerHTML = `<p style="color:red; text-align:center;">Error: Could not identify villain for modal ${id}.</p>`;
+        }
+        modal.style.display = 'block';
+        return;
+    }
+    
+    // If table is missing or seems to have the "No data" message incorrectly, force a rebuild using correct villainName.
+    const table = modal.querySelector('table');
+    const noDataRow = modal.querySelector('td[colspan="4"]');
+    const heroStatsForModal = window.heroStatsCache[villainName] || [];
+
+    if (!table || (noDataRow && heroStatsForModal.length > 0)) {
+        console.warn(`SHOW_DETAIL: Table missing or incorrect for ${id} ("${villainName}"). Forcing rebuild. Cached stats count: ${heroStatsForModal.length}`);
+        
+        const bodyDiv = modal.querySelector('.villain-modal-body');
+        if (bodyDiv) {
+            let heroRowsHtml = '';
+            if (heroStatsForModal.length > 0) {
+                heroRowsHtml = heroStatsForModal.map(h => `
+                    <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
+                        <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${h.hero || 'Unknown'}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.plays || 0}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.wins || 0}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
+                    </tr>
+                `).join('');
+            } else {
+                heroRowsHtml = `
+                    <tr style="background-color: white !important;">
+                        <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
+                            No hero data available for this villain (${escapeHTML(villainName)})
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            bodyDiv.innerHTML = `
+                <div class="table-container">
+                    <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse; background-color: white;">
+                        <thead style="background-color: #cccccc;">
+                            <tr>
+                                <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Wins</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
+                            </tr>
+                        </thead>
+                        <tbody>${heroRowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+            console.log(`SHOW_DETAIL: Emergency table rebuild for ${id} ("${villainName}") complete.`);
+        }
+    }
+    
+    modal.style.display = 'block';
+    console.log(`SHOW_DETAIL: Modal displayed for ID ${id} ("${villainName}")`);
+}
+
+// Add this line to the DOMContentLoaded event handler for earlier execution
+document.addEventListener('DOMContentLoaded', function() {
+    search.start();
     initTableSort();
+    
+    // Run the modal fix twice - once early and once after data is likely loaded
+    setTimeout(fixVillainModals, 1000);
+    setTimeout(fixVillainModals, 3000);
 });
