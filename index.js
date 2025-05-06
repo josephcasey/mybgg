@@ -358,9 +358,9 @@ function renderSortedVillainStats(villains, sortState) {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
+                background-color: transparent;
                 z-index: 10000;
-                backdrop-filter: blur(3px);
+                pointer-events: none;
             ">
                 <div style="
                     position: absolute;
@@ -368,16 +368,17 @@ function renderSortedVillainStats(villains, sortState) {
                     left: 50%;
                     transform: translate(-50%, -50%);
                     background-color: white;
-                    border: 3px solid #990000;
+                    border: 2px solid #990000;
                     border-radius: 8px;
                     padding: 15px;
-                    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+                    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
                     min-width: 300px;
                     max-width: 90%;
                     max-height: 90%;
                     overflow: auto;
+                    pointer-events: auto;
                 ">
-                    <div style="background-color: #e0e8ff; padding: 10px; margin-bottom: 10px; border-bottom: 2px solid #0000aa; border-radius: 5px;">
+                    <div style="background-color: #e0e8ff; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #0000aa; border-radius: 5px;">
                         <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center;">HEROES FACED BY ${villain.name.toUpperCase()}</h3>
                     </div>
                     <div style="padding: 10px; background-color: white;">
@@ -402,9 +403,8 @@ function renderSortedVillainStats(villains, sortState) {
                             </tbody>
                         </table>
                     </div>
-                    <div style="margin-top: 15px; text-align: center;">
-                        <button onclick="hideVillainDetail('${villainId}');" 
-                            style="padding: 8px 15px; background-color: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    <div style="margin-top: 15px; text-align: right; display: none;">
+                        <button style="padding: 8px 15px; background-color: #f0f0f0; color: black; border: 1px solid #ddd; border-radius: 5px;">
                             Close
                         </button>
                     </div>
@@ -414,100 +414,135 @@ function renderSortedVillainStats(villains, sortState) {
     `;
 }
 
-// Add these functions to handle villain detail modals
+// Update only this function to make it more efficient and cleaner
 function showVillainDetail(id) {
     const modal = document.getElementById(id);
     if (modal) {
+        // Show modal without affecting page scroll
         modal.style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Prevent scrolling behind the modal
     }
 }
 
 function hideVillainDetail(id, event) {
     const modal = document.getElementById(id);
-    if (modal) {
-        // Check if we're hovering over the modal itself - don't hide if so
-        if (event && event.relatedTarget && modal.contains(event.relatedTarget)) {
-            return;
-        }
-        modal.style.display = 'none';
-        document.body.style.overflow = ''; // Allow scrolling again
-    }
-}
-
-// Now let's add the missing initTableSort function
-function initTableSort() {
-    const heroHeaders = document.querySelectorAll('.hero-stats table.sortable th');
-    const villainHeaders = document.querySelectorAll('.villain-stats table.sortable th');
+    if (!modal) return;
     
-    // Sort handling for hero table
-    heroHeaders.forEach((headerCell, idx) => {
-        headerCell.addEventListener('click', () => {
-            if (isEditing) return;
-
-            const sortType = headerCell.getAttribute('data-sort') || 'string';
-
-            if (currentSortState.column === idx) {
-                currentSortState.asc = !currentSortState.asc;
-            } else {
-                currentSortState.column = idx;
-                currentSortState.asc = false;
-                currentSortState.sortType = sortType;
-            }
-
-            const heroTbody = document.querySelector('.hero-stats table.sortable tbody');
-            if (heroTbody) {
-                heroTbody.innerHTML = renderSortedHeroStats(currentHeroData, currentSortState);
-            }
-
-            heroHeaders.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-            headerCell.classList.toggle('th-sort-asc', currentSortState.asc);
-            headerCell.classList.toggle('th-sort-desc', !currentSortState.asc);
-        });
-    });
-
-    // Sort handling for villain table
-    villainHeaders.forEach((headerCell, idx) => {
-        headerCell.addEventListener('click', () => {
-            if (isEditing) return;
-
-            const sortType = headerCell.getAttribute('data-sort') || 'string';
-
-            if (currentVillainSortState.column === idx) {
-                currentVillainSortState.asc = !currentVillainSortState.asc;
-            } else {
-                currentVillainSortState.column = idx;
-                currentVillainSortState.asc = false;
-                currentVillainSortState.sortType = sortType;
-            }
-
-            const villainTbody = document.querySelector('.villain-stats table.sortable tbody');
-            if (villainTbody) {
-                villainTbody.innerHTML = renderSortedVillainStats(currentVillainData, currentVillainSortState);
-            }
-
-            villainHeaders.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-            headerCell.classList.toggle('th-sort-asc', currentVillainSortState.asc);
-            headerCell.classList.toggle('th-sort-desc', !currentVillainSortState.asc);
-        });
-    });
-
-    // Add click handlers for closing modals when clicking outside
-    document.addEventListener('click', function(event) {
-        const modals = document.querySelectorAll('.villain-modal');
-        modals.forEach(modal => {
-            if (event.target === modal) {
+    const contentContainer = modal.querySelector('div');
+    
+    // Check if we're moving to the modal content itself
+    if (event && event.relatedTarget && 
+        (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
+        
+        // Use a unique identifier for this handler to avoid multiple attachments
+        const handlerId = `handler-${id}`;
+        
+        // Remove any existing handler to prevent duplicates
+        if (contentContainer[handlerId]) {
+            contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
+        }
+        
+        // Create handler function
+        contentContainer[handlerId] = function(e) {
+            if (!contentContainer.contains(e.relatedTarget)) {
                 modal.style.display = 'none';
-                document.body.style.overflow = '';
+                contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
+                delete contentContainer[handlerId];
             }
-        });
+        };
+        
+        // Add the handler
+        contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
+        return;
+    }
+    
+    // Otherwise, hide the modal
+    modal.style.display = 'none';
+}
+
+// Update the initTableSort function to be more efficient
+function initTableSort() {
+    // Create a mutation observer to attach event handlers when tables are available
+    const observer = new MutationObserver((mutations) => {
+        const heroHeaders = document.querySelectorAll('.hero-stats table.sortable th');
+        const villainHeaders = document.querySelectorAll('.villain-stats table.sortable th');
+        
+        if (heroHeaders.length > 0 || villainHeaders.length > 0) {
+            observer.disconnect(); // Stop observing once we have tables
+            
+            // Set up hero sorting
+            heroHeaders.forEach((headerCell, idx) => {
+                headerCell.addEventListener('click', () => {
+                    if (isEditing) return;
+                    
+                    const sortType = headerCell.getAttribute('data-sort') || 'string';
+                    
+                    if (currentSortState.column === idx) {
+                        currentSortState.asc = !currentSortState.asc;
+                    } else {
+                        currentSortState.column = idx;
+                        currentSortState.asc = false;
+                        currentSortState.sortType = sortType;
+                    }
+                    
+                    const heroTbody = document.querySelector('.hero-stats table.sortable tbody');
+                    if (heroTbody) {
+                        // Use requestAnimationFrame to avoid forced reflows
+                        requestAnimationFrame(() => {
+                            heroTbody.innerHTML = renderSortedHeroStats(currentHeroData, currentSortState);
+                            
+                            // Update sort indicator classes
+                            heroHeaders.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+                            headerCell.classList.toggle('th-sort-asc', currentSortState.asc);
+                            headerCell.classList.toggle('th-sort-desc', !currentSortState.asc);
+                        });
+                    }
+                });
+            });
+            
+            // Set up villain sorting
+            villainHeaders.forEach((headerCell, idx) => {
+                headerCell.addEventListener('click', () => {
+                    if (isEditing) return;
+                    
+                    const sortType = headerCell.getAttribute('data-sort') || 'string';
+                    
+                    if (currentVillainSortState.column === idx) {
+                        currentVillainSortState.asc = !currentVillainSortState.asc;
+                    } else {
+                        currentVillainSortState.column = idx;
+                        currentVillainSortState.asc = false;
+                        currentVillainSortState.sortType = sortType;
+                    }
+                    
+                    const villainTbody = document.querySelector('.villain-stats table.sortable tbody');
+                    if (villainTbody) {
+                        // Use requestAnimationFrame to avoid forced reflows
+                        requestAnimationFrame(() => {
+                            villainTbody.innerHTML = renderSortedVillainStats(currentVillainData, currentVillainSortState);
+                            
+                            // Update sort indicator classes
+                            villainHeaders.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+                            headerCell.classList.toggle('th-sort-asc', currentVillainSortState.asc);
+                            headerCell.classList.toggle('th-sort-desc', !currentVillainSortState.asc);
+                        });
+                    }
+                });
+            });
+        }
+    });
+    
+    // Start observing the document for changes
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
     });
 }
 
-// Add initialization when the DOM is ready
+// Update initialization to be more robust
 document.addEventListener('DOMContentLoaded', function() {
+    // Start the search
     search.start();
     
-    // Initialize table sorting after a brief delay to ensure tables are rendered
-    setTimeout(initTableSort, 1000);
+    // Initialize table sorting with better approach
+    initTableSort();
 });
