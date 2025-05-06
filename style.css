@@ -771,3 +771,124 @@ body {
 .stats-table th:hover {
     background-color: #e5e5e5;
 }
+
+/* Popup styling for both hero and villain details */
+.hero-details-popup,
+.villain-details-popup {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background-color: #ffffff !important; /* Solid white background, important */
+    border: 1px solid #ddd;
+    padding: 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    min-width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: nowrap;
+    opacity: 1 !important; /* Ensure it's fully opaque, important */
+}
+
+/* Ensure table cells also have solid background */
+.hero-details-table th,
+.villain-details-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.hero-details-table tr,
+.villain-details-table tr {
+    background-color: #ffffff; /* Solid white background for rows */
+}
+
+.hero-details-table tbody tr:hover,
+.villain-details-table tbody tr:hover {
+    background-color: #f8f8f8; /* Solid hover background */
+}
+
+.hero-details-header,
+.villain-details-header {
+    padding: 8px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+}
+
+.hero-details-header h4,
+.villain-details-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 1em;
+}
+
+.hero-details-table,
+.villain-details-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9em;
+}
+
+.hero-details-table th,
+.villain-details-table th,
+.hero-details-table td,
+.villain-details-table td {
+    padding: 4px 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.hero-details-table th,
+.villain-details-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+
+.hero-details-table tbody tr:hover,
+.villain-details-table tbody tr:hover {
+    background: #f8f8f8;
+}
+
+.hero-details-table td:nth-child(2),
+.hero-details-table td:nth-child(3),
+.hero-details-table td:nth-child(4),
+.hero-details-table th:nth-child(2),
+.hero-details-table th:nth-child(3),
+.hero-details-table th:nth-child(4),
+.villain-details-table td:nth-child(2),
+.villain-details-table td:nth-child(3),
+.villain-details-table td:nth-child(4),
+.villain-details-table th:nth-child(2),
+.villain-details-table th:nth-child(3),
+.villain-details-table th:nth-child(4) {
+    text-align: right;
+}
+
+/* Hover trigger styles */
+.villain-name,
+.hero-name {
+    position: relative;
+    cursor: help;
+}
+
+.villain-name:hover .hero-details-popup,
+.hero-name:hover .villain-details-popup {
+    display: block;
+}
+
+/* Responsive positioning */
+@media (max-width: 1200px) {
+    .hero-details-popup,
+    .villain-details-popup {
+        left: auto;
+        right: 100%;
+        background-color: #ffffff !important; /* Add !important */
+    }
+}
+
+/* Ensure solid background for table cells within the popup */
+.hero-details-popup .stats-table td,
+.villain-details-popup .stats-table td {
+    background-color: #ffffff !important; /* Solid white background, important */
+}
