@@ -99,49 +99,9 @@ search.addWidgets([
     instantsearch.widgets.stats({
         container: '#stats-container',
         templates: {
-            text(results, { html }) {
-                // Debug logging
-                console.log('Stats widget state:', {
-                    hasResults: Boolean(results),
-                    hasHits: Boolean(results?.hits),
-                    hitCount: results?.hits?.length,
-                    totalHits: results?.nbHits,
-                    helper: Boolean(search.helper),
-                    helperResults: Boolean(search.helper?.lastResults)
-                });
-
-                // Use helper results if widget results aren't available yet
-                const hits = results?.hits || search.helper?.lastResults?.hits || [];
-                
-                if (!hits.length) {
-                    return '<p>Loading statistics...</p>';
-                }
-
-                const stats = computeStats(hits);
-                console.log('Computed stats:', stats);
-
-                if (!stats.heroes.length && !stats.villains.length) {
-                    return '<p>No statistics available</p>';
-                }
-
-                currentHeroData = stats.heroes; // Store hero data for sorting
-                currentVillainData = stats.villains;
-
-                // Generate main table HTML
-                // Pass all hits to renderSortedHeroStats for modal generation
-                const heroTableHtml = renderSortedHeroStats(stats.heroes, currentSortState, hits); 
-                const villainTableHtml = renderSortedVillainStats(stats.villains, currentVillainSortState, hits); // Pass hits for modal generation
-
-                // Call fixVillainModals here, ensuring it has access to currentVillainData and the correct hits
-                // Use a setTimeout to allow the DOM to update with modals before fixing them.
-                setTimeout(() => fixVillainModals(currentVillainData, hits), 0); 
-
-                return `
-                    <div class="statistics">
-                        <!-- Hero stats table removed for overlay experiment -->
-                        <!-- Villain stats table removed for overlay experiment -->
-                    </div>
-                `;
+            text() {
+                // Remove main statistics area rendering
+                return '';
             }
         }
     })
@@ -1216,68 +1176,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const leftBox = document.createElement('div');
     leftBox.style.flex = '1 1 50%';
-    leftBox.style.background = '';
-    leftBox.style.textAlign = '';
-    leftBox.style.padding = '';
-    leftBox.style.fontWeight = '';
-    leftBox.style.borderRight = '';
-    leftBox.style.overflow = 'auto';
     leftBox.style.maxHeight = '60vh';
     leftBox.style.overflowY = 'auto';
-
-    // Render the hero table directly using the same function as the main stats
-    setTimeout(() => {
-        // Use a single declaration for hits and stats
-        const hits = search.helper?.lastResults?.hits || [];
-        const stats = computeStats(hits);
-        // Render the hero table directly
-        const heroTableHtml = `
-          <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Experimental, Direct Render)</div>
-          <table class="stats-table sortable">
-            <thead>
-              <tr>
-                <th data-sort="string" class="hero-col">Hero</th>
-                <th data-sort="number" class="number-col">Plays</th>
-                <th data-sort="number" class="number-col">Wins</th>
-                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
-              </tr>
-            </thead>
-            <tbody>${renderSortedHeroStats(stats.heroes, currentSortState, hits)}</tbody>
-          </table>`;
-        leftBox.innerHTML = heroTableHtml;
-
-        // Render the villain table directly
-        const villainTableHtml = `
-          <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Experimental, Direct Render)</div>
-          <table class="stats-table sortable">
-            <thead>
-              <tr>
-                <th data-sort="string" class="villain-col">Villain</th>
-                <th data-sort="number" class="number-col">Plays</th>
-                <th data-sort="number" class="number-col">Hero Wins</th>
-                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
-              </tr>
-            </thead>
-            <tbody>${renderSortedVillainStats(stats.villains, currentVillainSortState, hits)}</tbody>
-          </table>`;
-        rightBox.innerHTML = villainTableHtml;
-
-        // Ensure table sorting is initialized for overlay tables
-        if (typeof initTableSort === 'function') {
-          initTableSort();
-        }
-    }, 500);
+    leftBox.innerHTML = '';
 
     const rightBox = document.createElement('div');
     rightBox.style.flex = '1 1 50%';
-    rightBox.style.background = '';
-    rightBox.style.textAlign = '';
-    rightBox.style.padding = '';
-    rightBox.style.fontWeight = '';
-    rightBox.style.borderRight = '';
-    rightBox.style.overflow = 'auto';
     rightBox.style.maxHeight = '60vh';
     rightBox.style.overflowY = 'auto';
+    rightBox.innerHTML = '';
 
     overlay.appendChild(leftBox);
     overlay.appendChild(rightBox);
@@ -1333,6 +1240,44 @@ document.addEventListener('DOMContentLoaded', function() {
     if (aisHitsList) aisHitsList.style.display = 'none';
     const aisHitsItems = document.querySelectorAll('.ais-Hits-item');
     aisHitsItems.forEach(item => item.style.display = 'none');
+
+    setTimeout(() => {
+        const hits = search.helper?.lastResults?.hits || [];
+        const stats = computeStats(hits);
+        // Render hero table in left pane
+        const heroTableHtml = `
+          <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Direct Render)</div>
+          <table class="stats-table sortable">
+            <thead>
+              <tr>
+                <th data-sort="string" class="hero-col">Hero</th>
+                <th data-sort="number" class="number-col">Plays</th>
+                <th data-sort="number" class="number-col">Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+              </tr>
+            </thead>
+            <tbody>${renderSortedHeroStats(stats.heroes, currentSortState, hits)}</tbody>
+          </table>`;
+        leftBox.innerHTML = heroTableHtml;
+        // Render villain table in right pane
+        const villainTableHtml = `
+          <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Direct Render)</div>
+          <table class="stats-table sortable">
+            <thead>
+              <tr>
+                <th data-sort="string" class="villain-col">Villain</th>
+                <th data-sort="number" class="number-col">Plays</th>
+                <th data-sort="number" class="number-col">Hero Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+              </tr>
+            </thead>
+            <tbody>${renderSortedVillainStats(stats.villains, currentVillainSortState, hits)}</tbody>
+          </table>`;
+        rightBox.innerHTML = villainTableHtml;
+        if (typeof initTableSort === 'function') {
+          initTableSort();
+        }
+    }, 500);
 });
 
 // Add this to ensure that table sorting is initialized properly
@@ -1344,6 +1289,35 @@ search.on('render', () => {
         setTimeout(() => {
             console.log('DEBUG: Initializing table sort after render event (500ms delay)');
             initTableSort();
+
+            // --- DIAGNOSTIC FLEXBOX DEBUG ---
+            const statsContainer = document.querySelector('.statistics');
+            if (statsContainer) {
+                statsContainer.style.border = '3px dashed orange';
+                statsContainer.style.background = 'rgba(255,200,0,0.07)';
+                const heroStats = statsContainer.querySelector('.hero-stats');
+                const villainStats = statsContainer.querySelector('.villain-stats');
+                if (heroStats) heroStats.style.border = '2px solid blue';
+                if (villainStats) villainStats.style.border = '2px solid red';
+                console.log('FLEXBOX DEBUG:', {
+                  statistics: {
+                    display: getComputedStyle(statsContainer).display,
+                    flexDirection: getComputedStyle(statsContainer).flexDirection,
+                    children: Array.from(statsContainer.children).map(c => c.className)
+                  },
+                  heroStats: heroStats ? {
+                    width: heroStats.offsetWidth,
+                    display: getComputedStyle(heroStats).display,
+                    flex: getComputedStyle(heroStats).flex
+                  } : null,
+                  villainStats: villainStats ? {
+                    width: villainStats.offsetWidth,
+                    display: getComputedStyle(villainStats).display,
+                    flex: getComputedStyle(villainStats).flex
+                  } : null
+                });
+            }
+            // --- END DIAGNOSTIC FLEXBOX DEBUG ---
         }, 500); // Delay to ensure DOM is updated
     }
 });
