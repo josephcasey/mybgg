@@ -1252,11 +1252,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const leftBox = document.createElement('div');
     leftBox.style.flex = '1 1 50%';
-    leftBox.style.background = '#e0e8ff';
-    leftBox.style.textAlign = 'center';
-    leftBox.style.padding = '10px';
-    leftBox.style.fontWeight = 'bold';
-    leftBox.style.borderRight = '1px solid #aaa';
+    leftBox.style.background = '';
+    leftBox.style.textAlign = '';
+    leftBox.style.padding = '';
+    leftBox.style.fontWeight = '';
+    leftBox.style.borderRight = '';
     leftBox.style.overflow = 'auto';
     leftBox.style.maxHeight = '60vh';
     leftBox.style.overflowY = 'auto';
@@ -1266,21 +1266,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const heroTable = document.querySelector('.hero-stats .stats-table');
         if (heroTable) {
             const clone = heroTable.cloneNode(true);
-            clone.style.width = '100%';
+            clone.style.width = '';
             leftBox.innerHTML = '<div style="font-weight:bold;margin-bottom:8px;">Hero Table (Experimental)</div>';
             leftBox.appendChild(clone);
         } else {
             leftBox.textContent = 'Hero table not found.';
         }
+
+        // Clone the villain table for the right box
+        const villainTable = document.querySelector('.villain-stats .stats-table');
+        if (villainTable) {
+            const vClone = villainTable.cloneNode(true);
+            vClone.style.width = '';
+            rightBox.innerHTML = '<div style="font-weight:bold;margin-bottom:8px;">Villain Table (Experimental)</div>';
+            rightBox.appendChild(vClone);
+        } else {
+            rightBox.textContent = 'Villain table not found.';
+        }
     }, 500);
 
     const rightBox = document.createElement('div');
-    rightBox.textContent = 'RIGHT SIDE';
     rightBox.style.flex = '1 1 50%';
-    rightBox.style.background = '#ffe0e0';
-    rightBox.style.textAlign = 'center';
-    rightBox.style.padding = '20px 0';
-    rightBox.style.fontWeight = 'bold';
+    rightBox.style.background = '';
+    rightBox.style.textAlign = '';
+    rightBox.style.padding = '';
+    rightBox.style.fontWeight = '';
+    rightBox.style.borderRight = '';
+    rightBox.style.overflow = 'auto';
+    rightBox.style.maxHeight = '60vh';
+    rightBox.style.overflowY = 'auto';
 
     overlay.appendChild(leftBox);
     overlay.appendChild(rightBox);
