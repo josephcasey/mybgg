@@ -391,7 +391,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
         </div>`;
     });
     
-    return tableRowsHtml + modalsHtml; // Return combined HTML for rows and modals
+    return { tableRowsHtml, modalsHtml }; // Return combined HTML for rows and modals
 }
 
 function renderVillainStats(villains) {
@@ -439,11 +439,14 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
     const hits = search.helper?.lastResults?.hits || [];
 
     // Generate villain rows for the main table
-    const rows = sorted.map((villain, index) => {
+    let tableRowsHtml = '';
+    let modalsHtml = '';
+
+    sorted.forEach((villain, index) => {
         const safeVillainName = villain.name.replace(/[^a-zA-Z0-9]/g, '');
         const villainId = `villain-${index}-${safeVillainName}`;
         
-        return `
+        tableRowsHtml += `
             <tr class="villain-row">
                 <td class="villain-name" style="position: relative; cursor: pointer;" 
                     onmouseover="showVillainDetail('${villainId}');"
@@ -455,8 +458,8 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
                 <td class="number-col">${villain.winRate}%</td>
             </tr>
         `;
-    }).join('');
-    
+    });
+
     // Force computation of all hero stats before generating modals
     for (const villain of sorted) {
         const villainName = villain.name;
@@ -513,7 +516,7 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
         }
         
         // Complete rebuilt modal HTML structure for all villains
-        return `
+        modalsHtml += `
         <div id="${villainId}" class="villain-modal" data-villain-name="${escapeHTML(villain.name)}" style="
             display: none; 
             position: fixed;
@@ -564,7 +567,7 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
         </div>`;
     }).join('');
     
-    return rows + modals;
+    return { tableRowsHtml, modalsHtml };
 }
 
 // Also implement a fixed showVillainDetail function
@@ -1245,6 +1248,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const hits = search.helper?.lastResults?.hits || [];
         const stats = computeStats(hits);
         // Render hero table in left pane
+        const { tableRowsHtml, modalsHtml } = renderSortedHeroStats(stats.heroes, currentSortState, hits);
         const heroTableHtml = `
           <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Direct Render)</div>
           <table class="stats-table sortable">
@@ -1256,10 +1260,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
               </tr>
             </thead>
-            <tbody>${renderSortedHeroStats(stats.heroes, currentSortState, hits)}</tbody>
-          </table>`;
+            <tbody>${tableRowsHtml}</tbody>
+          </table>
+          ${modalsHtml}
+        `;
         leftBox.innerHTML = heroTableHtml;
         // Render villain table in right pane
+        const { tableRowsHtml: villainRowsHtml, modalsHtml: villainModalsHtml } = renderSortedVillainStats(stats.villains, currentVillainSortState, hits);
         const villainTableHtml = `
           <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Direct Render)</div>
           <table class="stats-table sortable">
@@ -1271,8 +1278,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
               </tr>
             </thead>
-            <tbody>${renderSortedVillainStats(stats.villains, currentVillainSortState, hits)}</tbody>
-          </table>`;
+            <tbody>${villainRowsHtml}</tbody>
+          </table>
+          ${villainModalsHtml}
+        `;
         rightBox.innerHTML = villainTableHtml;
         if (typeof initTableSort === 'function') {
           initTableSort();
