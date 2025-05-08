@@ -149,20 +149,7 @@ search.addWidgets([
                 return `
                     <div class="statistics">
                         <!-- Hero stats table removed for overlay experiment -->
-                        <div class="villain-stats">
-                            <h3>Villain Statistics (${stats.villains.length} villains)</h3>
-                            <table class="stats-table sortable">
-                                <thead>
-                                    <tr>
-                                        <th data-sort="string" class="villain-col">Villain</th>
-                                        <th data-sort="number" class="number-col">Plays</th>
-                                        <th data-sort="number" class="number-col">Hero Wins</th>
-                                        <th data-sort="number" class="number-col win-rate-col number-col" style="display: table-cell;">Win %</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${villainTableHtml}</tbody>
-                            </table>
-                        </div>
+                        <!-- Villain stats table removed for overlay experiment -->
                     </div>
                 `;
             }
