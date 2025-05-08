@@ -148,20 +148,7 @@ search.addWidgets([
 
                 return `
                     <div class="statistics">
-                        <div class="hero-stats">
-                            <h3>Hero Statistics (${stats.heroes.length} heroes)</h3>
-                            <table class="stats-table sortable">
-                                <thead>
-                                    <tr>
-                                        <th data-sort="string" class="hero-col">Hero</th>
-                                        <th data-sort="number" class="number-col">Plays</th>
-                                        <th data-sort="number" class="number-col">Wins</th>
-                                        <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${heroTableHtml}</tbody>
-                            </table>
-                        </div>
+                        <!-- Hero stats table removed for overlay experiment -->
                         <div class="villain-stats">
                             <h3>Villain Statistics (${stats.villains.length} villains)</h3>
                             <table class="stats-table sortable">
@@ -344,9 +331,9 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
                     column === 1 ? a.plays :
                     column === 2 ? a.wins :
                     parseFloat(a.winRate);
-        const bVal = column === 0 ? b.name :
-                    column === 1 ? b.plays :
-                    column === 2 ? b.wins :
+        const bVal = column === 0 ? a.name :
+                    column === 1 ? a.plays :
+                    column === 2 ? a.wins :
                     parseFloat(b.winRate);
         
         // Descending by default
@@ -1261,27 +1248,46 @@ document.addEventListener('DOMContentLoaded', function() {
     leftBox.style.maxHeight = '60vh';
     leftBox.style.overflowY = 'auto';
 
-    // Try to clone the hero table from the main statistics area
+    // Render the hero table directly using the same function as the main stats
     setTimeout(() => {
-        const heroTable = document.querySelector('.hero-stats .stats-table');
-        if (heroTable) {
-            const clone = heroTable.cloneNode(true);
-            clone.style.width = '';
-            leftBox.innerHTML = '<div style="font-weight:bold;margin-bottom:8px;">Hero Table (Experimental)</div>';
-            leftBox.appendChild(clone);
-        } else {
-            leftBox.textContent = 'Hero table not found.';
-        }
+        // Use a single declaration for hits and stats
+        const hits = search.helper?.lastResults?.hits || [];
+        const stats = computeStats(hits);
+        // Render the hero table directly
+        const heroTableHtml = `
+          <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Experimental, Direct Render)</div>
+          <table class="stats-table sortable">
+            <thead>
+              <tr>
+                <th data-sort="string" class="hero-col">Hero</th>
+                <th data-sort="number" class="number-col">Plays</th>
+                <th data-sort="number" class="number-col">Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+              </tr>
+            </thead>
+            <tbody>${renderSortedHeroStats(stats.heroes, currentSortState, hits)}</tbody>
+          </table>`;
+        leftBox.innerHTML = heroTableHtml;
 
-        // Clone the villain table for the right box
-        const villainTable = document.querySelector('.villain-stats .stats-table');
-        if (villainTable) {
-            const vClone = villainTable.cloneNode(true);
-            vClone.style.width = '';
-            rightBox.innerHTML = '<div style="font-weight:bold;margin-bottom:8px;">Villain Table (Experimental)</div>';
-            rightBox.appendChild(vClone);
-        } else {
-            rightBox.textContent = 'Villain table not found.';
+        // Render the villain table directly
+        const villainTableHtml = `
+          <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Experimental, Direct Render)</div>
+          <table class="stats-table sortable">
+            <thead>
+              <tr>
+                <th data-sort="string" class="villain-col">Villain</th>
+                <th data-sort="number" class="number-col">Plays</th>
+                <th data-sort="number" class="number-col">Hero Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+              </tr>
+            </thead>
+            <tbody>${renderSortedVillainStats(stats.villains, currentVillainSortState, hits)}</tbody>
+          </table>`;
+        rightBox.innerHTML = villainTableHtml;
+
+        // Ensure table sorting is initialized for overlay tables
+        if (typeof initTableSort === 'function') {
+          initTableSort();
         }
     }, 500);
 
@@ -1300,6 +1306,43 @@ document.addEventListener('DOMContentLoaded', function() {
     overlay.appendChild(rightBox);
     document.body.appendChild(overlay);
     // --- END SIDE-BY-SIDE LAYOUT EXPERIMENT ---
+
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Overlay experiment styles remain unchanged */
+      // ...existing code...
+
+      /* Main statistics flexbox layout */
+      .statistics {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+        flex-wrap: nowrap !important;
+        gap: 20px !important;
+        box-sizing: border-box !important;
+        min-height: 100px !important;
+        margin-bottom: 20px !important;
+      }
+      .hero-stats, .villain-stats {
+        flex: 1 1 50% !important;
+        min-width: 300px !important;
+        max-width: 48% !important;
+        box-sizing: border-box !important;
+        overflow: auto !important;
+        padding: 10px !important;
+        border: 1px solid #eee !important;
+        border-radius: 5px !important;
+      }
+      .stats-table {
+        width: 100% !important;
+        table-layout: fixed !important;
+        margin-bottom: 0 !important;
+        border-collapse: collapse !important;
+      }
+    `;
+    document.head.appendChild(style);
 });
 
 // Add this to ensure that table sorting is initialized properly
