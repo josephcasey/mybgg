@@ -73,17 +73,7 @@ search.addWidgets([
         container: '.hits',
         templates: {
             empty: 'No results found.',
-            item: `
-                <div class="play-card">
-                    <h2>{{villain}}</h2>
-                    <div class="play-details">
-                        <p>Hero: {{hero}}</p>
-                        <p>Result: {{#win}}Victory! 🎉{{/win}}{{^win}}Defeat 💀{{/win}}</p>
-                        <p>Date: {{date}}</p>
-                    </div>
-                </div>
-            `,
-            showMoreText: 'Load more'
+            item: '' // Remove rendering of individual play tiles
         },
         escapeHTML: true,
         transformItems(items) {
@@ -476,7 +466,7 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
         const bVal = column === 0 ? a.name :
                     column === 1 ? a.plays :
                     column === 2 ? a.wins :
-                    parseFloat(a.winRate);
+                    parseFloat(b.winRate);
 
         const baseResult = column === 0 ?
             bVal.localeCompare(aVal) :
@@ -1330,6 +1320,19 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     `;
     document.head.appendChild(style);
+
+    // Remove any leftover blank tiles from the .hits container
+    const hitsContainer = document.querySelector('.hits');
+    if (hitsContainer) {
+        hitsContainer.innerHTML = '';
+        hitsContainer.style.display = 'none';
+    }
+    const aisHits = document.querySelector('.ais-Hits');
+    if (aisHits) aisHits.style.display = 'none';
+    const aisHitsList = document.querySelector('.ais-Hits-list');
+    if (aisHitsList) aisHitsList.style.display = 'none';
+    const aisHitsItems = document.querySelectorAll('.ais-Hits-item');
+    aisHitsItems.forEach(item => item.style.display = 'none');
 });
 
 // Add this to ensure that table sorting is initialized properly
