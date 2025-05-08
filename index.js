@@ -1230,6 +1230,62 @@ document.addEventListener('DOMContentLoaded', function() {
     // Run the modal fix twice - once early and once after data is likely loaded
     setTimeout(fixVillainModals, 1000);
     setTimeout(fixVillainModals, 3000);
+
+    // --- BEGIN SIDE-BY-SIDE LAYOUT EXPERIMENT ---
+    const overlay = document.createElement('div');
+    overlay.id = 'side-by-side-experiment';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = 'auto';
+    overlay.style.minHeight = '80px';
+    overlay.style.zIndex = '9999';
+    overlay.style.background = 'rgba(255,255,255,0.95)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'row';
+    overlay.style.justifyContent = 'space-between';
+    overlay.style.alignItems = 'flex-start';
+    overlay.style.gap = '20px';
+    overlay.style.borderBottom = '2px solid #aaa';
+    overlay.style.padding = '10px 0';
+
+    const leftBox = document.createElement('div');
+    leftBox.style.flex = '1 1 50%';
+    leftBox.style.background = '#e0e8ff';
+    leftBox.style.textAlign = 'center';
+    leftBox.style.padding = '10px';
+    leftBox.style.fontWeight = 'bold';
+    leftBox.style.borderRight = '1px solid #aaa';
+    leftBox.style.overflow = 'auto';
+    leftBox.style.maxHeight = '60vh';
+    leftBox.style.overflowY = 'auto';
+
+    // Try to clone the hero table from the main statistics area
+    setTimeout(() => {
+        const heroTable = document.querySelector('.hero-stats .stats-table');
+        if (heroTable) {
+            const clone = heroTable.cloneNode(true);
+            clone.style.width = '100%';
+            leftBox.innerHTML = '<div style="font-weight:bold;margin-bottom:8px;">Hero Table (Experimental)</div>';
+            leftBox.appendChild(clone);
+        } else {
+            leftBox.textContent = 'Hero table not found.';
+        }
+    }, 500);
+
+    const rightBox = document.createElement('div');
+    rightBox.textContent = 'RIGHT SIDE';
+    rightBox.style.flex = '1 1 50%';
+    rightBox.style.background = '#ffe0e0';
+    rightBox.style.textAlign = 'center';
+    rightBox.style.padding = '20px 0';
+    rightBox.style.fontWeight = 'bold';
+
+    overlay.appendChild(leftBox);
+    overlay.appendChild(rightBox);
+    document.body.appendChild(overlay);
+    // --- END SIDE-BY-SIDE LAYOUT EXPERIMENT ---
 });
 
 // Add this to ensure that table sorting is initialized properly
