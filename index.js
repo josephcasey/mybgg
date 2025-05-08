@@ -1075,7 +1075,7 @@ function showVillainDetail(id) {
             const foundVillain = currentVillainData.find(v => v.name.toUpperCase() === parsedNameFromHeader.toUpperCase());
             if (foundVillain) {
                 villainName = foundVillain.name; // Original case
-                console.log(`SHOW_DETAIL: Matched header to original name: "${villainName}" for ${id}`);
+                console.log(`SHOW_DETAIL: Matched header to original name: ${villainName} for ${id}`);
             }
         }
         // Further fallbacks if needed, e.g., from ID, ensuring original case for cache keys
@@ -1162,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', function() {
     overlay.style.top = '0';
     overlay.style.left = '0';
     overlay.style.width = '100vw';
-    overlay.style.height = 'auto';
+    overlay.style.height = '100vh';
     overlay.style.minHeight = '80px';
     overlay.style.zIndex = '9999';
     overlay.style.background = 'rgba(255,255,255,0.95)';
@@ -1176,13 +1176,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const leftBox = document.createElement('div');
     leftBox.style.flex = '1 1 50%';
-    leftBox.style.maxHeight = '60vh';
+    leftBox.style.height = '100%';
     leftBox.style.overflowY = 'auto';
     leftBox.innerHTML = '';
 
     const rightBox = document.createElement('div');
     rightBox.style.flex = '1 1 50%';
-    rightBox.style.maxHeight = '60vh';
+    rightBox.style.height = '100%';
     rightBox.style.overflowY = 'auto';
     rightBox.innerHTML = '';
 
