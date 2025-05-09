@@ -321,7 +321,11 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
             </tr>
             <tr class="bar-row">
                 <td colspan="4">
-                    <div style="height:8px;background:#b3c6ff;width:${(hero.plays / maxPlays) * 100}%;border-radius:4px;"></div>
+                    <div style="position:relative;height:8px;background:transparent;width:100%;">
+                        <div style="height:8px;background:#b3c6ff;width:${(hero.plays / maxPlays) * 100}%;border-radius:4px;position:relative;">
+                            <div style="height:8px;background:#3366cc;width:${(hero.plays > 0 ? (hero.wins / hero.plays) * 100 : 0)}%;border-radius:4px;"></div>
+                        </div>
+                    </div>
                 </td>
             </tr>
         `;
@@ -468,7 +472,11 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
             </tr>
             <tr class="bar-row">
                 <td colspan="4">
-                    <div style="height:8px;background:#ffd6b3;width:${(villain.plays / maxPlays) * 100}%;border-radius:4px;"></div>
+                    <div style="position:relative;height:8px;background:transparent;width:100%;">
+                        <div style="height:8px;background:#ffd6b3;width:${(villain.plays / maxPlays) * 100}%;border-radius:4px;position:relative;">
+                            <div style="height:8px;background:#ff6600;width:${(villain.plays > 0 ? (villain.wins / villain.plays) * 100 : 0)}%;border-radius:4px;"></div>
+                        </div>
+                    </div>
                 </td>
             </tr>
         `;
