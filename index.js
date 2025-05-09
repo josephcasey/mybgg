@@ -302,6 +302,8 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
         }
     });
 
+    const maxPlays = Math.max(...sorted.map(h => h.plays), 1);
+
     sorted.forEach((hero, index) => {
         const safeHeroName = hero.name.replace(/[^a-zA-Z0-9]/g, '');
         const heroModalId = `hero-detail-${index}-${safeHeroName}`;
@@ -316,6 +318,11 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
                 <td class="number-col">${hero.winRate}%</td>
+            </tr>
+            <tr class="bar-row">
+                <td colspan="4">
+                    <div style="height:8px;background:#b3c6ff;width:${(hero.plays / maxPlays) * 100}%;border-radius:4px;"></div>
+                </td>
             </tr>
         `;
 
@@ -442,6 +449,8 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
     let tableRowsHtml = '';
     let modalsHtml = '';
 
+    const maxPlays = Math.max(...sorted.map(v => v.plays), 1);
+
     sorted.forEach((villain, index) => {
         const safeVillainName = villain.name.replace(/[^a-zA-Z0-9]/g, '');
         const villainId = `villain-${index}-${safeVillainName}`;
@@ -456,6 +465,11 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col">${villain.winRate}%</td>
+            </tr>
+            <tr class="bar-row">
+                <td colspan="4">
+                    <div style="height:8px;background:#ffd6b3;width:${(villain.plays / maxPlays) * 100}%;border-radius:4px;"></div>
+                </td>
             </tr>
         `;
     });
