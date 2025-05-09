@@ -1163,8 +1163,9 @@ document.addEventListener('DOMContentLoaded', function() {
     overlay.id = 'side-by-side-experiment';
     overlay.style.position = 'fixed';
     overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
+    overlay.style.left = '50%';
+    overlay.style.width = '50vw';
+    overlay.style.transform = 'translateX(-50%)';
     overlay.style.height = '100vh';
     overlay.style.minHeight = '80px';
     overlay.style.zIndex = '9999';
@@ -1196,6 +1197,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const style = document.createElement('style');
     style.textContent = `
+      #side-by-side-experiment {
+        border-left: 2px solid #aaa;
+        border-right: 2px solid #aaa;
+        transition: width 0.2s;
+      }
+      @media (max-width: 900px) {
+        #side-by-side-experiment {
+          width: 100vw !important;
+          left: 0 !important;
+          transform: none !important;
+          border-left: none;
+          border-right: none;
+        }
+      }
       /* Overlay experiment styles remain unchanged */
       // ...existing code...
 
@@ -1227,6 +1242,12 @@ document.addEventListener('DOMContentLoaded', function() {
         table-layout: fixed !important;
         margin-bottom: 0 !important;
         border-collapse: collapse !important;
+      }
+      .stats-table thead th {
+        position: sticky;
+        top: 0;
+        background: #f5f5f5;
+        z-index: 2;
       }
     `;
     document.head.appendChild(style);
@@ -1275,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <th data-sort="string" class="villain-col">Villain</th>
                 <th data-sort="number" class="number-col">Plays</th>
                 <th data-sort="number" class="number-col">Hero Wins</th>
-                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+                <th data-sort="number" class="number-col">Win %</th>
               </tr>
             </thead>
             <tbody>${villainRowsHtml}</tbody>
