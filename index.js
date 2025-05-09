@@ -1149,7 +1149,7 @@ function showVillainDetail(id) {
     console.log(`SHOW_DETAIL: Modal displayed for ID ${id} ("${villainName}")`);
 }
 
-// Add this line to the DOMContentLoaded event handler for earlier execution
+// Add this to ensure that table sorting is initialized properly
 document.addEventListener('DOMContentLoaded', function() {
     search.start();
     initTableSort();
@@ -1307,6 +1307,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof initTableSort === 'function') {
           initTableSort();
         }
+        // Initial sort by Plays descending for both tables
+        const heroTable = leftBox.querySelector('table.stats-table');
+        if (heroTable) sortTableByColumn(heroTable, 1, false, 'number');
+        const villainTable = rightBox.querySelector('table.stats-table');
+        if (villainTable) sortTableByColumn(villainTable, 1, false, 'number');
     }, 500);
 });
 
