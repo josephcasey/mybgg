@@ -170,10 +170,12 @@ def scrape_hero_images_from_browse(hero_pages, browse_url="https://hallofheroesl
             })
         for hero, url in hero_pages.items():
             hero_fragment = hero.lower().replace(' ', '-')
+            hero_norm = ''.join(c for c in hero.lower() if c.isalnum())
             tried_hrefs = []
             image = None
             for a in a_hrefs:
-                if hero_fragment in a["href"].lower():
+                href_norm = ''.join(c for c in a["href"].lower() if c.isalnum())
+                if hero_fragment in a["href"].lower() or hero_norm in href_norm:
                     tried_hrefs.append(a["href"])
                     a_tag = soup.find('a', href=a["href"])
                     if a_tag:
@@ -214,3 +216,14 @@ if __name__ == "__main__":
     with open("hero_images.json", "w") as f:
         json.dump(hero_images, f, indent=2)
     print("Done. Results saved to hero_images.json")
+    # After processing and saving hero_images.json
+    with open("hero_images.json") as f:
+        data = json.load(f)
+    total = len(data)
+    matched = sum(1 for v in data.values() if v["image"])
+    unmatched = [k for k, v in data.items() if not v["image"]]
+    print(f"[SUMMARY] Total heroes: {total}")
+    print(f"[SUMMARY] Matched heroes: {matched}")
+    print(f"[SUMMARY] Unmatched heroes: {len(unmatched)}")
+    if unmatched:
+        print(f"[SUMMARY] Unmatched hero names: {', '.join(unmatched)}")
