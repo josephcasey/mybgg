@@ -32,6 +32,8 @@ let currentVillainSortState = {
     sortType: 'number'
 };
 
+let heroImageData = {}; // To store hero image data
+
 // Initialize a global map to manage table sort event handlers
 if (!window.tableSortHandlers) {
     window.tableSortHandlers = new Map();
@@ -304,16 +306,66 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
 
     const maxPlays = Math.max(...sorted.map(h => h.plays), 1);
 
+    console.log(`IMAGE_DEBUG_PRE_CHECK B4`);
+    
     sorted.forEach((hero, index) => {
+        // console.log(`DEBUG: Processing hero for table: '${hero.name}'`); // You can re-enable this if needed for further debugging
+
+        console.log(`IMAGE_DEBUG_PRE_CHECK B4IN`);
+            
         const safeHeroName = hero.name.replace(/[^a-zA-Z0-9]/g, '');
         const heroModalId = `hero-detail-${index}-${safeHeroName}`;
         
+        let heroNameDisplay = escapeHTML(hero.name);
+        
+        // --- IMAGE INSERTION FOR SPECIFIC HERO ---
+        const baseTargetHeroName = "Shadowcat"; // The key in hero_images.json
+
+        // More detailed logging for any hero name containing "Shadowcat"
+        if (typeof hero.name === 'string' && hero.name.includes("Shadowcat")) {
+            console.log(`IMAGE_DEBUG_PRE_CHECK: Hero Name: '${hero.name}' (Type: ${typeof hero.name}, Length: ${hero.name.length})`);
+            console.log(`IMAGE_DEBUG_PRE_CHECK: Target Name: '${baseTargetHeroName}' (Type: ${typeof baseTargetHeroName}, Length: ${baseTargetHeroName.length})`);
+            // console.log(`IMAGE_DEBUG_PRE_CHECK: JSON.stringify(hero.name): ${JSON.stringify(hero.name)}`); // Keep if needed, but startsWith is key
+            const startsWithResultForPreCheck = hero.name.startsWith(baseTargetHeroName);
+            console.log(`IMAGE_DEBUG_PRE_CHECK: hero.name.startsWith(baseTargetHeroName) -> ${startsWithResultForPreCheck}`);
+        }
+
+        // --- THIS IS THE CRITICAL BLOCK ---
+        const heroNameIsString = typeof hero.name === 'string';
+        const heroNameStartsWithTarget = heroNameIsString && hero.name.startsWith(baseTargetHeroName);
+
+        // Log right before the IF
+        if (heroNameIsString && hero.name.includes("Shadowcat")) { // Only log this extra debug for relevant heroes
+             console.log(`IMAGE_DEBUG_BEFORE_IF: hero.name: '${hero.name}', heroNameIsString: ${heroNameIsString}, heroNameStartsWithTarget: ${heroNameStartsWithTarget}`);
+        }
+
+        if (heroNameIsString && heroNameStartsWithTarget) { 
+            console.log("<<<<< ENTERED CRITICAL IF BLOCK for " + hero.name + " >>>>>"); // <-- NEW VERY SIMPLE LOG
+
+            console.log(`IMAGE_DEBUG_MATCH: Matched hero starting with: ${baseTargetHeroName} (actual name: ${hero.name})`);
+            
+            console.log(`IMAGE_DEBUG_DATA_CHECK: heroImageData exists? ${!!heroImageData}`);
+            if (heroImageData) {
+                console.log(`IMAGE_DEBUG_DATA_CHECK: heroImageData["${baseTargetHeroName}"] content:`, JSON.stringify(heroImageData[baseTargetHeroName]));
+            }
+
+            if (heroImageData && heroImageData[baseTargetHeroName] && heroImageData[baseTargetHeroName].image) {
+                const imageUrl = escapeHTML(heroImageData[baseTargetHeroName].image);
+                console.log(`IMAGE_DEBUG_URL: Image URL found for ${baseTargetHeroName}: ${imageUrl}`);
+                heroNameDisplay += ` <img src="${imageUrl}" alt="${escapeHTML(baseTargetHeroName)}" style="max-height: 20px; max-width: 30px; vertical-align: middle; margin-left: 5px; border-radius: 3px;">`;
+                console.log(`IMAGE_DEBUG_HTML: heroNameDisplay for ${hero.name} with image: ${heroNameDisplay}`);
+            } else {
+                console.log(`IMAGE_DEBUG_NO_URL: Conditions for image not met. heroImageData: ${!!heroImageData}, heroImageData[${baseTargetHeroName}]: ${heroImageData ? !!heroImageData[baseTargetHeroName] : 'N/A'}, image property: ${heroImageData && heroImageData[baseTargetHeroName] ? !!heroImageData[baseTargetHeroName].image : 'N/A'}`);
+            }
+        }
+        // --- END IMAGE INSERTION ---
+
         tableRowsHtml += `
             <tr class="hero-row">
                 <td class="hero-name" style="position: relative; cursor: pointer;" 
                     onmouseover="showHeroDetail('${heroModalId}');"
                     onmouseout="hideHeroDetail('${heroModalId}', event);">
-                    ${escapeHTML(hero.name)}
+                    ${heroNameDisplay}
                 </td>
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
@@ -1174,11 +1226,33 @@ function showVillainDetail(id) {
 // Add this to ensure that table sorting is initialized properly
 document.addEventListener('DOMContentLoaded', function() {
     search.start();
-    initTableSort();
+    // initTableSort(); // This was deferred in previous step, ensure it's called appropriately if side-by-side is active
+
+    // Fetch hero images - THIS IS STILL NEEDED
+    fetch('hero_images.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            heroImageData = data;
+            console.log('Hero image data loaded successfully for in-row display.');
+            // Potentially trigger a re-render of stats if they were already drawn
+            // For now, assuming this loads before the first major render via search.on('render') or the timeout.
+        })
+        .catch(error => console.error('Error loading hero_images.json:', error));
+
+    // Remove the static test image container if it exists from previous tests
+    const staticTestContainer = document.getElementById('static-hero-image-test-container');
+    if (staticTestContainer) {
+        staticTestContainer.remove();
+    }
     
-    // Run the modal fix twice - once early and once after data is likely loaded
-    setTimeout(fixVillainModals, 1000);
-    setTimeout(fixVillainModals, 3000);
+    // The side-by-side layout experiment code can remain if you're still using it.
+    // Ensure that the logic that populates leftBox and rightBox (likely in a timeout or search.on('render'))
+    // will use the updated renderSortedHeroStats function.
 
     // --- BEGIN SIDE-BY-SIDE LAYOUT EXPERIMENT ---
     const overlay = document.createElement('div');
@@ -1291,6 +1365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const hits = search.helper?.lastResults?.hits || [];
         const stats = computeStats(hits);
         // Render hero table in left pane
+        // This will now use the modified renderSortedHeroStats
         const { tableRowsHtml, modalsHtml } = renderSortedHeroStats(stats.heroes, currentSortState, hits);
         const heroTableHtml = `
           <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Direct Render)</div>
@@ -1342,9 +1417,57 @@ search.on('render', () => {
     const results = search.helper?.lastResults;
     if (results?.hits) {
         // Initialize table sorting with debug
-        console.log('DEBUG: render event fired, will initialize table sort');
+        console.log('DEBUG: render event fired, will initialize table sort and render stats for side-by-side');
         setTimeout(() => {
-            console.log('DEBUG: Initializing table sort after render event (500ms delay)');
+            console.log('DEBUG: Initializing table sort and rendering stats after render event (500ms delay)');
+            
+            // This is where the side-by-side content is typically populated in your setup
+            const leftBox = document.querySelector('#side-by-side-experiment > div:first-child');
+            const rightBox = document.querySelector('#side-by-side-experiment > div:last-child');
+
+            if (leftBox && rightBox) {
+                const hits = results.hits;
+                const statsData = computeStats(hits);
+                
+                // Render hero table in left pane
+                const { tableRowsHtml: heroRows, modalsHtml: heroModals } = renderSortedHeroStats(statsData.heroes, currentSortState, hits);
+                const heroTableHtml = `
+                  <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Render Event)</div>
+                  <table class="stats-table sortable">
+                    <thead>
+                      <tr>
+                        <th data-sort="string" class="hero-col">Hero</th>
+                        <th data-sort="number" class="number-col">Plays</th>
+                        <th data-sort="number" class="number-col">Wins</th>
+                        <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+                      </tr>
+                    </thead>
+                    <tbody>${heroRows}</tbody>
+                  </table>
+                  ${heroModals}
+                `;
+                leftBox.innerHTML = heroTableHtml;
+
+                // Render villain table in right pane
+                const { tableRowsHtml: villainRows, modalsHtml: villainModals } = renderSortedVillainStats(statsData.villains, currentVillainSortState, hits);
+                const villainTableHtml = `
+                  <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Render Event)</div>
+                  <table class="stats-table sortable">
+                    <thead>
+                      <tr>
+                        <th data-sort="string" class="villain-col">Villain</th>
+                        <th data-sort="number" class="number-col">Plays</th>
+                        <th data-sort="number" class="number-col">Hero Wins</th>
+                        <th data-sort="number" class="number-col">Win %</th>
+                      </tr>
+                    </thead>
+                    <tbody>${villainRows}</tbody>
+                  </table>
+                  ${villainModals}
+                `;
+                rightBox.innerHTML = villainTableHtml;
+            }
+            
             initTableSort();
 
             // --- DIAGNOSTIC FLEXBOX DEBUG ---
