@@ -96,40 +96,85 @@ def extract_slug(url):
     """Extract the last non-empty part of the URL as the slug."""
     return url.rstrip('/').split('/')[-1].lower()
 
+def fallback_big_box_image(hero, hero_slug, big_box_urls):
+    import re
+    print(f"[FALLBACK DEBUG] Searching big box pages for hero: {hero} (slug: {hero_slug})")
+    hero_norm = re.sub(r'[^a-z0-9]', '', hero.lower())
+    for url in big_box_urls:
+        print(f"[FALLBACK DEBUG]   Checking URL: {url}")
+        try:
+            resp = requests.get(url, timeout=15)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "html.parser")
+            h2s = soup.find_all("h2", class_="wp-block-heading")
+            h2_list = [(h2.get("id", ""), h2.get_text(strip=True)) for h2 in h2s]
+            print(f"[FALLBACK DEBUG]     h2s found: {h2_list}")
+            found_h2 = None
+            for h2 in h2s:
+                h2_id = h2.get("id", "").lower()
+                h2_text = h2.get_text(strip=True).lower()
+                h2_id_norm = re.sub(r'[^a-z0-9]', '', h2_id)
+                h2_text_norm = re.sub(r'[^a-z0-9]', '', h2_text)
+                if hero_norm in h2_id_norm or hero_norm in h2_text_norm:
+                    found_h2 = h2
+                    print(f"[FALLBACK DEBUG]     Fuzzy match found: id='{h2_id}', text='{h2_text}'")
+                    break
+            if found_h2:
+                # Try both class names for gallery
+                gallery = found_h2.find_next(class_="tiled-gallery_gallery")
+                if not gallery:
+                    gallery = found_h2.find_next(class_="tiled-gallery__gallery")
+                if gallery:
+                    print(f"[FALLBACK DEBUG]     Found gallery after <h2>")
+                    imgs = gallery.find_all("img")
+                    print(f"[FALLBACK DEBUG]     Found {len(imgs)} images in gallery")
+                    if len(imgs) >= 2:
+                        img_url = imgs[1].get("src")
+                        print(f"[FALLBACK DEBUG]     Fallback image found: {img_url}")
+                        return img_url
+                    else:
+                        print(f"[FALLBACK DEBUG]     Not enough images in gallery for fallback")
+                else:
+                    print(f"[FALLBACK DEBUG]     No gallery found after <h2>")
+            else:
+                print(f"[FALLBACK DEBUG]     No fuzzy-matching <h2> found for hero '{hero}' on this page")
+        except Exception as e:
+            print(f"[FALLBACK DEBUG]     Fallback error for {hero} on {url}: {e}")
+    print(f"[FALLBACK DEBUG]   No fallback image found for hero: {hero}")
+    return None
+
 def scrape_hero_images_from_browse(hero_pages, browse_url="https://hallofheroeslcg.com/browse/"):
-    """Scrape the /browse/ page and map hero names to their card art image URLs using slug matching, with debug output and detailed match info."""
+    big_box_urls = [
+        "https://hallofheroeslcg.com/core-set-2/",
+        "https://hallofheroeslcg.com/the-rise-of-red-skull-player-cards/",
+        "https://hallofheroeslcg.com/galaxys-most-wanted/",
+        "https://hallofheroeslcg.com/the-mad-titans-shadow/",
+        "https://hallofheroeslcg.com/sinister-motives/",
+        "https://hallofheroeslcg.com/mutant-genesis/",
+        "https://hallofheroeslcg.com/next-evolution/",
+        "https://hallofheroeslcg.com/the-age-of-apocalypse/",
+        "https://hallofheroeslcg.com/agents-of-shield/",
+    ]
     try:
         resp = requests.get(browse_url, timeout=15)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         results = {}
-        slug_to_hero = {extract_slug(v): k for k, v in hero_pages.items()}
-        # Gather all <a href> and their slugs from the browse page
         a_hrefs = []
         for a in soup.find_all("a", href=True):
             href = a["href"]
-            slug = extract_slug(href)
             img = a.find("img")
             a_hrefs.append({
                 "href": href,
-                "slug": slug,
                 "img_src": img["src"] if img and img.get("src") else None
             })
-        # For each hero, match hero name to fragment of href URL and get image from the same parent div
         for hero, url in hero_pages.items():
             hero_fragment = hero.lower().replace(' ', '-')
             tried_hrefs = []
             image = None
-            match_info = []
             for a in a_hrefs:
-                match_info.append({
-                    "hero_fragment": hero_fragment,
-                    "candidate_href": a["href"]
-                })
                 if hero_fragment in a["href"].lower():
                     tried_hrefs.append(a["href"])
-                    # Find the parent div and get the first <img> in it
-                    # We need to re-find the <a> in the soup to get its parent
                     a_tag = soup.find('a', href=a["href"])
                     if a_tag:
                         parent_div = a_tag.find_parent('div')
@@ -140,20 +185,27 @@ def scrape_hero_images_from_browse(hero_pages, browse_url="https://hallofheroesl
             if image:
                 reason = "Matched by hero name fragment and image found in parent div"
             else:
-                if tried_hrefs:
-                    reason = "Matching href found by hero name fragment, but no image present in parent div"
+                # Fallback: try big box pages
+                fallback_img = fallback_big_box_image(hero, hero_fragment, big_box_urls)
+                if fallback_img:
+                    image = fallback_img
+                    reason = "Fallback: found image in big box page"
+                elif tried_hrefs:
+                    reason = "Matching href found by hero name fragment, but no image present in parent div or big box pages"
                 else:
-                    reason = "No matching href found by hero name fragment in browse page"
+                    reason = "No matching href found by hero name fragment in browse page or big box pages"
+                # Debug output for unmatched heroes
+                print(f"[DEBUG] No image found for hero: {hero}")
+                print(f"[DEBUG] Tried hrefs: {tried_hrefs}")
             results[hero] = {
                 "image": image,
                 "reason": reason,
-                "tried_hrefs": tried_hrefs,
-                ##"match_info": match_info
+                "tried_hrefs": tried_hrefs
             }
         return results
     except Exception as e:
         print(f"Error scraping browse page: {e}")
-        return {hero: {"image": None, "reason": f"Error: {e}", "tried_hrefs": [], "match_info": []} for hero in hero_pages}
+        return {hero: {"image": None, "reason": f"Error: {e}", "tried_hrefs": []} for hero in hero_pages}
 
 if __name__ == "__main__":
     hero_images = scrape_hero_images_from_browse(hero_pages)
