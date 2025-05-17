@@ -520,7 +520,7 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
                 </td>
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
-                <td class="number-col">${villain.winRate}%</td>
+                <td class="number-col win-rate-col">${villain.winRate}%</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="4">
@@ -1393,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <th data-sort="string" class="villain-col">Villain</th>
                 <th data-sort="number" class="number-col">Plays</th>
                 <th data-sort="number" class="number-col">Hero Wins</th>
-                <th data-sort="number" class="number-col">Win %</th>
+                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
               </tr>
             </thead>
             <tbody>${villainRowsHtml}</tbody>
@@ -1458,7 +1458,7 @@ search.on('render', () => {
                         <th data-sort="string" class="villain-col">Villain</th>
                         <th data-sort="number" class="number-col">Plays</th>
                         <th data-sort="number" class="number-col">Hero Wins</th>
-                        <th data-sort="number" class="number-col">Win %</th>
+                        <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
                       </tr>
                     </thead>
                     <tbody>${villainRows}</tbody>
