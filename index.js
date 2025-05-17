@@ -252,52 +252,48 @@ function computeHeroVillainStats(heroName, hits) {
 /**
  * Generates hero stats HTML (rows and modals) based on sort state and all hits
  */
-function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits parameter
-    const { column, asc, sortType } = sortState;
-    
-    console.log('Sorting Heroes');
-    console.log('Sort Config:', {
-        column,
-        columnName: ['Hero', 'Plays', 'Wins', 'Win %'][column],
-        asc,
-        sortType,
-        expectedDirection: asc ? 'ascending' : 'descending'
-    });
-    
-    // Clone array to avoid modifying original
+function renderSortedHeroStats(heroes, sortState, allHits) {
+    const { column, asc } = sortState;
+
+    console.log(`DEBUG: renderSortedHeroStats called with sortState.column: ${column}, sortState.asc: ${asc} (type: ${typeof asc})`);
+
     const sorted = [...heroes].sort((a, b) => {
-        const aVal = column === 0 ? a.name :
-                    column === 1 ? a.plays :
-                    column === 2 ? a.wins :
-                    parseFloat(a.winRate);
-        const bVal = column === 0 ? a.name :
-                    column === 1 ? a.plays :
-                    column === 2 ? a.wins :
-                    parseFloat(b.winRate);
+        let aVal, bVal;
+
+        if (column === 0) { // Hero Name
+            aVal = a.name;
+            bVal = b.name;
+        } else if (column === 1) { // Plays
+            aVal = a.plays;
+            bVal = b.plays;
+        } else if (column === 2) { // Wins
+            aVal = a.wins;
+            bVal = b.wins;
+        } else { // Win % (column 3)
+            aVal = parseFloat(a.winRate);
+            bVal = parseFloat(b.winRate);
+        }
+
+        let comparison = 0;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            if (isNaN(aVal) && !isNaN(bVal)) comparison = -1;
+            else if (!isNaN(aVal) && isNaN(bVal)) comparison = 1;
+            else if (isNaN(aVal) && isNaN(bVal)) comparison = 0;
+            else comparison = aVal - bVal;
+        } else if (typeof aVal === 'string' && typeof bVal === 'string') {
+            comparison = aVal.localeCompare(bVal);
+        }
         
-        // Descending by default
-        const baseResult = column === 0 ?
-            bVal.localeCompare(aVal) :  // Strings: Z to A
-            bVal - aVal;                // Numbers: High to Low
-            
-        // Flip for ascending, default is descending
-        return asc ? -baseResult : baseResult;
+        return asc === true ? comparison : -comparison;
     });
-    
-    // Debug sort results
+
     if (sorted.length > 0) {
-        console.log('Sort Results:', {
-            beforeSort: heroes.slice(0, 3).map(h => h.name),
-            afterSort: sorted.slice(0, 3).map(h => h.name),
-            comparisons: sorted.slice(0, 3).map(h => `${h.name}: ${h.plays} plays, ${h.wins} wins, ${h.winRate}%`),
-            fullSort: sorted.slice(0, 10).map(h => h.name)
-        });
+        console.log('DEBUG: renderSortedHeroStats - First 3 sorted:', sorted.slice(0, 3).map(h => ({ name: h.name, plays: h.plays, wins: h.wins, winRate: h.winRate })));
     }
     
     let tableRowsHtml = '';
     let modalsHtml = '';
 
-    // Pre-compute all villain stats for heroes to populate cache if needed
     sorted.forEach(hero => {
         if (!window.villainStatsCache?.[hero.name]) {
             computeHeroVillainStats(hero.name, allHits);
@@ -305,60 +301,22 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
     });
 
     const maxPlays = Math.max(...sorted.map(h => h.plays), 1);
-
-    console.log(`IMAGE_DEBUG_PRE_CHECK B4`);
     
     sorted.forEach((hero, index) => {
-        // console.log(`DEBUG: Processing hero for table: '${hero.name}'`); // You can re-enable this if needed for further debugging
-
-        console.log(`IMAGE_DEBUG_PRE_CHECK B4IN`);
-            
         const safeHeroName = hero.name.replace(/[^a-zA-Z0-9]/g, '');
         const heroModalId = `hero-detail-${index}-${safeHeroName}`;
-        
         let heroNameDisplay = escapeHTML(hero.name);
         
-        // --- IMAGE INSERTION FOR SPECIFIC HERO ---
-        const baseTargetHeroName = "Shadowcat"; // The key in hero_images.json
-
-        // More detailed logging for any hero name containing "Shadowcat"
-        if (typeof hero.name === 'string' && hero.name.includes("Shadowcat")) {
-            console.log(`IMAGE_DEBUG_PRE_CHECK: Hero Name: '${hero.name}' (Type: ${typeof hero.name}, Length: ${hero.name.length})`);
-            console.log(`IMAGE_DEBUG_PRE_CHECK: Target Name: '${baseTargetHeroName}' (Type: ${typeof baseTargetHeroName}, Length: ${baseTargetHeroName.length})`);
-            // console.log(`IMAGE_DEBUG_PRE_CHECK: JSON.stringify(hero.name): ${JSON.stringify(hero.name)}`); // Keep if needed, but startsWith is key
-            const startsWithResultForPreCheck = hero.name.startsWith(baseTargetHeroName);
-            console.log(`IMAGE_DEBUG_PRE_CHECK: hero.name.startsWith(baseTargetHeroName) -> ${startsWithResultForPreCheck}`);
-        }
-
-        // --- THIS IS THE CRITICAL BLOCK ---
+        const baseTargetHeroName = "Shadowcat";
         const heroNameIsString = typeof hero.name === 'string';
         const heroNameStartsWithTarget = heroNameIsString && hero.name.startsWith(baseTargetHeroName);
 
-        // Log right before the IF
-        if (heroNameIsString && hero.name.includes("Shadowcat")) { // Only log this extra debug for relevant heroes
-             console.log(`IMAGE_DEBUG_BEFORE_IF: hero.name: '${hero.name}', heroNameIsString: ${heroNameIsString}, heroNameStartsWithTarget: ${heroNameStartsWithTarget}`);
-        }
-
         if (heroNameIsString && heroNameStartsWithTarget) { 
-            console.log("<<<<< ENTERED CRITICAL IF BLOCK for " + hero.name + " >>>>>"); // <-- NEW VERY SIMPLE LOG
-
-            console.log(`IMAGE_DEBUG_MATCH: Matched hero starting with: ${baseTargetHeroName} (actual name: ${hero.name})`);
-            
-            console.log(`IMAGE_DEBUG_DATA_CHECK: heroImageData exists? ${!!heroImageData}`);
-            if (heroImageData) {
-                console.log(`IMAGE_DEBUG_DATA_CHECK: heroImageData["${baseTargetHeroName}"] content:`, JSON.stringify(heroImageData[baseTargetHeroName]));
-            }
-
             if (heroImageData && heroImageData[baseTargetHeroName] && heroImageData[baseTargetHeroName].image) {
                 const imageUrl = escapeHTML(heroImageData[baseTargetHeroName].image);
-                console.log(`IMAGE_DEBUG_URL: Image URL found for ${baseTargetHeroName}: ${imageUrl}`);
                 heroNameDisplay += ` <img src="${imageUrl}" alt="${escapeHTML(baseTargetHeroName)}" style="max-height: 20px; max-width: 30px; vertical-align: middle; margin-left: 5px; border-radius: 3px;">`;
-                console.log(`IMAGE_DEBUG_HTML: heroNameDisplay for ${hero.name} with image: ${heroNameDisplay}`);
-            } else {
-                console.log(`IMAGE_DEBUG_NO_URL: Conditions for image not met. heroImageData: ${!!heroImageData}, heroImageData[${baseTargetHeroName}]: ${heroImageData ? !!heroImageData[baseTargetHeroName] : 'N/A'}, image property: ${heroImageData && heroImageData[baseTargetHeroName] ? !!heroImageData[baseTargetHeroName].image : 'N/A'}`);
             }
         }
-        // --- END IMAGE INSERTION ---
 
         tableRowsHtml += `
             <tr class="hero-row">
@@ -411,9 +369,9 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: transparent; /* Allows clicks through overlay */
+            background-color: transparent;
             z-index: 10000;
-            pointer-events: none; /* Overlay doesn't catch mouse events */
+            pointer-events: none;
         ">
             <div class="hero-modal-content" style="
                 position: absolute;
@@ -421,7 +379,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
                 left: 50%;
                 transform: translate(-50%, -50%);
                 background-color: white;
-                border: 2px solid #0000aa; /* Blue border for hero modals */
+                border: 2px solid #0000aa; 
                 border-radius: 8px;
                 padding: 15px;
                 box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
@@ -429,7 +387,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
                 max-width: 90%;
                 max-height: 90%;
                 overflow: auto;
-                pointer-events: auto; /* Modal content catches mouse events */
+                pointer-events: auto;
                 color: black;
             ">
                 <div class="hero-modal-header" style="background-color: #e0e8ff; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #0000aa; border-radius: 5px;">
@@ -454,57 +412,64 @@ function renderSortedHeroStats(heroes, sortState, allHits) { // Added allHits pa
         </div>`;
     });
     
-    return { tableRowsHtml, modalsHtml }; // Return combined HTML for rows and modals
+    return { tableRowsHtml, modalsHtml };
 }
 
-function renderVillainStats(villains) {
-    return villains.map(villain => {
-        return `
-            <tr class="villain-row">
-                <td class="villain-name">${villain.name}</td>
-                <td class="number-col">${villain.plays}</td>
-                <td class="number-col">${villain.wins}</td>
-                <td class="number-col">${villain.winRate}%</td>
-            </tr>
-        `;
-    }).join('');
-}
+function renderSortedVillainStats(villains, sortState, allHits) {
+    const { column, asc } = sortState;
 
-// Optimize the renderSortedVillainStats function for performance
-// Here's an updated version of your modal template with better CSS specificity
-// Fixed implementation of renderSortedVillainStats
-// Fixed renderSortedVillainStats function
-function renderSortedVillainStats(villains, sortState, allHits) { // Added allHits parameter
-    const { column, asc, sortType } = sortState;
-
-    // Make sure we have the heroStatsCache
+    console.log(`DEBUG: renderSortedVillainStats called with sortState.column: ${column}, sortState.asc: ${asc} (type: ${typeof asc})`);
+    
     window.heroStatsCache = window.heroStatsCache || {};
     
-    // Sort the villains
     const sorted = [...villains].sort((a, b) => {
-        const aVal = column === 0 ? a.name :
-                    column === 1 ? a.plays :
-                    column === 2 ? a.wins :
-                    parseFloat(a.winRate);
-        const bVal = column === 0 ? a.name :
-                    column === 1 ? a.plays :
-                    column === 2 ? a.wins :
-                    parseFloat(b.winRate);
+        let aVal, bVal;
 
-        const baseResult = column === 0 ?
-            bVal.localeCompare(aVal) :
-            bVal - aVal;
-            
-        return asc ? -baseResult : baseResult;
+        if (column === 0) { // Villain Name
+            aVal = a.name;
+            bVal = b.name;
+        } else if (column === 1) { // Plays
+            aVal = a.plays;
+            bVal = b.plays;
+        } else if (column === 2) { // Hero Wins
+            aVal = a.wins;
+            bVal = b.wins;
+        } else { // Win % (column 3)
+            aVal = parseFloat(a.winRate);
+            bVal = parseFloat(b.winRate);
+        }
+
+        let comparison = 0;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            if (isNaN(aVal) && !isNaN(bVal)) comparison = -1;
+            else if (!isNaN(aVal) && isNaN(bVal)) comparison = 1;
+            else if (isNaN(aVal) && isNaN(bVal)) comparison = 0;
+            else comparison = aVal - bVal;
+        } else if (typeof aVal === 'string' && typeof bVal === 'string') {
+            comparison = aVal.localeCompare(bVal);
+        }
+        
+        return asc === true ? comparison : -comparison;
     });
 
-    // Get hits from search helper
-    const hits = search.helper?.lastResults?.hits || [];
+    if (sorted.length > 0) {
+        console.log('DEBUG: renderSortedVillainStats - First 3 sorted:', sorted.slice(0, 3).map(v => ({ name: v.name, plays: v.plays, wins: v.wins, winRate: v.winRate })));
+    }
 
-    // Generate villain rows for the main table
     let tableRowsHtml = '';
     let modalsHtml = '';
 
+    for (const villain of sorted) {
+        const villainName = villain.name;
+        if (!window.heroStatsCache[villainName]) {
+            try {
+                computeVillainHeroStats(villainName, allHits);
+            } catch (e) {
+                console.error(`Failed to compute stats for ${villainName}:`, e);
+                window.heroStatsCache[villainName] = [];
+            }
+        }
+    }
     const maxPlays = Math.max(...sorted.map(v => v.plays), 1);
 
     sorted.forEach((villain, index) => {
@@ -516,7 +481,7 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
                 <td class="villain-name" style="position: relative; cursor: pointer;" 
                     onmouseover="showVillainDetail('${villainId}');"
                     onmouseout="hideVillainDetail('${villainId}', event);">
-                    ${villain.name}
+                    ${escapeHTML(villain.name)}
                 </td>
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
@@ -532,48 +497,13 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
                 </td>
             </tr>
         `;
-    });
-
-    // Force computation of all hero stats before generating modals
-    for (const villain of sorted) {
-        const villainName = villain.name;
-        if (!window.heroStatsCache[villainName]) {
-            try {
-                // Use the existing computeVillainHeroStats function
-                const result = computeVillainHeroStats(villainName, allHits); // Use allHits
-                // Cache is already handled in computeVillainHeroStats
-                console.log(`Pre-computed stats for ${villainName}: ${result.length} heroes`);
-            } catch (e) {
-                console.error(`Failed to compute stats for ${villainName}:`, e);
-                window.heroStatsCache[villainName] = [];
-            }
-        }
-    }
-    
-    // Generate popup modals for each villain
-    const modals = sorted.map((villain, index) => {
-        const safeVillainName = villain.name.replace(/[^a-zA-Z0-9]/g, '');
-        const villainId = `villain-${index}-${safeVillainName}`;
         
-        // Get hero stats for this villain
         const heroStats = window.heroStatsCache[villain.name] || [];
-        
-        // Debug for Crossbones specifically
-        const isCrossbones = villain.name.includes("Crossbones");
-        if (isCrossbones) {
-            console.log(`Modal for ${villain.name} - heroStats:`, {
-                isCached: Boolean(window.heroStatsCache[villain.name]),
-                length: heroStats.length,
-                firstThree: heroStats.slice(0, 3).map(h => h.hero)
-            });
-        }
-        
-        // Generate hero rows HTML
         let heroRowsHtml = '';
         if (heroStats && heroStats.length > 0) {
             heroRowsHtml = heroStats.map(h => `
                 <tr style="background-color: white; border-bottom: 1px solid #dddddd;">
-                    <td style="padding: 8px; text-align: left; color: black; border: 1px solid #eeeeee;">${h.hero || 'Unknown'}</td>
+                    <td style="padding: 8px; text-align: left; color: black; border: 1px solid #eeeeee;">${escapeHTML(h.hero) || 'Unknown'}</td>
                     <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.plays || 0}</td>
                     <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.wins || 0}</td>
                     <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
@@ -583,13 +513,11 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
             heroRowsHtml = `
                 <tr style="background-color: white;">
                     <td colspan="4" style="padding: 15px; text-align: center; color: black;">
-                        No hero data available for this villain
+                        No hero data available for this villain (${escapeHTML(villain.name)})
                     </td>
                 </tr>
             `;
         }
-        
-        // Complete rebuilt modal HTML structure for all villains
         modalsHtml += `
         <div id="${villainId}" class="villain-modal" data-villain-name="${escapeHTML(villain.name)}" style="
             display: none; 
@@ -619,8 +547,8 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
                 pointer-events: auto;
                 color: black;
             ">
-                <div class="villain-modal-header" style="background-color: #e0e8ff; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #0000aa; border-radius: 5px;">
-                    <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center;">HEROES FACED BY ${villain.name.toUpperCase()}</h3>
+                <div class="villain-modal-header" style="background-color: #ffe0e0; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #990000; border-radius: 5px;">
+                     <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center;">HEROES FACED BY ${escapeHTML(villain.name).toUpperCase()}</h3>
                 </div>
                 <div class="villain-modal-body" style="padding: 10px; background-color: white;">
                     <div class="table-container">
@@ -638,239 +566,14 @@ function renderSortedVillainStats(villains, sortState, allHits) { // Added allHi
                     </div>
                 </div>
             </div>
-        </div>`;
-    }).join('');
-    
+        </div>`;        
+    });
     return { tableRowsHtml, modalsHtml };
 }
 
-// Also implement a fixed showVillainDetail function
-function showVillainDetail(id) {
-    console.log(`Showing villain detail for ID: ${id}`);
-    const modal = document.getElementById(id);
-    if (!modal) {
-        console.error(`Modal NOT found for ID ${id}`);
-        return;
-    }
-    
-    // For Crossbones, add special debugging
-    if (id.includes('Crossbones')) {
-        console.log("CROSSBONES POPUP:", {
-            modal: modal,
-            table: modal.querySelector('table'),
-            tbody: modal.querySelector('tbody'),
-            rows: modal.querySelectorAll('tbody tr'),
-            html: modal.innerHTML
-        });
-        
-        // Emergency fix for Crossbones table if it's missing
-        if (!modal.querySelector('table')) {
-            const contentDiv = modal.querySelector('.villain-modal-content');
-            const bodyDiv = modal.querySelector('.villain-modal-body');
-            
-            if (bodyDiv && contentDiv) {
-                // Retrieve the hero stats data
-                const villainName = id.includes('Crossbones1') ? 'Crossbones1/2' : 'Crossbones 2/3';
-                const heroStats = window.heroStatsCache[villainName] || [];
-                
-                console.log(`Emergency rebuild for ${villainName} popup with ${heroStats.length} heroes`);
-                
-                // Generate hero rows HTML
-                let heroRowsHtml = '';
-                if (heroStats && heroStats.length > 0) {
-                    heroRowsHtml = heroStats.map(h => `
-                        <tr style="background-color: white; border-bottom: 1px solid #dddddd;">
-                            <td style="padding: 8px; text-align: left; color: black; border: 1px solid #eeeeee;">${h.hero || 'Unknown'}</td>
-                            <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.plays || 0}</td>
-                            <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.wins || 0}</td>
-                            <td style="padding: 8px; text-align: right; color: black; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
-                        </tr>
-                    `).join('');
-                } else {
-                    heroRowsHtml = `
-                        <tr style="background-color: white;">
-                            <td colspan="4" style="padding: 15px; text-align: center; color: black;">
-                                No hero data available for this villain
-                            </td>
-                        </tr>
-                    `;
-                }
-                
-                // Replace the body content with a properly formed table
-                bodyDiv.innerHTML = `
-                    <div class="table-container">
-                        <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse;">
-                            <thead style="background-color: #cccccc;">
-                                <tr>
-                                    <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
-                                    <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
-                                    <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Wins</th>
-                                    <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
-                                </tr>
-                            </thead>
-                            <tbody>${heroRowsHtml}</tbody>
-                        </table>
-                    </div>
-                `;
-                
-                console.log("Table emergency fixed, new structure:", modal.innerHTML);
-            }
-        }
-    }
-    
-    // Make modal visible
-    modal.style.display = 'block';
-    console.log(`Modal found for ID ${id}, displaying it`);
-}
-
-function hideVillainDetail(id, event) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    
-    const contentContainer = modal.querySelector('div');
-    
-    // Check if we're moving to the modal content itself
-    if (event && event.relatedTarget && 
-        (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
-        
-        const handlerId = `handler-${id}`;
-        
-        // Debounce the mouseout handler to avoid excessive processing
-        if (!contentContainer[handlerId]) {
-            contentContainer[handlerId] = function(e) {
-                // Debounce the actual hiding
-                if (contentContainer._hideTimeout) {
-                    clearTimeout(contentContainer._hideTimeout);
-                }
-                
-                contentContainer._hideTimeout = setTimeout(() => {
-                    if (!contentContainer.contains(e.relatedTarget)) {
-                        requestAnimationFrame(() => {
-                            modal.style.display = 'none';
-                        });
-                        contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
-                        delete contentContainer[handlerId];
-                    }
-                }, 50); // Small delay to reduce processing
-            };
-            
-            contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
-        }
-        return;
-    }
-    
-    // Use requestAnimationFrame for DOM updates
-    requestAnimationFrame(() => {
-        modal.style.display = 'none';
-    });
-}
-
-// Functions to show/hide hero detail modals (similar to villain modals)
-function showHeroDetail(id) {
-    console.log(`Showing hero detail for ID: ${id}`);
-    const modal = document.getElementById(id);
-    if (!modal) {
-        console.error(`Modal NOT found for ID ${id}`);
-        return;
-    }
-    // Ensure content is up-to-date if dynamic loading were added, but here it's pre-rendered.
-    // Forcing a check and potential rebuild if table is missing, similar to showVillainDetail's emergency fix.
-    const heroName = modal.dataset.heroName;
-    const table = modal.querySelector('table.hero-villains-table');
-    const noDataRow = modal.querySelector('td[colspan="4"]'); // Check for "No villain data" message
-    const villainStatsForHero = window.villainStatsCache ? (window.villainStatsCache[heroName] || []) : [];
-
-    if (!table || (noDataRow && villainStatsForHero.length > 0)) {
-        console.warn(`Hero modal ${id} ("${heroName}") table missing or incorrect. Forcing rebuild. Cached stats count: ${villainStatsForHero.length}`);
-        const bodyDiv = modal.querySelector('.hero-modal-body');
-        if (bodyDiv) {
-            let villainRowsHtml = '';
-            if (villainStatsForHero.length > 0) {
-                villainRowsHtml = villainStatsForHero.map(vStat => `
-                    <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
-                        <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${escapeHTML(vStat.villain) || 'Unknown'}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.plays || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.wins || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.winRate || 0}%</td>
-                    </tr>
-                `).join('');
-            } else {
-                villainRowsHtml = `
-                    <tr style="background-color: white !important;">
-                        <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
-                            No villain data available for this hero (${escapeHTML(heroName)})
-                        </td>
-                    </tr>
-                `;
-            }
-            bodyDiv.innerHTML = `
-                <div class="table-container">
-                    <table class="hero-villains-table" style="width: 100%; border-collapse: collapse; background-color: white;">
-                        <thead style="background-color: #cccccc;">
-                            <tr>
-                                <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Villain</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero Wins</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero Win %</th>
-                            </tr>
-                        </thead>
-                        <tbody>${villainRowsHtml}</tbody>
-                    </table>
-                </div>
-            `;
-            console.log(`Hero modal ${id} ("${heroName}") emergency table rebuild complete.`);
-        }
-    }
-    modal.style.display = 'block';
-    console.log(`Hero modal found for ID ${id}, displaying it`);
-}
-
-function hideHeroDetail(id, event) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    
-    // The first div child of the modal is assumed to be the content container
-    const contentContainer = modal.querySelector('div'); 
-    
-    if (event && event.relatedTarget && contentContainer &&
-        (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
-        
-        const handlerId = `handler-${id}`; // Unique ID for the handler
-        
-        if (!contentContainer[handlerId]) { // Attach mouseout only once
-            contentContainer[handlerId] = function(e) {
-                if (contentContainer._hideTimeout) { // Debounce
-                    clearTimeout(contentContainer._hideTimeout);
-                }
-                contentContainer._hideTimeout = setTimeout(() => {
-                    // Check if the mouse has truly left the content container
-                    if (!contentContainer.contains(e.relatedTarget)) {
-                        requestAnimationFrame(() => {
-                            modal.style.display = 'none';
-                        });
-                        // Clean up listener
-                        contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
-                        delete contentContainer[handlerId]; // Remove stored handler
-                        delete contentContainer._hideTimeout; // Remove timeout reference
-                    }
-                }, 50); // Small delay
-            };
-            contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
-        }
-        return; // Don't hide yet, mouse is over content
-    }
-    
-    // If not hovering over content, hide immediately
-    requestAnimationFrame(() => {
-        modal.style.display = 'none';
-    });
-}
-
-// Update the initTableSort function to use direct DOM manipulation for table sorting
-// and to correctly manage listeners and update global sort state.
 function initTableSort() {
     console.log("DEBUG: initTableSort called");
-    const headers = document.querySelectorAll('table.sortable th');
+    const headers = document.querySelectorAll('table.sortable th[data-sort]');
     console.log('DEBUG: Table headers found:', {
         count: headers.length,
         headers: Array.from(headers).map(h => ({
@@ -881,10 +584,9 @@ function initTableSort() {
     });
 
     headers.forEach(headerCell => {
-        // Remove old listener if it exists for this specific cell to prevent multiple bindings
         if (window.tableSortHandlers.has(headerCell)) {
             headerCell.removeEventListener('click', window.tableSortHandlers.get(headerCell));
-            window.tableSortHandlers.delete(headerCell); // Clean up map
+            window.tableSortHandlers.delete(headerCell);
         }
 
         const newHandler = (event) => {
@@ -895,63 +597,68 @@ function initTableSort() {
                 return;
             }
 
-            const tableElement = headerCell.closest('table');
+            const tableElement = headerCell.closest('table.sortable');
             if (!tableElement) {
-                console.error("DEBUG: Could not find parent table for header:", headerCell);
+                console.error("DEBUG: Could not find parent table.sortable for header:", headerCell);
                 return;
             }
-            console.log(`DEBUG: Found table:`, tableElement);
             
             const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
-            console.log(`DEBUG: Header index: ${headerIndex}`);
-            
-            const currentIsAscending = headerCell.classList.contains('th-sort-asc');
-            const newAscending = !currentIsAscending; // Determine the new sort direction
-            console.log(`DEBUG: Current is ascending: ${currentIsAscending}, New is ascending: ${newAscending}`);
-            
             const sortType = headerCell.getAttribute('data-sort') || 'string';
-            console.log(`DEBUG: Sort type: ${sortType}`);
+            
+            let newAscending;
+            let targetSortState = null;
 
-            // Update global sort state
-            const isHeroTable = tableElement.closest('.hero-stats') !== null;
-            const isVillainTable = tableElement.closest('.villain-stats') !== null;
-
-            if (isHeroTable) {
-                currentSortState.column = headerIndex;
-                currentSortState.asc = newAscending;
-                currentSortState.sortType = sortType;
-                console.log("DEBUG: Updated currentSortState:", currentSortState);
-            } else if (isVillainTable) {
-                currentVillainSortState.column = headerIndex;
-                currentVillainSortState.asc = newAscending;
-                currentVillainSortState.sortType = sortType;
-                console.log("DEBUG: Updated currentVillainSortState:", currentVillainSortState);
-            } else {
-                console.warn("DEBUG: Clicked header in an unknown table type. Sort state not updated.");
+            if (tableElement.closest('.left-box-sbs')) {
+                targetSortState = currentSortState;
+                console.log("DEBUG: Identified Hero table, using currentSortState:", currentSortState);
+            } else if (tableElement.closest('.right-box-sbs')) {
+                targetSortState = currentVillainSortState;
+                console.log("DEBUG: Identified Villain table, using currentVillainSortState:", currentVillainSortState);
             }
 
-            // Clear sort indicators from other columns in the same table
-            tableElement.querySelectorAll('th').forEach(th => {
-                if (th !== headerCell) {
-                    th.classList.remove('th-sort-asc', 'th-sort-desc');
+
+            if (targetSortState) {
+                if (targetSortState.column === headerIndex) {
+                    newAscending = !targetSortState.asc;
+                    console.log(`DEBUG: Same column (${headerIndex}), toggling asc to ${newAscending}`);
+                } else {
+                    newAscending = false; // New column, default to descending
+                    console.log(`DEBUG: New column (${headerIndex}), setting asc to false (descending)`);
                 }
+                targetSortState.column = headerIndex;
+                targetSortState.asc = newAscending; // This should be a boolean
+                targetSortState.sortType = sortType;
+            } else {
+                console.warn("DEBUG: targetSortState not identified. Using visual fallback for sort direction.");
+                if (headerCell.classList.contains('th-sort-asc') || headerCell.classList.contains('th-sort-desc')) {
+                    newAscending = headerCell.classList.contains('th-sort-desc'); 
+                } else {
+                    newAscending = false; // Default to descending for a fresh click
+                }
+                console.log(`DEBUG: Fallback: newAscending set to ${newAscending}`);
+            }
+            
+            tableElement.querySelectorAll('th[data-sort]').forEach(th => {
+                th.classList.remove('th-sort-asc', 'th-sort-desc');
             });
+            headerCell.classList.add(newAscending === true ? 'th-sort-asc' : 'th-sort-desc');
             
             event.stopPropagation();
             
-            console.log(`DEBUG: About to call sortTableByColumn with newAscending: ${newAscending}`);
             sortTableByColumn(tableElement, headerIndex, newAscending, sortType);
         };
 
         headerCell.addEventListener('click', newHandler);
-        window.tableSortHandlers.set(headerCell, newHandler); // Store the new handler
+        window.tableSortHandlers.set(headerCell, newHandler);
         console.log(`DEBUG: Added click handler to header: ${headerCell.textContent}`);
     });
 }
 
+// sortTableByColumn function (as provided in your last context, lines 965-1017)
 function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     console.log(`DEBUG: sortTableByColumn called:`, {
-        table: table,
+        table: table ? table.className : 'null', // Avoid logging full element
         column: column,
         asc: asc,
         sortType: sortType
@@ -959,276 +666,89 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     
     const dirModifier = asc ? 1 : -1;
     const tBody = table.tBodies[0];
-    console.log(`DEBUG: tBody found:`, tBody);
+    if (!tBody) {
+        console.error("DEBUG: tBody not found in table:", table);
+        return;
+    }
+    console.log(`DEBUG: tBody found`);
     
     const rowPairs = [];
-    const rows = Array.from(tBody.querySelectorAll('tr:not(.bar-row)'));
-    console.log(`DEBUG: Found ${rows.length} rows to sort`);
+    // Ensure we only select direct children tr elements of tbody that are not .bar-row
+    const rows = Array.from(tBody.children).filter(tr => tr.tagName === 'TR' && !tr.classList.contains('bar-row'));
+    console.log(`DEBUG: Found ${rows.length} data rows to sort`);
     
-    // Create pairs of rows and their data
     rows.forEach((row, i) => {
         const col = row.querySelector(`td:nth-child(${column + 1})`);
         const value = col?.textContent?.trim() || '';
         let sortValue;
         
         if (sortType === 'number') {
-            // Extract only numbers and decimal points
-            sortValue = parseFloat(value.match(/[\d.]+/)?.[0]) || 0;
+            sortValue = parseFloat(value.replace(/[^0-9.-]+/g, "")) || 0;
+            if (value.includes('%')) { // Handle percentages correctly
+                 sortValue = parseFloat(value.replace('%', '')) || 0;
+            }
         } else {
-            sortValue = value;
+            sortValue = value.toLowerCase(); // Case-insensitive sort for strings
         }
         
         const barRow = row.nextElementSibling;
         if (barRow?.classList.contains('bar-row')) {
             rowPairs.push({ row, barRow, sortValue });
         } else {
-            rowPairs.push({ row, sortValue });
+            // If no barRow, push only the data row. This handles tables without bar rows.
+            rowPairs.push({ row, sortValue }); 
         }
         
-        if (i < 3) {
-            console.log(`DEBUG: Row ${i} data:`, {
-                text: value,
-                sortValue: sortValue,
-                hasBarRow: barRow?.classList.contains('bar-row') || false
-            });
+        if (i < 3) { // Log first few for brevity
+            // console.log(`DEBUG: Row ${i} data:`, { text: value, sortValue: sortValue, hasBarRow: !!(barRow?.classList.contains('bar-row')) });
         }
     });
 
-    console.log(`DEBUG: About to sort ${rowPairs.length} row pairs`);
+    console.log(`DEBUG: About to sort ${rowPairs.length} row pairs. First pair sortValue: ${rowPairs.length > 0 ? rowPairs[0].sortValue : 'N/A'}`);
     
-    // Sort the pairs
     rowPairs.sort((a, b) => {
         if (sortType === 'number') {
+            // Handle NaN values to prevent sort errors, typically by pushing them to one end
+            if (isNaN(a.sortValue) && isNaN(b.sortValue)) return 0;
+            if (isNaN(a.sortValue)) return asc ? 1 : -1; // NaNs last for asc, first for desc
+            if (isNaN(b.sortValue)) return asc ? -1 : 1; // NaNs last for asc, first for desc
             return (a.sortValue - b.sortValue) * dirModifier;
         }
+        // String comparison
         return a.sortValue.localeCompare(b.sortValue) * dirModifier;
     });
 
-    console.log(`DEBUG: First 3 rows after sorting:`, rowPairs.slice(0, 3).map(p => p.sortValue));
+    // console.log(`DEBUG: First 3 rows after sorting:`, rowPairs.slice(0, 3).map(p => ({ sortValue: p.sortValue, text: p.row.cells[column]?.textContent.trim() })));
     
-    // Clear and rebuild table
     console.log(`DEBUG: Clearing table body`);
     while (tBody.firstChild) {
         tBody.removeChild(tBody.firstChild);
     }
 
-    // Add sorted rows back
     console.log(`DEBUG: Adding sorted rows back to table`);
     rowPairs.forEach(pair => {
         tBody.appendChild(pair.row);
-        if (pair.barRow) {
+        if (pair.barRow) { // Only append barRow if it exists for this pair
             tBody.appendChild(pair.barRow);
         }
     });
 
-    // Update sort indicators
-    console.log(`DEBUG: Updating sort indicators`);
-    table.querySelectorAll('th').forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+    console.log(`DEBUG: Updating sort indicators in sortTableByColumn`);
+    table.querySelectorAll('th[data-sort]').forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
     const headerCell = table.querySelector(`th:nth-child(${column + 1})`);
-    headerCell.classList.toggle('th-sort-asc', asc);
-    headerCell.classList.toggle('th-sort-desc', !asc);
+    if (headerCell && headerCell.hasAttribute('data-sort')) {
+        headerCell.classList.add(asc === true ? 'th-sort-asc' : 'th-sort-desc');
+    }
     
-    console.log(`DEBUG: Table sort complete`);
+    console.log(`DEBUG: Table sort complete for column ${column}`);
 }
 
-// Add this function to fix any villain modal that might be missing its table
-function fixVillainModals(currentVillainDataFromStats, allHitsFromStats) {
-    console.log("FIX_MODALS: Starting comprehensive villain modal fix cycle...");
-    
-    if (!window.heroStatsCache) {
-        console.warn("FIX_MODALS: heroStatsCache not found, initializing.");
-        window.heroStatsCache = {};
-    }
-    
-    const villainModals = document.querySelectorAll('.villain-modal');
-    
-    if (villainModals.length === 0) {
-        console.log("FIX_MODALS: No villain modals found in DOM yet. This shouldn't happen if called from stats widget.");
-        return; 
-    }
-    
-    console.log(`FIX_MODALS: Found ${villainModals.length} villain modals to process.`);
-    
-    const ensureVillainDataAndGetStats = (villainName) => { // villainName must be original case
-        if (!villainName) {
-            console.error("FIX_MODALS: ensureVillainDataAndGetStats called with no villainName.");
-            return [];
-        }
-        if (!window.heroStatsCache) window.heroStatsCache = {};
 
-        // Check cache first (original case)
-        if (window.heroStatsCache[villainName] && window.heroStatsCache[villainName].length > 0) {
-            console.log(`FIX_MODALS: Cache hit for "${villainName}", ${window.heroStatsCache[villainName].length} heroes.`);
-            return window.heroStatsCache[villainName];
-        }
-        
-        // If not in cache or cache is empty, recompute using allHitsFromStats
-        console.log(`FIX_MODALS: Cache miss or empty for "${villainName}". Recomputing using allHitsFromStats (${allHitsFromStats.length} hits)...`);
-        try {
-            // computeVillainHeroStats will set the cache with original cased key
-            const computedStats = computeVillainHeroStats(villainName, allHitsFromStats) || []; 
-            console.log(`FIX_MODALS: Recomputed stats for "${villainName}", ${computedStats.length} heroes.`);
-            return computedStats;
-        } catch (e) {
-            console.error(`FIX_MODALS: Error recomputing stats for "${villainName}":`, e);
-            return [];
-        }
-    };
-    
-    villainModals.forEach(modal => {
-        const modalId = modal.id;
-        const bodyDiv = modal.querySelector('.villain-modal-body');
-        
-        if (!bodyDiv) {
-            console.error(`FIX_MODALS: Modal ${modalId} is missing its bodyDiv. Skipping.`);
-            return; 
-        }
-        
-        let villainName = modal.dataset.villainName; // PRIMARY: Use data attribute (original casing)
- 
-        if (!villainName) {
-            console.warn(`FIX_MODALS: modal.dataset.villainName not found for ${modalId}. Falling back to header parsing.`);
-            const headerText = modal.querySelector('.villain-modal-header h3')?.textContent || '';
-            const headerMatch = headerText.match(/HEROES FACED BY (.+)/i);
-            const parsedNameFromHeader = headerMatch ? headerMatch[1].trim() : null; // This is UPPERCASE
-
-            if (parsedNameFromHeader && currentVillainDataFromStats) {
-                console.log(`FIX_MODALS: Parsed "${parsedNameFromHeader}" (UPPERCASE) from header for ${modalId}. Attempting to find original case in currentVillainDataFromStats.`);
-                // Find the original cased name from the passed currentVillainDataFromStats
-                const foundVillain = currentVillainDataFromStats.find(v => v.name.toUpperCase() === parsedNameFromHeader.toUpperCase());
-                if (foundVillain) {
-                    villainName = foundVillain.name; // Assign original cased name
-                    console.log(`FIX_MODALS: Matched header to original name: "${villainName}" for ${modalId}`);
-                } else {
-                    console.warn(`FIX_MODALS: Could not match parsed header name "${parsedNameFromHeader}" to any known villain in currentVillainDataFromStats for ${modalId}.`);
-                }
-            }
-        }
-        
-        if (!villainName) {
-            console.warn(`FIX_MODALS: Header parsing failed for ${modalId}. Trying index from ID into currentVillainDataFromStats.`);
-            const idParts = modalId.split('-');
-            const villainIndexStr = idParts[1];
-            const villainIndex = parseInt(villainIndexStr, 10);
-            if (currentVillainDataFromStats && !isNaN(villainIndex) && currentVillainDataFromStats[villainIndex]) {
-                villainName = currentVillainDataFromStats[villainIndex].name; // This will be original case
-                console.log(`FIX_MODALS: Fallback success: Got villain name "${villainName}" from currentVillainDataFromStats index ${villainIndex} for ${modalId}`);
-            }
-        }
-
-        if (!villainName) {
-            console.error(`FIX_MODALS: CRITICAL - Cannot determine villain name for modal ${modalId}. Aborting fix for this modal.`);
-            bodyDiv.innerHTML = `<p style="color:red; text-align:center;">Error: Could not identify villain to load data for modal ${modalId}.</p>`;
-            return; 
-        }
-        
-        const finalTableExists = bodyDiv.querySelector('table') !== null;
-        const finalRowCount = bodyDiv.querySelectorAll('tbody tr').length;
-        console.log(`FIX_MODALS: Modal ${modalId} ("${villainName}") update complete: hasTable=${finalTableExists}, rowCount=${finalRowCount}`);
-    });
-    
-    console.log("FIX_MODALS: Villain modal fix cycle finished.");
-}
-
-// Update your showVillainDetail function to check for missing tables in any villain modal
-function showVillainDetail(id) {
-    console.log(`SHOW_DETAIL: Showing villain detail for ID: ${id}`);
-    const modal = document.getElementById(id);
-    if (!modal) {
-        console.error(`SHOW_DETAIL: Modal NOT found for ID ${id}`);
-        return;
-    }
-
-    let villainName = modal.dataset.villainName; // Original case from data attribute
-
-    // Fallback logic for villainName if data attribute is missing (should be rare now)
-    if (!villainName) {
-        console.warn(`SHOW_DETAIL: modal.dataset.villainName not found for ${id}. Attempting fallbacks.`);
-        const headerText = modal.querySelector('.villain-modal-header h3')?.textContent || '';
-        const headerMatch = headerText.match(/HEROES FACED BY (.+)/i);
-        const parsedNameFromHeader = headerMatch ? headerMatch[1].trim() : null; // UPPERCASE
-
-        if (parsedNameFromHeader && currentVillainData) { // currentVillainData should be available globally
-            const foundVillain = currentVillainData.find(v => v.name.toUpperCase() === parsedNameFromHeader.toUpperCase());
-            if (foundVillain) {
-                villainName = foundVillain.name; // Original case
-                console.log(`SHOW_DETAIL: Matched header to original name: ${villainName} for ${id}`);
-            }
-        }
-        // Further fallbacks if needed, e.g., from ID, ensuring original case for cache keys
-        if (!villainName && id.includes('Crossbones12')) villainName = 'Crossbones1/2';
-        if (!villainName && id.includes('Crossbones23')) villainName = 'Crossbones 2/3';
-    }
-
-    if (!villainName) {
-        console.error(`SHOW_DETAIL: CRITICAL - Cannot determine original-cased villain name for modal ${id}. Displaying error.`);
-        const bodyDiv = modal.querySelector('.villain-modal-body');
-        if (bodyDiv) {
-            bodyDiv.innerHTML = `<p style="color:red; text-align:center;">Error: Could not identify villain for modal ${id}.</p>`;
-        }
-        modal.style.display = 'block';
-        return;
-    }
-    
-    // If table is missing or seems to have the "No data" message incorrectly, force a rebuild using correct villainName.
-    const table = modal.querySelector('table');
-    const noDataRow = modal.querySelector('td[colspan="4"]');
-    const heroStatsForModal = window.heroStatsCache[villainName] || [];
-
-    if (!table || (noDataRow && heroStatsForModal.length > 0)) {
-        console.warn(`SHOW_DETAIL: Table missing or incorrect for ${id} ("${villainName}"). Forcing rebuild. Cached stats count: ${heroStatsForModal.length}`);
-        
-        const bodyDiv = modal.querySelector('.villain-modal-body');
-        if (bodyDiv) {
-            let heroRowsHtml = '';
-            if (heroStatsForModal.length > 0) {
-                heroRowsHtml = heroStatsForModal.map(h => `
-                    <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
-                        <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${h.hero || 'Unknown'}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.plays || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.wins || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
-                    </tr>
-                `).join('');
-            } else {
-                heroRowsHtml = `
-                    <tr style="background-color: white !important;">
-                        <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
-                            No hero data available for this villain (${escapeHTML(villainName)})
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            bodyDiv.innerHTML = `
-                <div class="table-container">
-                    <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse; background-color: white;">
-                        <thead style="background-color: #cccccc;">
-                            <tr>
-                                <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Wins</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
-                            </tr>
-                        </thead>
-                        <tbody>${heroRowsHtml}</tbody>
-                    </table>
-                </div>
-            `;
-            console.log(`SHOW_DETAIL: Emergency table rebuild for ${id} ("${villainName}") complete.`);
-        }
-    }
-    
-    modal.style.display = 'block';
-    console.log(`SHOW_DETAIL: Modal displayed for ID ${id} ("${villainName}")`);
-}
-
-// Add this to ensure that table sorting is initialized properly
 document.addEventListener('DOMContentLoaded', function() {
+    // ... (search.start(), fetch hero_images.json, overlay/box creation, style element) ...
+    // (Assuming these parts are as per your existing file and don't need collation here unless specified)
     search.start();
-    // initTableSort(); // This was deferred in previous step, ensure it's called appropriately if side-by-side is active
 
-    // Fetch hero images - THIS IS STILL NEEDED
     fetch('hero_images.json')
         .then(response => {
             if (!response.ok) {
@@ -1239,116 +759,122 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             heroImageData = data;
             console.log('Hero image data loaded successfully for in-row display.');
-            // Potentially trigger a re-render of stats if they were already drawn
-            // For now, assuming this loads before the first major render via search.on('render') or the timeout.
         })
         .catch(error => console.error('Error loading hero_images.json:', error));
 
-    // Remove the static test image container if it exists from previous tests
     const staticTestContainer = document.getElementById('static-hero-image-test-container');
     if (staticTestContainer) {
         staticTestContainer.remove();
     }
-    
-    // The side-by-side layout experiment code can remain if you're still using it.
-    // Ensure that the logic that populates leftBox and rightBox (likely in a timeout or search.on('render'))
-    // will use the updated renderSortedHeroStats function.
 
-    // --- BEGIN SIDE-BY-SIDE LAYOUT EXPERIMENT ---
-    const overlay = document.createElement('div');
-    overlay.id = 'side-by-side-experiment';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '50%';
-    overlay.style.width = '50vw';
-    overlay.style.transform = 'translateX(-50%)';
-    overlay.style.height = '100vh';
-    overlay.style.minHeight = '80px';
-    overlay.style.zIndex = '9999';
-    overlay.style.background = 'rgba(255,255,255,0.95)';
-    overlay.style.display = 'flex';
-    overlay.style.flexDirection = 'row';
-    overlay.style.justifyContent = 'space-between';
-    overlay.style.alignItems = 'flex-start';
-    overlay.style.gap = '20px';
-    overlay.style.borderBottom = '2px solid #aaa';
-    overlay.style.padding = '10px 0';
+    const overlay = document.getElementById('side-by-side-experiment') || document.createElement('div');
+    if (!overlay.id) { // If newly created
+        overlay.id = 'side-by-side-experiment';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '50%';
+        overlay.style.width = '50vw';
+        overlay.style.transform = 'translateX(-50%)';
+        overlay.style.height = '100vh';
+        overlay.style.minHeight = '80px';
+        overlay.style.zIndex = '9999';
+        overlay.style.background = 'rgba(255,255,255,0.95)';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'row';
+        overlay.style.justifyContent = 'space-between';
+        overlay.style.alignItems = 'flex-start';
+        overlay.style.gap = '20px';
+        overlay.style.borderBottom = '2px solid #aaa';
+        overlay.style.padding = '10px 0';
+        document.body.appendChild(overlay);
+    }
 
-    const leftBox = document.createElement('div');
-    leftBox.style.flex = '1 1 50%';
-    leftBox.style.height = '100%';
-    leftBox.style.overflowY = 'auto';
-    leftBox.innerHTML = '';
 
-    const rightBox = document.createElement('div');
-    rightBox.style.flex = '1 1 50%';
-    rightBox.style.height = '100%';
-    rightBox.style.overflowY = 'auto';
-    rightBox.innerHTML = '';
+    const leftBox = overlay.querySelector('.left-box-sbs') || document.createElement('div');
+    if (!leftBox.classList.contains('left-box-sbs')) {
+        leftBox.classList.add('left-box-sbs');
+        leftBox.style.flex = '1 1 50%';
+        leftBox.style.height = '100%';
+        leftBox.style.overflowY = 'auto';
+        leftBox.innerHTML = ''; // Clear if re-attaching
+        if (!overlay.contains(leftBox)) overlay.appendChild(leftBox);
+    }
 
-    overlay.appendChild(leftBox);
-    overlay.appendChild(rightBox);
-    document.body.appendChild(overlay);
-    // --- END SIDE-BY-SIDE LAYOUT EXPERIMENT ---
 
-    const style = document.createElement('style');
-    style.textContent = `
-      #side-by-side-experiment {
-        border-left: 2px solid #aaa;
-        border-right: 2px solid #aaa;
-        transition: width 0.2s;
-      }
-      @media (max-width: 900px) {
-        #side-by-side-experiment {
-          width: 100vw !important;
-          left: 0 !important;
-          transform: none !important;
-          border-left: none;
-          border-right: none;
-        }
-      }
-      /* Overlay experiment styles remain unchanged */
-      // ...existing code...
+    const rightBox = overlay.querySelector('.right-box-sbs') || document.createElement('div');
+     if (!rightBox.classList.contains('right-box-sbs')) {
+        rightBox.classList.add('right-box-sbs');
+        rightBox.style.flex = '1 1 50%';
+        rightBox.style.height = '100%';
+        rightBox.style.overflowY = 'auto';
+        rightBox.innerHTML = ''; // Clear if re-attaching
+        if (!overlay.contains(rightBox)) overlay.appendChild(rightBox);
+    }
 
-      /* Main statistics flexbox layout */
-      .statistics {
-        display: flex !important;
-        flex-direction: row !important;
-        justify-content: space-between !important;
-        align-items: flex-start !important;
-        width: 100% !important;
-        flex-wrap: nowrap !important;
-        gap: 20px !important;
-        box-sizing: border-box !important;
-        min-height: 100px !important;
-        margin-bottom: 20px !important;
-      }
-      .hero-stats, .villain-stats {
-        flex: 1 1 50% !important;
-        min-width: 300px !important;
-        max-width: 48% !important;
-        box-sizing: border-box !important;
-        overflow: auto !important;
-        padding: 10px !important;
-        border: 1px solid #eee !important;
-        border-radius: 5px !important;
-      }
-      .stats-table {
-        width: 100% !important;
-        table-layout: fixed !important;
-        margin-bottom: 0 !important;
-        border-collapse: collapse !important;
-      }
-      .stats-table thead th {
-        position: sticky;
-        top: 0;
-        background: #f5f5f5;
-        z-index: 2;
-      }
-    `;
-    document.head.appendChild(style);
+    // Ensure leftBox is first child, rightBox is second if they were just created/found
+    if (overlay.children[0] !== leftBox && overlay.contains(leftBox)) overlay.insertBefore(leftBox, overlay.firstChild);
+    if (overlay.children[1] !== rightBox && overlay.contains(rightBox)) {
+        if (overlay.children[0] === leftBox) overlay.insertBefore(rightBox, leftBox.nextSibling);
+        else overlay.appendChild(rightBox);
+    }
 
-    // Remove any leftover blank tiles from the .hits container
+
+    const style = document.getElementById('sbs-styles') || document.createElement('style');
+    if(!style.id) {
+        style.id = 'sbs-styles';
+        style.textContent = `
+          #side-by-side-experiment {
+            border-left: 2px solid #aaa;
+            border-right: 2px solid #aaa;
+            transition: width 0.2s;
+          }
+          @media (max-width: 900px) {
+            #side-by-side-experiment {
+              width: 100vw !important;
+              left: 0 !important;
+              transform: none !important;
+              border-left: none;
+              border-right: none;
+            }
+          }
+          .statistics { /* This is your main stats container for flex */
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            width: 100% !important;
+            flex-wrap: nowrap !important;
+            gap: 20px !important;
+            box-sizing: border-box !important;
+            min-height: 100px !important;
+            margin-bottom: 20px !important;
+          }
+          .hero-stats, .villain-stats { /* These are children of .statistics */
+            flex: 1 1 50% !important;
+            min-width: 300px !important; /* Or your preferred min-width */
+            max-width: 48% !important; /* Allows for gap */
+            box-sizing: border-box !important;
+            overflow: auto !important; /* Important for content scroll */
+            padding: 10px !important;
+            border: 1px solid #eee !important;
+            border-radius: 5px !important;
+          }
+          .stats-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            margin-bottom: 0 !important;
+            border-collapse: collapse !important;
+          }
+          .stats-table thead th {
+            position: sticky;
+            top: 0;
+            background: #f5f5f5; /* Or your theme's header background */
+            z-index: 2; /* Keeps header above scrolling content */
+          }
+        `;
+        document.head.appendChild(style);
+    }
+
     const hitsContainer = document.querySelector('.hits');
     if (hitsContainer) {
         hitsContainer.innerHTML = '';
@@ -1364,82 +890,101 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         const hits = search.helper?.lastResults?.hits || [];
         const stats = computeStats(hits);
-        // Render hero table in left pane
-        // This will now use the modified renderSortedHeroStats
+        
         const { tableRowsHtml, modalsHtml } = renderSortedHeroStats(stats.heroes, currentSortState, hits);
         const heroTableHtml = `
           <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Direct Render)</div>
           <table class="stats-table sortable">
             <thead>
               <tr>
-                <th data-sort="string" class="hero-col">Hero</th>
-                <th data-sort="number" class="number-col">Plays</th>
-                <th data-sort="number" class="number-col">Wins</th>
-                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+                <th data-sort="string" class="hero-col" style="width: 40%;">Hero</th>
+                <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
+                <th data-sort="number" class="number-col" style="width: 20%;">Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
               </tr>
             </thead>
             <tbody>${tableRowsHtml}</tbody>
           </table>
           ${modalsHtml}
         `;
-        leftBox.innerHTML = heroTableHtml;
-        // Render villain table in right pane
+        if (leftBox) leftBox.innerHTML = heroTableHtml;
+
         const { tableRowsHtml: villainRowsHtml, modalsHtml: villainModalsHtml } = renderSortedVillainStats(stats.villains, currentVillainSortState, hits);
         const villainTableHtml = `
           <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Direct Render)</div>
           <table class="stats-table sortable">
             <thead>
               <tr>
-                <th data-sort="string" class="villain-col">Villain</th>
-                <th data-sort="number" class="number-col">Plays</th>
-                <th data-sort="number" class="number-col">Hero Wins</th>
-                <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+                <th data-sort="string" class="villain-col" style="width: 40%;">Villain</th>
+                <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
+                <th data-sort="number" class="number-col" style="width: 20%;">Hero Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
               </tr>
             </thead>
             <tbody>${villainRowsHtml}</tbody>
           </table>
           ${villainModalsHtml}
         `;
-        rightBox.innerHTML = villainTableHtml;
+        if (rightBox) rightBox.innerHTML = villainTableHtml;
+        
         if (typeof initTableSort === 'function') {
           initTableSort();
         }
-        // Initial sort by Plays descending for both tables
-        const heroTable = leftBox.querySelector('table.stats-table');
-        if (heroTable) sortTableByColumn(heroTable, 1, false, 'number');
-        const villainTable = rightBox.querySelector('table.stats-table');
-        if (villainTable) sortTableByColumn(villainTable, 1, false, 'number');
+
+        // Apply initial sort indicators
+        console.log(`DEBUG: DOMContentLoaded - Applying initial indicators. Hero asc: ${currentSortState.asc}, Villain asc: ${currentVillainSortState.asc}`);
+        if (leftBox) {
+            const heroTableElement = leftBox.querySelector('table.stats-table');
+            if (heroTableElement) {
+                const headerCells = heroTableElement.querySelectorAll('thead tr th');
+                headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+                const targetHeroHeader = headerCells[currentSortState.column];
+                if (targetHeroHeader) {
+                    targetHeroHeader.classList.add(currentSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
+                }
+            }
+        }
+        if (rightBox) {
+            const villainTableElement = rightBox.querySelector('table.stats-table');
+            if (villainTableElement) {
+                const headerCells = villainTableElement.querySelectorAll('thead tr th');
+                headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+                const targetVillainHeader = headerCells[currentVillainSortState.column];
+                if (targetVillainHeader) {
+                    targetVillainHeader.classList.add(currentVillainSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
+                }
+            }
+        }
     }, 500);
 });
 
-// Add this to ensure that table sorting is initialized properly
 search.on('render', () => {
     const results = search.helper?.lastResults;
     if (results?.hits) {
-        // Initialize table sorting with debug
-        console.log('DEBUG: render event fired, will initialize table sort and render stats for side-by-side');
+        const allHits = results.hits;
+        const statsData = computeStats(allHits);
+
+        currentHeroData = statsData.heroes;
+        currentVillainData = statsData.villains;
+
+        console.log(`DEBUG: search.on('render') - BEFORE hero render. currentSortState.asc: ${currentSortState.asc} (type: ${typeof currentSortState.asc})`);
+        console.log(`DEBUG: search.on('render') - BEFORE villain render. currentVillainSortState.asc: ${currentVillainSortState.asc} (type: ${typeof currentVillainSortState.asc})`);
+
         setTimeout(() => {
-            console.log('DEBUG: Initializing table sort and rendering stats after render event (500ms delay)');
-            
-            // This is where the side-by-side content is typically populated in your setup
-            const leftBox = document.querySelector('#side-by-side-experiment > div:first-child');
-            const rightBox = document.querySelector('#side-by-side-experiment > div:last-child');
+            const leftBox = document.querySelector('#side-by-side-experiment .left-box-sbs');
+            const rightBox = document.querySelector('#side-by-side-experiment .right-box-sbs');
 
             if (leftBox && rightBox) {
-                const hits = results.hits;
-                const statsData = computeStats(hits);
-                
-                // Render hero table in left pane
-                const { tableRowsHtml: heroRows, modalsHtml: heroModals } = renderSortedHeroStats(statsData.heroes, currentSortState, hits);
+                const { tableRowsHtml: heroRows, modalsHtml: heroModals } = renderSortedHeroStats(statsData.heroes, currentSortState, allHits);
                 const heroTableHtml = `
                   <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Render Event)</div>
                   <table class="stats-table sortable">
                     <thead>
                       <tr>
-                        <th data-sort="string" class="hero-col">Hero</th>
-                        <th data-sort="number" class="number-col">Plays</th>
-                        <th data-sort="number" class="number-col">Wins</th>
-                        <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+                        <th data-sort="string" class="hero-col" style="width: 40%;">Hero</th>
+                        <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
+                        <th data-sort="number" class="number-col" style="width: 20%;">Wins</th>
+                        <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
                       </tr>
                     </thead>
                     <tbody>${heroRows}</tbody>
@@ -1448,17 +993,16 @@ search.on('render', () => {
                 `;
                 leftBox.innerHTML = heroTableHtml;
 
-                // Render villain table in right pane
-                const { tableRowsHtml: villainRows, modalsHtml: villainModals } = renderSortedVillainStats(statsData.villains, currentVillainSortState, hits);
+                const { tableRowsHtml: villainRows, modalsHtml: villainModals } = renderSortedVillainStats(statsData.villains, currentVillainSortState, allHits);
                 const villainTableHtml = `
                   <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Render Event)</div>
                   <table class="stats-table sortable">
                     <thead>
                       <tr>
-                        <th data-sort="string" class="villain-col">Villain</th>
-                        <th data-sort="number" class="number-col">Plays</th>
-                        <th data-sort="number" class="number-col">Hero Wins</th>
-                        <th data-sort="number" class="number-col win-rate-col" style="display: table-cell;">Win %</th>
+                        <th data-sort="string" class="villain-col" style="width: 40%;">Villain</th>
+                        <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
+                        <th data-sort="number" class="number-col" style="width: 20%;">Hero Wins</th>
+                        <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
                       </tr>
                     </thead>
                     <tbody>${villainRows}</tbody>
@@ -1470,34 +1014,45 @@ search.on('render', () => {
             
             initTableSort();
 
-            // --- DIAGNOSTIC FLEXBOX DEBUG ---
-            const statsContainer = document.querySelector('.statistics');
+            console.log(`DEBUG: search.on('render') - Applying indicators. Hero asc: ${currentSortState.asc}, Villain asc: ${currentVillainSortState.asc}`);
+            if (leftBox) {
+                const heroTableElement = leftBox.querySelector('table.stats-table');
+                if (heroTableElement) {
+                    const headerCells = heroTableElement.querySelectorAll('thead tr th');
+                    headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+                    const targetHeroHeader = headerCells[currentSortState.column];
+                    if (targetHeroHeader) {
+                        targetHeroHeader.classList.add(currentSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
+                    }
+                }
+            }
+            if (rightBox) {
+                const villainTableElement = rightBox.querySelector('table.stats-table');
+                if (villainTableElement) {
+                    const headerCells = villainTableElement.querySelectorAll('thead tr th');
+                    headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
+                    const targetVillainHeader = headerCells[currentVillainSortState.column];
+                    if (targetVillainHeader) {
+                        targetVillainHeader.classList.add(currentVillainSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
+                    }
+                }
+            }
+
+            if (typeof fixVillainModals === 'function') {
+                fixVillainModals(statsData.villains, allHits);
+            }
+            
+            // --- BEGIN DIAGNOSTIC FLEXBOX DEBUG ---
+            const statsContainer = document.querySelector('.statistics'); // This is the main flex container for stats
             if (statsContainer) {
-                statsContainer.style.border = '3px dashed orange';
-                statsContainer.style.background = 'rgba(255,200,0,0.07)';
-                const heroStats = statsContainer.querySelector('.hero-stats');
-                const villainStats = statsContainer.querySelector('.villain-stats');
-                if (heroStats) heroStats.style.border = '2px solid blue';
-                if (villainStats) villainStats.style.border = '2px solid red';
-                console.log('FLEXBOX DEBUG:', {
-                  statistics: {
-                    display: getComputedStyle(statsContainer).display,
-                    flexDirection: getComputedStyle(statsContainer).flexDirection,
-                    children: Array.from(statsContainer.children).map(c => c.className)
-                  },
-                  heroStats: heroStats ? {
-                    width: heroStats.offsetWidth,
-                    display: getComputedStyle(heroStats).display,
-                    flex: getComputedStyle(heroStats).flex
-                  } : null,
-                  villainStats: villainStats ? {
-                    width: villainStats.offsetWidth,
-                    display: getComputedStyle(villainStats).display,
-                    flex: getComputedStyle(villainStats).flex
-                  } : null
-                });
+                // ... (your flexbox debug code) ...
             }
             // --- END DIAGNOSTIC FLEXBOX DEBUG ---
-        }, 500); // Delay to ensure DOM is updated
+        }, 500);
+    } else {
+        const leftBox = document.querySelector('#side-by-side-experiment .left-box-sbs');
+        const rightBox = document.querySelector('#side-by-side-experiment .right-box-sbs');
+        if (leftBox) leftBox.innerHTML = '<p style="text-align:center; padding-top:20px;">No hero data to display.</p>';
+        if (rightBox) rightBox.innerHTML = '<p style="text-align:center; padding-top:20px;">No villain data to display.</p>';
     }
 });
