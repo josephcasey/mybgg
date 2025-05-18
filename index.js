@@ -743,6 +743,241 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     console.log(`DEBUG: Table sort complete for column ${column}`);
 }
 
+// Functions to show/hide hero detail modals
+function showHeroDetail(id) {
+    console.log(`Showing hero detail for ID: ${id}`);
+    const modal = document.getElementById(id);
+    if (!modal) {
+        console.error(`Modal NOT found for ID ${id}`);
+        return;
+    }
+    // Ensure content is up-to-date if dynamic loading were added, but here it's pre-rendered.
+    // Forcing a check and potential rebuild if table is missing.
+    const heroName = modal.dataset.heroName; // Assumes heroName is stored in data-hero-name
+    const table = modal.querySelector('table.hero-villains-table');
+    const noDataRow = modal.querySelector('td[colspan="4"]'); // Check for "No villain data" message
+    const villainStatsForHero = window.villainStatsCache ? (window.villainStatsCache[heroName] || []) : [];
+
+    if (!table || (noDataRow && villainStatsForHero.length > 0)) {
+        console.warn(`Hero modal ${id} ("${heroName}") table missing or incorrect. Forcing rebuild. Cached stats count: ${villainStatsForHero.length}`);
+        const bodyDiv = modal.querySelector('.hero-modal-body');
+        if (bodyDiv) {
+            let villainRowsHtml = '';
+            if (villainStatsForHero.length > 0) {
+                villainRowsHtml = villainStatsForHero.map(vStat => `
+                    <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
+                        <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${escapeHTML(vStat.villain) || 'Unknown'}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.plays || 0}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.wins || 0}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.winRate || 0}%</td>
+                    </tr>
+                `).join('');
+            } else {
+                villainRowsHtml = `
+                    <tr style="background-color: white !important;">
+                        <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
+                            No villain data available for this hero (${escapeHTML(heroName)})
+                        </td>
+                    </tr>
+                `;
+            }
+            bodyDiv.innerHTML = `
+                <div class="table-container">
+                    <table class="hero-villains-table" style="width: 100%; border-collapse: collapse; background-color: white;">
+                        <thead style="background-color: #cccccc;">
+                            <tr>
+                                <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Villain</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero Wins</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero Win %</th>
+                            </tr>
+                        </thead>
+                        <tbody>${villainRowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+            console.log(`Hero modal ${id} ("${heroName}") emergency table rebuild complete.`);
+        }
+    }
+    modal.style.display = 'block';
+    console.log(`Hero modal found for ID ${id}, displaying it`);
+}
+
+function hideHeroDetail(id, event) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    
+    // The first div child of the modal is assumed to be the content container
+    const contentContainer = modal.querySelector('div'); 
+    
+    if (event && event.relatedTarget && contentContainer &&
+        (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
+        
+        const handlerId = `handler-${id}`; // Unique ID for the handler
+        
+        if (!contentContainer[handlerId]) { // Attach mouseout only once
+            contentContainer[handlerId] = function(e) {
+                if (contentContainer._hideTimeout) { // Debounce
+                    clearTimeout(contentContainer._hideTimeout);
+                }
+                contentContainer._hideTimeout = setTimeout(() => {
+                    // Check if the mouse has truly left the content container
+                    if (!contentContainer.contains(e.relatedTarget)) {
+                        requestAnimationFrame(() => {
+                            modal.style.display = 'none';
+                        });
+                        // Clean up listener
+                        contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
+                        delete contentContainer[handlerId]; // Remove stored handler
+                        delete contentContainer._hideTimeout; // Remove timeout reference
+                    }
+                }, 50); // Small delay
+            };
+            contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
+        }
+        return; // Don't hide yet, mouse is over content
+    }
+    
+    // If not hovering over content, hide immediately
+    requestAnimationFrame(() => {
+        modal.style.display = 'none';
+    });
+}
+
+// Functions to show/hide villain detail modals
+function showVillainDetail(id) {
+    console.log(`SHOW_DETAIL: Showing villain detail for ID: ${id}`);
+    const modal = document.getElementById(id);
+    if (!modal) {
+        console.error(`SHOW_DETAIL: Modal NOT found for ID ${id}`);
+        return;
+    }
+
+    let villainName = modal.dataset.villainName; // Original case from data attribute
+
+    // Fallback logic for villainName if data attribute is missing
+    if (!villainName) {
+        console.warn(`SHOW_DETAIL: modal.dataset.villainName not found for ${id}. Attempting fallbacks.`);
+        const headerText = modal.querySelector('.villain-modal-header h3')?.textContent || '';
+        const headerMatch = headerText.match(/HEROES FACED BY (.+)/i);
+        const parsedNameFromHeader = headerMatch ? headerMatch[1].trim() : null; // UPPERCASE
+
+        if (parsedNameFromHeader && currentVillainData) { // currentVillainData should be available globally
+            const foundVillain = currentVillainData.find(v => v.name.toUpperCase() === parsedNameFromHeader.toUpperCase());
+            if (foundVillain) {
+                villainName = foundVillain.name; // Original case
+                console.log(`SHOW_DETAIL: Matched header to original name: "${villainName}" for ${id}`);
+            }
+        }
+        // Add more specific fallbacks if necessary, e.g., for names with slashes
+        if (!villainName && id.includes('Crossbones12')) villainName = 'Crossbones1/2'; // Example
+        if (!villainName && id.includes('Crossbones23')) villainName = 'Crossbones 2/3'; // Example
+    }
+
+    if (!villainName) {
+        console.error(`SHOW_DETAIL: CRITICAL - Cannot determine original-cased villain name for modal ${id}. Displaying error.`);
+        const bodyDiv = modal.querySelector('.villain-modal-body');
+        if (bodyDiv) {
+            bodyDiv.innerHTML = `<p style="color:red; text-align:center;">Error: Could not identify villain for modal ${id}.</p>`;
+        }
+        modal.style.display = 'block';
+        return;
+    }
+    
+    const table = modal.querySelector('table.villain-heroes-table');
+    const noDataRow = modal.querySelector('td[colspan="4"]'); // Check for "No hero data" message
+    const heroStatsForModal = window.heroStatsCache ? (window.heroStatsCache[villainName] || []) : [];
+
+    if (!table || (noDataRow && heroStatsForModal.length > 0)) {
+        console.warn(`SHOW_DETAIL: Table missing or incorrect for ${id} ("${villainName}"). Forcing rebuild. Cached stats count: ${heroStatsForModal.length}`);
+        
+        const bodyDiv = modal.querySelector('.villain-modal-body');
+        if (bodyDiv) {
+            let heroRowsHtml = '';
+            if (heroStatsForModal.length > 0) {
+                heroRowsHtml = heroStatsForModal.map(h => `
+                    <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
+                        <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${escapeHTML(h.hero) || 'Unknown'}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.plays || 0}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.wins || 0}</td>
+                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
+                    </tr>
+                `).join('');
+            } else {
+                heroRowsHtml = `
+                    <tr style="background-color: white !important;">
+                        <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
+                            No hero data available for this villain (${escapeHTML(villainName)})
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            bodyDiv.innerHTML = `
+                <div class="table-container">
+                    <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse; background-color: white;">
+                        <thead style="background-color: #cccccc;">
+                            <tr>
+                                <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Wins</th>
+                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
+                            </tr>
+                        </thead>
+                        <tbody>${heroRowsHtml}</tbody>
+                    </table>
+                </div>
+            `;
+            console.log(`SHOW_DETAIL: Emergency table rebuild for ${id} ("${villainName}") complete.`);
+        }
+    }
+    
+    modal.style.display = 'block';
+    console.log(`SHOW_DETAIL: Modal displayed for ID ${id} ("${villainName}")`);
+}
+
+function hideVillainDetail(id, event) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    
+    const contentContainer = modal.querySelector('div'); // Assuming the first div is the main content wrapper
+    
+    // Check if we're moving to the modal content itself
+    if (event && event.relatedTarget && contentContainer &&
+        (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
+        
+        const handlerId = `handler-${id}`;
+        
+        // Debounce the mouseout handler to avoid excessive processing
+        if (!contentContainer[handlerId]) {
+            contentContainer[handlerId] = function(e) {
+                // Debounce the actual hiding
+                if (contentContainer._hideTimeout) {
+                    clearTimeout(contentContainer._hideTimeout);
+                }
+                
+                contentContainer._hideTimeout = setTimeout(() => {
+                    if (!contentContainer.contains(e.relatedTarget)) {
+                        requestAnimationFrame(() => {
+                            modal.style.display = 'none';
+                        });
+                        contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
+                        delete contentContainer[handlerId];
+                        delete contentContainer._hideTimeout;
+                    }
+                }, 50); // Small delay to reduce processing
+            };
+            
+            contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
+        }
+        return;
+    }
+    
+    // Use requestAnimationFrame for DOM updates
+    requestAnimationFrame(() => {
+        modal.style.display = 'none';
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     // ... (search.start(), fetch hero_images.json, overlay/box creation, style element) ...
