@@ -1,5 +1,7 @@
-import json
 import sys
+print(f"Running with Python executable: {sys.executable}")
+print(f"Python version: {sys.version}")
+import json
 import datetime  # Import the datetime module
 
 from mybgg.downloader import Downloader
