@@ -91,6 +91,17 @@ function isWithinLastMonth(dateString) {
     return date > oneMonthAgo;
 }
 
+function formatDayMonthYear(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
+    const day = date.getDate();
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = monthNames[date.getMonth()];
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day} ${month}'${year}`;
+}
+
 // Add configure widget first
 search.addWidgets([
     instantsearch.widgets.configure({
@@ -364,6 +375,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
         // Highlight last played if within last month
         const lastPlayedRaw = hero.lastPlayedDate;
         const lastPlayedFormatted = formatMonthYear(lastPlayedRaw); // changed from formatDate
+        const lastPlayedTooltip = formatDayMonthYear(lastPlayedRaw);
         const highlightLastPlayed = isWithinLastMonth(lastPlayedRaw)
             ? ' style="color: red;"'
             : '';
@@ -378,7 +390,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
                 <td class="number-col">${hero.winRate}%</td>
-                <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}">${lastPlayedFormatted}</td>
+                <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="5">
@@ -543,6 +555,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
         
         const lastPlayedRaw = villain.lastPlayedDate;
         const lastPlayedFormatted = formatMonthYear(lastPlayedRaw); // changed from formatDate
+        const lastPlayedTooltip = formatDayMonthYear(lastPlayedRaw);
         const highlightLastPlayed = isWithinLastMonth(lastPlayedRaw)
             ? ' style="color: red;"'
             : '';
@@ -557,7 +570,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col win-rate-col">${villain.winRate}%</td>
-                <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}">${lastPlayedFormatted}</td>
+                <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="5">
@@ -1367,4 +1380,64 @@ search.on('render', () => {
         if (leftBox) leftBox.innerHTML = '<p style="text-align:center; padding-top:20px;">No hero data to display.</p>';
         if (rightBox) rightBox.innerHTML = '<p style="text-align:center; padding-top:20px;">No villain data to display.</p>';
     }
+});
+
+// Add this CSS for the custom tooltip (insert near the top or in a <style> block)
+(function() {
+    const style = document.createElement('style');
+    style.textContent = `
+    .custom-tooltip {
+        position: absolute;
+        background: #222;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 13px;
+        pointer-events: none;
+        z-index: 99999;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        opacity: 0.97;
+        transition: opacity 0.05s;
+    }
+    `;
+    document.head.appendChild(style);
+})();
+
+// Add this after your DOMContentLoaded event or after table rendering
+function enableFastDateTooltips() {
+    let tooltipDiv = null;
+    document.body.addEventListener('mouseover', function(e) {
+        const td = e.target.closest('.date-col');
+        if (td && td.hasAttribute('title')) {
+            // Remove default title to prevent browser tooltip
+            const tip = td.getAttribute('title');
+            td.setAttribute('data-tooltip', tip);
+            td.removeAttribute('title');
+            tooltipDiv = document.createElement('div');
+            tooltipDiv.className = 'custom-tooltip';
+            tooltipDiv.textContent = tip;
+            document.body.appendChild(tooltipDiv);
+            const rect = td.getBoundingClientRect();
+            tooltipDiv.style.left = (rect.left + window.scrollX + rect.width/2 - tooltipDiv.offsetWidth/2) + 'px';
+            tooltipDiv.style.top = (rect.top + window.scrollY - tooltipDiv.offsetHeight - 6) + 'px';
+        }
+    });
+    document.body.addEventListener('mouseout', function(e) {
+        const td = e.target.closest('.date-col');
+        if (td && td.hasAttribute('data-tooltip')) {
+            td.setAttribute('title', td.getAttribute('data-tooltip'));
+            td.removeAttribute('data-tooltip');
+        }
+        if (tooltipDiv) {
+            tooltipDiv.remove();
+            tooltipDiv = null;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ...existing code...
+    enableFastDateTooltips();
+    // ...existing code...
 });
