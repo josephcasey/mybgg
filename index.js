@@ -58,6 +58,17 @@ function escapeHTML(str) {
     });
 }
 
+// Helper function to format timestamp to YYYY-MM-DD
+function formatDate(timestamp) {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return 'N/A'; // Handle invalid timestamps
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Add configure widget first
 search.addWidgets([
     instantsearch.widgets.configure({
@@ -125,23 +136,30 @@ function computeStats(hits) {
         const hero = hit.hero;
         const villain = hit.villain;
         const win = Boolean(hit.win);
-        
+        const hitDateTimestamp = hit.date ? new Date(hit.date).getTime() : 0;
+
         // Update hero stats
         if (!heroStats[hero]) {
-            heroStats[hero] = { name: hero, plays: 0, wins: 0, winRate: 0 };
+            heroStats[hero] = { name: hero, plays: 0, wins: 0, winRate: 0, lastPlayedDate: 0 };
         }
         heroStats[hero].plays++;
         if (win) {
             heroStats[hero].wins++;
         }
+        if (hitDateTimestamp > heroStats[hero].lastPlayedDate) {
+            heroStats[hero].lastPlayedDate = hitDateTimestamp;
+        }
         
         // Update villain stats
         if (!villainStats[villain]) {
-            villainStats[villain] = { name: villain, plays: 0, wins: 0, winRate: 0 };
+            villainStats[villain] = { name: villain, plays: 0, wins: 0, winRate: 0, lastPlayedDate: 0 };
         }
         villainStats[villain].plays++;
         if (win) {
             villainStats[villain].wins++;
+        }
+        if (hitDateTimestamp > villainStats[villain].lastPlayedDate) {
+            villainStats[villain].lastPlayedDate = hitDateTimestamp;
         }
     });
     
@@ -269,9 +287,12 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
         } else if (column === 2) { // Wins
             aVal = a.wins;
             bVal = b.wins;
-        } else { // Win % (column 3)
+        } else if (column === 3) { // Win %
             aVal = parseFloat(a.winRate);
             bVal = parseFloat(b.winRate);
+        } else { // Last Played (column 4)
+            aVal = a.lastPlayedDate || 0;
+            bVal = b.lastPlayedDate || 0;
         }
 
         let comparison = 0;
@@ -288,7 +309,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
     });
 
     if (sorted.length > 0) {
-        console.log('DEBUG: renderSortedHeroStats - First 3 sorted:', sorted.slice(0, 3).map(h => ({ name: h.name, plays: h.plays, wins: h.wins, winRate: h.winRate })));
+        console.log('DEBUG: renderSortedHeroStats - First 3 sorted:', sorted.slice(0, 3).map(h => ({ name: h.name, plays: h.plays, wins: h.wins, winRate: h.winRate, lastPlayedDate: formatDate(h.lastPlayedDate) })));
     }
     
     let tableRowsHtml = '';
@@ -328,9 +349,10 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
                 <td class="number-col">${hero.winRate}%</td>
+                <td class="date-col">${formatDate(hero.lastPlayedDate)}</td>
             </tr>
             <tr class="bar-row">
-                <td colspan="4">
+                <td colspan="5">
                     <div style="position:relative;height:8px;background:transparent;width:100%;">
                         <div style="height:8px;background:#b3c6ff;width:${(hero.plays / maxPlays) * 100}%;border-radius:4px;position:relative;">
                             <div style="height:8px;background:#3366cc;width:${(hero.plays > 0 ? (hero.wins / hero.plays) * 100 : 0)}%;border-radius:4px;"></div>
@@ -434,9 +456,12 @@ function renderSortedVillainStats(villains, sortState, allHits) {
         } else if (column === 2) { // Hero Wins
             aVal = a.wins;
             bVal = b.wins;
-        } else { // Win % (column 3)
+        } else if (column === 3) { // Win % (Hero Win % against Villain)
             aVal = parseFloat(a.winRate);
             bVal = parseFloat(b.winRate);
+        } else { // Last Played (column 4)
+            aVal = a.lastPlayedDate || 0;
+            bVal = b.lastPlayedDate || 0;
         }
 
         let comparison = 0;
@@ -453,7 +478,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
     });
 
     if (sorted.length > 0) {
-        console.log('DEBUG: renderSortedVillainStats - First 3 sorted:', sorted.slice(0, 3).map(v => ({ name: v.name, plays: v.plays, wins: v.wins, winRate: v.winRate })));
+        console.log('DEBUG: renderSortedVillainStats - First 3 sorted:', sorted.slice(0, 3).map(v => ({ name: v.name, plays: v.plays, wins: v.wins, winRate: v.winRate, lastPlayedDate: formatDate(v.lastPlayedDate) })));
     }
 
     let tableRowsHtml = '';
@@ -486,9 +511,10 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col win-rate-col">${villain.winRate}%</td>
+                <td class="date-col">${formatDate(villain.lastPlayedDate)}</td>
             </tr>
             <tr class="bar-row">
-                <td colspan="4">
+                <td colspan="5">
                     <div style="position:relative;height:8px;background:transparent;width:100%;">
                         <div style="height:8px;background:#ffd6b3;width:${(villain.plays / maxPlays) * 100}%;border-radius:4px;position:relative;">
                             <div style="height:8px;background:#ff6600;width:${(villain.plays > 0 ? (villain.wins / villain.plays) * 100 : 0)}%;border-radius:4px;"></div>
@@ -755,7 +781,7 @@ function showHeroDetail(id) {
     // Forcing a check and potential rebuild if table is missing.
     const heroName = modal.dataset.heroName; // Assumes heroName is stored in data-hero-name
     const table = modal.querySelector('table.hero-villains-table');
-    const noDataRow = modal.querySelector('td[colspan="4"]'); // Check for "No villain data" message
+    const noDataRow = modal.querySelector('td[colspan="5"]'); // Check for "No villain data" message
     const villainStatsForHero = window.villainStatsCache ? (window.villainStatsCache[heroName] || []) : [];
 
     if (!table || (noDataRow && villainStatsForHero.length > 0)) {
@@ -775,7 +801,7 @@ function showHeroDetail(id) {
             } else {
                 villainRowsHtml = `
                     <tr style="background-color: white !important;">
-                        <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
+                        <td colspan="5" style="padding: 15px; text-align: center; color: black !important;">
                             No villain data available for this hero (${escapeHTML(heroName)})
                         </td>
                     </tr>
@@ -885,7 +911,7 @@ function showVillainDetail(id) {
     }
     
     const table = modal.querySelector('table.villain-heroes-table');
-    const noDataRow = modal.querySelector('td[colspan="4"]'); // Check for "No hero data" message
+    const noDataRow = modal.querySelector('td[colspan="5"]'); // Check for "No hero data" message
     const heroStatsForModal = window.heroStatsCache ? (window.heroStatsCache[villainName] || []) : [];
 
     if (!table || (noDataRow && heroStatsForModal.length > 0)) {
@@ -906,7 +932,7 @@ function showVillainDetail(id) {
             } else {
                 heroRowsHtml = `
                     <tr style="background-color: white !important;">
-                        <td colspan="4" style="padding: 15px; text-align: center; color: black !important;">
+                        <td colspan="5" style="padding: 15px; text-align: center; color: black !important;">
                             No hero data available for this villain (${escapeHTML(villainName)})
                         </td>
                     </tr>
@@ -1132,10 +1158,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <table class="stats-table sortable">
             <thead>
               <tr>
-                <th data-sort="string" class="hero-col" style="width: 40%;">Hero</th>
-                <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
-                <th data-sort="number" class="number-col" style="width: 20%;">Wins</th>
-                <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
+                <th data-sort="string" class="hero-col" style="width: 35%;">Hero</th>
+                <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
+                <th data-sort="number" class="number-col" style="width: 15%;">Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
+                <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
               </tr>
             </thead>
             <tbody>${tableRowsHtml}</tbody>
@@ -1150,10 +1177,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <table class="stats-table sortable">
             <thead>
               <tr>
-                <th data-sort="string" class="villain-col" style="width: 40%;">Villain</th>
-                <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
-                <th data-sort="number" class="number-col" style="width: 20%;">Hero Wins</th>
-                <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
+                <th data-sort="string" class="villain-col" style="width: 35%;">Villain</th>
+                <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
+                <th data-sort="number" class="number-col" style="width: 15%;">Hero Wins</th>
+                <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
+                <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
               </tr>
             </thead>
             <tbody>${villainRowsHtml}</tbody>
@@ -1216,10 +1244,11 @@ search.on('render', () => {
                   <table class="stats-table sortable">
                     <thead>
                       <tr>
-                        <th data-sort="string" class="hero-col" style="width: 40%;">Hero</th>
-                        <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
-                        <th data-sort="number" class="number-col" style="width: 20%;">Wins</th>
-                        <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
+                        <th data-sort="string" class="hero-col" style="width: 35%;">Hero</th>
+                        <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
+                        <th data-sort="number" class="number-col" style="width: 15%;">Wins</th>
+                        <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
+                        <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
                       </tr>
                     </thead>
                     <tbody>${heroRows}</tbody>
@@ -1234,10 +1263,11 @@ search.on('render', () => {
                   <table class="stats-table sortable">
                     <thead>
                       <tr>
-                        <th data-sort="string" class="villain-col" style="width: 40%;">Villain</th>
-                        <th data-sort="number" class="number-col" style="width: 20%;">Plays</th>
-                        <th data-sort="number" class="number-col" style="width: 20%;">Hero Wins</th>
-                        <th data-sort="number" class="number-col win-rate-col" style="width: 20%; display: table-cell;">Win %</th>
+                        <th data-sort="string" class="villain-col" style="width: 35%;">Villain</th>
+                        <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
+                        <th data-sort="number" class="number-col" style="width: 15%;">Hero Wins</th>
+                        <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
+                        <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
                       </tr>
                     </thead>
                     <tbody>${villainRows}</tbody>

@@ -681,8 +681,7 @@ body {
 
 /* Remove bar column related styles */
 .bar-container,
-.play-bar-cell,
-.stats-table th:last-child {
+.play-bar-cell {
     display: none;
 }
 
