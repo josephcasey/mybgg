@@ -69,6 +69,17 @@ function formatDate(timestamp) {
     return `${year}-${month}-${day}`;
 }
 
+// Place this near your other utility functions, outside any function
+function isWithinLastMonth(dateString) {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    if (isNaN(date)) return false;
+    const now = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(now.getMonth() - 1);
+    return date > oneMonthAgo;
+}
+
 // Add configure widget first
 search.addWidgets([
     instantsearch.widgets.configure({
@@ -339,6 +350,13 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             }
         }
 
+        // Highlight last played if within last month
+        const lastPlayedRaw = hero.lastPlayedDate;
+        const lastPlayedFormatted = formatDate(lastPlayedRaw);
+        const highlightLastPlayed = isWithinLastMonth(lastPlayedRaw)
+            ? ' style="color: red;"'
+            : '';
+
         tableRowsHtml += `
             <tr class="hero-row">
                 <td class="hero-name" style="position: relative; cursor: pointer;" 
@@ -349,7 +367,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
                 <td class="number-col">${hero.winRate}%</td>
-                <td class="date-col">${formatDate(hero.lastPlayedDate)}</td>
+                <td class="date-col"${highlightLastPlayed}>${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="5">
@@ -497,10 +515,27 @@ function renderSortedVillainStats(villains, sortState, allHits) {
     }
     const maxPlays = Math.max(...sorted.map(v => v.plays), 1);
 
+    // Helper function to check if date is within the last month
+    function isWithinLastMonth(dateString) {
+        if (!dateString) return false;
+        const date = new Date(dateString);
+        if (isNaN(date)) return false;
+        const now = new Date();
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(now.getMonth() - 1);
+        return date > oneMonthAgo;
+    }
+
     sorted.forEach((villain, index) => {
         const safeVillainName = villain.name.replace(/[^a-zA-Z0-9]/g, '');
         const villainId = `villain-${index}-${safeVillainName}`;
         
+        const lastPlayedRaw = villain.lastPlayedDate;
+        const lastPlayedFormatted = formatDate(lastPlayedRaw);
+        const highlightLastPlayed = isWithinLastMonth(lastPlayedRaw)
+            ? ' style="color: red;"'
+            : '';
+
         tableRowsHtml += `
             <tr class="villain-row">
                 <td class="villain-name" style="position: relative; cursor: pointer;" 
@@ -511,7 +546,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col win-rate-col">${villain.winRate}%</td>
-                <td class="date-col">${formatDate(villain.lastPlayedDate)}</td>
+                <td class="date-col"${highlightLastPlayed}>${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="5">
