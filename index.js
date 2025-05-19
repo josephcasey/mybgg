@@ -69,6 +69,17 @@ function formatDate(timestamp) {
     return `${year}-${month}-${day}`;
 }
 
+// Helper function to format timestamp to Month'YY (e.g., May'25)
+function formatMonthYear(timestamp) {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return 'N/A';
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = monthNames[date.getMonth()];
+    const year = String(date.getFullYear()).slice(-2);
+    return `${month}'${year}`;
+}
+
 // Place this near your other utility functions, outside any function
 function isWithinLastMonth(dateString) {
     if (!dateString) return false;
@@ -352,7 +363,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
 
         // Highlight last played if within last month
         const lastPlayedRaw = hero.lastPlayedDate;
-        const lastPlayedFormatted = formatDate(lastPlayedRaw);
+        const lastPlayedFormatted = formatMonthYear(lastPlayedRaw); // changed from formatDate
         const highlightLastPlayed = isWithinLastMonth(lastPlayedRaw)
             ? ' style="color: red;"'
             : '';
@@ -367,7 +378,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
                 <td class="number-col">${hero.winRate}%</td>
-                <td class="date-col"${highlightLastPlayed}>${lastPlayedFormatted}</td>
+                <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}">${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="5">
@@ -531,7 +542,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
         const villainId = `villain-${index}-${safeVillainName}`;
         
         const lastPlayedRaw = villain.lastPlayedDate;
-        const lastPlayedFormatted = formatDate(lastPlayedRaw);
+        const lastPlayedFormatted = formatMonthYear(lastPlayedRaw); // changed from formatDate
         const highlightLastPlayed = isWithinLastMonth(lastPlayedRaw)
             ? ' style="color: red;"'
             : '';
@@ -546,7 +557,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col win-rate-col">${villain.winRate}%</td>
-                <td class="date-col"${highlightLastPlayed}>${lastPlayedFormatted}</td>
+                <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}">${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
                 <td colspan="5">
@@ -740,15 +751,17 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     
     rows.forEach((row, i) => {
         const col = row.querySelector(`td:nth-child(${column + 1})`);
-        const value = col?.textContent?.trim() || '';
         let sortValue;
-        
-        if (sortType === 'number') {
+        if (col && col.hasAttribute('data-timestamp')) {
+            sortValue = parseFloat(col.getAttribute('data-timestamp')) || 0;
+        } else if (sortType === 'number') {
+            const value = col?.textContent?.trim() || '';
             sortValue = parseFloat(value.replace(/[^0-9.-]+/g, "")) || 0;
             if (value.includes('%')) { // Handle percentages correctly
                  sortValue = parseFloat(value.replace('%', '')) || 0;
             }
         } else {
+            const value = col?.textContent?.trim() || '';
             sortValue = value.toLowerCase(); // Case-insensitive sort for strings
         }
         
@@ -768,15 +781,14 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     console.log(`DEBUG: About to sort ${rowPairs.length} row pairs. First pair sortValue: ${rowPairs.length > 0 ? rowPairs[0].sortValue : 'N/A'}`);
     
     rowPairs.sort((a, b) => {
-        if (sortType === 'number') {
-            // Handle NaN values to prevent sort errors, typically by pushing them to one end
+        if (typeof a.sortValue === 'number' && typeof b.sortValue === 'number') {
+            // Numeric sort fallback for date columns with data-timestamp
             if (isNaN(a.sortValue) && isNaN(b.sortValue)) return 0;
-            if (isNaN(a.sortValue)) return asc ? 1 : -1; // NaNs last for asc, first for desc
-            if (isNaN(b.sortValue)) return asc ? -1 : 1; // NaNs last for asc, first for desc
+            if (isNaN(a.sortValue)) return asc ? 1 : -1;
+            if (isNaN(b.sortValue)) return asc ? -1 : 1;
             return (a.sortValue - b.sortValue) * dirModifier;
         }
-        // String comparison
-        return a.sortValue.localeCompare(b.sortValue) * dirModifier;
+        return String(a.sortValue).localeCompare(String(b.sortValue)) * dirModifier;
     });
 
     // console.log(`DEBUG: First 3 rows after sorting:`, rowPairs.slice(0, 3).map(p => ({ sortValue: p.sortValue, text: p.row.cells[column]?.textContent.trim() })));
