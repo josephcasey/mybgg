@@ -428,7 +428,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 <td class="hero-name" style="${tdCellStyles}" 
                     onmouseover="showHeroDetail('${heroModalId}');"
                     onmouseout="hideHeroDetail('${heroModalId}', event);">
-                    ${heroNameDisplay}
+                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.55); text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${heroNameDisplay}</span>
                 </td>
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
