@@ -26,6 +26,48 @@ def main(args):
     num_plays = len(play_data)
     print(f"Imported {num_plays} Marvel Champions plays from boardgamegeek.")
 
+    # Extract and save hero names
+    all_hero_names = set()
+    # Define aspect roots for fuzzy matching
+    aspect_roots = ["Aggress", "Agres", "Leader", "Protect", "Protectio", "Justi", "Pool"]
+
+    for play in play_data:
+        hero_name = getattr(play, 'hero', None)
+        if hero_name:
+            name_to_process = str(hero_name).strip()
+
+            if name_to_process.startswith("Team 1 - "):
+                name_to_process = name_to_process[len("Team 1 - "):].strip()
+            elif name_to_process.startswith("Team: "):
+                name_to_process = name_to_process[len("Team: "):].strip()
+
+            words = name_to_process.split()
+            if words:
+                # Check if the last word starts with any of the aspect roots
+                last_word = words[-1]
+                aspect_found = False
+                for root in aspect_roots:
+                    if last_word.startswith(root):
+                        words.pop() # Remove the aspect
+                        aspect_found = True
+                        break
+                
+                # If an aspect was removed and the new last word is "CC", remove it too
+                if aspect_found and words and words[-1] == "CC":
+                    words.pop()
+            
+            cleaned_name = " ".join(words).strip()
+
+            if cleaned_name and '/' not in cleaned_name and '／' not in cleaned_name:
+                all_hero_names.add(cleaned_name)
+    
+    if all_hero_names:
+        with open("cached_hero_names.json", "w") as f:
+            json.dump(list(all_hero_names), f, indent=2)
+        print(f"Saved {len(all_hero_names)} unique hero names to cached_hero_names.json")
+    else:
+        print("No hero names found to cache.")
+
     if not len(play_data):
         assert False, "No plays imported, is the boardgamegeek part of config.json correctly set?"
 
