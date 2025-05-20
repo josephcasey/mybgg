@@ -359,17 +359,60 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
     sorted.forEach((hero, index) => {
         const safeHeroName = hero.name.replace(/[^a-zA-Z0-9]/g, '');
         const heroModalId = `hero-detail-${index}-${safeHeroName}`;
-        let heroNameDisplay = escapeHTML(hero.name);
-        
-        const baseTargetHeroName = "Shadowcat";
-        const heroNameIsString = typeof hero.name === 'string';
-        const heroNameStartsWithTarget = heroNameIsString && hero.name.startsWith(baseTargetHeroName);
+        let heroNameDisplay = escapeHTML(hero.name); // Hero name text
 
-        if (heroNameIsString && heroNameStartsWithTarget) { 
-            if (heroImageData && heroImageData[baseTargetHeroName] && heroImageData[baseTargetHeroName].image) {
-                const imageUrl = escapeHTML(heroImageData[baseTargetHeroName].image);
-                heroNameDisplay += ` <img src="${imageUrl}" alt="${escapeHTML(baseTargetHeroName)}" style="max-height: 20px; max-width: 30px; vertical-align: middle; margin-left: 5px; border-radius: 3px;">`;
+        // --- MODIFICATION START --- (Aspect removal logic - already present)
+        let heroNameForImageLookup = hero.name;
+        const aspects = ["Aggression", "Leadership", "Protection", "Justice"];
+        for (const aspect of aspects) {
+            if (heroNameForImageLookup.endsWith(aspect)) {
+                heroNameForImageLookup = heroNameForImageLookup.substring(0, heroNameForImageLookup.length - aspect.length).trim();
+                break; 
             }
+        }
+        // --- MODIFICATION END ---
+
+        const heroNameWithAspect = hero.name; 
+        let matchedKeyFromImageData = null;
+
+        // --- BEGIN DEBUG LOGGING ---
+        // console.log(`Processing hero from stats: "${heroNameWithAspect}"`);
+        // if (index === 0 && heroImageData) {
+        //     console.log('heroImageData (first hero log):', heroImageData);
+        // }
+        // --- END DEBUG LOGGING ---
+
+        if (heroImageData) {
+            let longestMatchLength = 0;
+            for (const keyInImageData in heroImageData) {
+                // Use heroNameForImageLookup for matching
+                if (heroNameForImageLookup.startsWith(keyInImageData)) { 
+                    if (keyInImageData.length > longestMatchLength) {
+                        longestMatchLength = keyInImageData.length;
+                        matchedKeyFromImageData = keyInImageData;
+                    }
+                }
+            }
+        }
+
+        let tdCellStyles = "position: relative; cursor: pointer; line-height: 2.2em; min-height: 3.4em;"; // Base styles for the TD, now including min-height
+
+        if (matchedKeyFromImageData) {
+            if (heroImageData[matchedKeyFromImageData] && heroImageData[matchedKeyFromImageData].image) {
+                const imageUrl = escapeHTML(heroImageData[matchedKeyFromImageData].image);
+                // Modify background image styles to fill the cell width (cover) and position with a percentage
+                tdCellStyles += ` background-image: url('${imageUrl}'); background-repeat: no-repeat; background-size: cover; background-position: center 40%;`;
+            } else {
+                console.log(`No image property or null image for matched key "${matchedKeyFromImageData}" (from hero "${heroNameForImageLookup}") in heroImageData. Entry:`, heroImageData[matchedKeyFromImageData]);
+            }
+        } else {
+            console.log(`No matching key found in heroImageData for "${heroNameForImageLookup}".`);
+            if (!heroImageData) {
+                console.log(`heroImageData is null or undefined when checking for "${heroNameForImageLookup}"`);
+            }
+            // else if (Object.keys(heroImageData).length > 0) {
+                // console.log(`Available heroImageData keys:`, Object.keys(heroImageData)); 
+            // } // This console log can be very verbose, keeping it commented.
         }
 
         // Highlight last played if within last month
@@ -382,7 +425,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
 
         tableRowsHtml += `
             <tr class="hero-row">
-                <td class="hero-name" style="position: relative; cursor: pointer;" 
+                <td class="hero-name" style="${tdCellStyles}" 
                     onmouseover="showHeroDetail('${heroModalId}');"
                     onmouseout="hideHeroDetail('${heroModalId}', event);">
                     ${heroNameDisplay}
