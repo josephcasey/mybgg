@@ -359,10 +359,11 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
     sorted.forEach((hero, index) => {
         const safeHeroName = hero.name.replace(/[^a-zA-Z0-9]/g, '');
         const heroModalId = `hero-detail-${index}-${safeHeroName}`;
-        let heroNameDisplay = escapeHTML(hero.name); // Hero name text
 
         // --- MODIFICATION START --- (Aspect removal and alias resolution logic)
         let heroNameForImageLookup = hero.name;
+        let heroNameForDisplay = hero.name;
+        let detectedAspect = null;
         const originalHeroName = hero.name; // Store original for debugging
         
         // First apply hero aliases to handle nicknames
@@ -377,6 +378,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
         if (heroAliases[heroNameForImageLookup]) {
             // console.log(`ALIAS: Exact match "${heroNameForImageLookup}" -> "${heroAliases[heroNameForImageLookup]}"`);
             heroNameForImageLookup = heroAliases[heroNameForImageLookup];
+            heroNameForDisplay = heroAliases[heroNameForDisplay];
         } else {
             // Check for partial matches (nickname followed by aspect or other text)
             for (const nickname in heroAliases) {
@@ -384,19 +386,69 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                     // Replace the nickname part while keeping any suffix
                     console.log(`✓ Alias resolved: "${heroNameForImageLookup}" → "${heroNameForImageLookup.replace(nickname, heroAliases[nickname])}"`);
                     heroNameForImageLookup = heroNameForImageLookup.replace(nickname, heroAliases[nickname]);
+                    heroNameForDisplay = heroNameForDisplay.replace(nickname, heroAliases[nickname]);
                     break;
                 }
             }
         }
         
-        // Then strip aspects
-        const aspects = ["Aggression", "Leadership", "Protection", "Justice"];
+        // Then strip aspects and detect which one was found (with fuzzy matching)
+        const aspects = [
+            { name: "Aggression", keywords: ["aggression", "agg", "aggressive", "aggressi", "agression"] },
+            { name: "Leadership", keywords: ["leadership", "lead", "leader", "leaders", "leadersh"] },
+            { name: "Protection", keywords: ["protection", "protec", "protect", "protectio", "protecti"] },
+            { name: "Justice", keywords: ["justice", "just", "justicia", "justic", "justi"] }
+        ];
+        
+        // First try exact matches
         for (const aspect of aspects) {
-            if (heroNameForImageLookup.endsWith(aspect)) {
+            if (heroNameForImageLookup.endsWith(aspect.name)) {
+                detectedAspect = aspect.name;
                 const beforeAspectStrip = heroNameForImageLookup;
-                heroNameForImageLookup = heroNameForImageLookup.substring(0, heroNameForImageLookup.length - aspect.length).trim();
+                heroNameForImageLookup = heroNameForImageLookup.substring(0, heroNameForImageLookup.length - aspect.name.length).trim();
+                heroNameForDisplay = heroNameForDisplay.substring(0, heroNameForDisplay.length - aspect.name.length).trim();
                 // console.log(`ASPECT: "${beforeAspectStrip}" -> "${heroNameForImageLookup}"`);
                 break; 
+            }
+        }
+        
+        // If no exact match, try fuzzy matching
+        if (!detectedAspect) {
+            for (const aspect of aspects) {
+                for (const keyword of aspect.keywords) {
+                    // Check if hero name ends with this keyword (case insensitive)
+                    const heroLower = heroNameForImageLookup.toLowerCase();
+                    if (heroLower.endsWith(keyword.toLowerCase())) {
+                        detectedAspect = aspect.name;
+                        const beforeAspectStrip = heroNameForImageLookup;
+                        // Remove the keyword from the end
+                        const keywordLength = keyword.length;
+                        heroNameForImageLookup = heroNameForImageLookup.substring(0, heroNameForImageLookup.length - keywordLength).trim();
+                        heroNameForDisplay = heroNameForDisplay.substring(0, heroNameForDisplay.length - keywordLength).trim();
+                        console.log(`FUZZY ASPECT MATCH: "${beforeAspectStrip}" matched "${keyword}" -> "${aspect.name}" -> cleaned: "${heroNameForImageLookup}"`);
+                        break;
+                    }
+                }
+                if (detectedAspect) break; // Exit outer loop if we found a match
+            }
+        }
+        
+        // Determine aspect color for plays cell
+        let aspectColor = 'transparent'; // Default no background
+        if (detectedAspect) {
+            switch (detectedAspect) {
+                case 'Aggression':
+                    aspectColor = '#ffcccc'; // Light red
+                    break;
+                case 'Leadership':
+                    aspectColor = '#cce6ff'; // Light blue  
+                    break;
+                case 'Protection':
+                    aspectColor = '#ccffcc'; // Light green
+                    break;
+                case 'Justice':
+                    aspectColor = '#ffffcc'; // Light yellow
+                    break;
             }
         }
         
@@ -404,6 +456,9 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             console.log(`FINAL HERO NAME TRANSFORMATION: "${originalHeroName}" -> "${heroNameForImageLookup}"`);
         }
         // --- MODIFICATION END ---
+
+        // Now create the display name using the processed heroNameForDisplay
+        let heroNameDisplay = escapeHTML(heroNameForDisplay);
 
         const heroNameWithAspect = hero.name; 
         let matchedKeyFromImageData = null;
@@ -476,7 +531,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                     ${imageOverlayHtml}
                     <span style="font-weight: bold; color: rgba(255, 255, 255, 0.55); text-shadow: 1px 1px 2px rgba(0,0,0,0.7); position: relative; z-index: 2; pointer-events: none;">${heroNameDisplay}</span>
                 </td>
-                <td class="number-col">${hero.plays}</td>
+                <td class="number-col" style="background-color: ${aspectColor};">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
                 <td class="number-col">${hero.winRate}%</td>
                 <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
