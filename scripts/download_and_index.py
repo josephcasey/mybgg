@@ -28,36 +28,68 @@ def main(args):
 
     # Extract and save hero names
     all_hero_names = set()
-    # Define aspect roots for fuzzy matching
-    aspect_roots = ["Aggress", "Agres", "Leader", "Protect", "Protectio", "Justi", "Pool"]
+    # Define comprehensive aspect mappings for normalization
+    aspects = [
+        {"name": "Aggression", "keywords": ["aggression", "agg", "aggressive", "aggressi", "agression", "aggress", "agres"]},
+        {"name": "Leadership", "keywords": ["leadership", "lead", "leader", "leaders", "leadersh", "leader"]},
+        {"name": "Protection", "keywords": ["protection", "protec", "protect", "protectio", "protecti"]},
+        {"name": "Justice", "keywords": ["justice", "just", "justicia", "justic", "justi"]},
+        {"name": "Pool", "keywords": ["pool"]}  # Keep existing Pool aspect
+    ]
+
+    def normalize_aspect_in_hero_name(hero_name):
+        """
+        Normalize aspect contractions in hero names to canonical forms.
+        Returns (cleaned_hero_name, detected_aspect)
+        """
+        name_to_process = str(hero_name).strip()
+        detected_aspect = None
+
+        # Strip team prefixes
+        if name_to_process.startswith("Team 1 - "):
+            name_to_process = name_to_process[len("Team 1 - "):].strip()
+        elif name_to_process.startswith("Team: "):
+            name_to_process = name_to_process[len("Team: "):].strip()
+
+        # First try exact aspect name matches (case insensitive)
+        for aspect in aspects:
+            aspect_name = aspect["name"]
+            if name_to_process.lower().endswith(aspect_name.lower()):
+                detected_aspect = aspect_name
+                name_to_process = name_to_process[:-len(aspect_name)].strip()
+                break
+
+        # If no exact match, try fuzzy matching with keywords
+        if not detected_aspect:
+            for aspect in aspects:
+                for keyword in aspect["keywords"]:
+                    if name_to_process.lower().endswith(keyword.lower()):
+                        detected_aspect = aspect["name"]
+                        name_to_process = name_to_process[:-len(keyword)].strip()
+                        break
+                if detected_aspect:
+                    break
+
+        # Remove "CC" if it's the last word after aspect removal
+        words = name_to_process.split()
+        if words and words[-1] == "CC":
+            words.pop()
+            name_to_process = " ".join(words).strip()
+
+        return name_to_process, detected_aspect
 
     for play in play_data:
         hero_name = getattr(play, 'hero', None)
         if hero_name:
-            name_to_process = str(hero_name).strip()
-
-            if name_to_process.startswith("Team 1 - "):
-                name_to_process = name_to_process[len("Team 1 - "):].strip()
-            elif name_to_process.startswith("Team: "):
-                name_to_process = name_to_process[len("Team: "):].strip()
-
-            words = name_to_process.split()
-            if words:
-                # Check if the last word starts with any of the aspect roots
-                last_word = words[-1]
-                aspect_found = False
-                for root in aspect_roots:
-                    if last_word.startswith(root):
-                        words.pop() # Remove the aspect
-                        aspect_found = True
-                        break
-                
-                # If an aspect was removed and the new last word is "CC", remove it too
-                if aspect_found and words and words[-1] == "CC":
-                    words.pop()
+            cleaned_name, detected_aspect = normalize_aspect_in_hero_name(hero_name)
             
-            cleaned_name = " ".join(words).strip()
+            # If we detected an aspect, update the play object with normalized hero name
+            if detected_aspect and cleaned_name:
+                # Store the normalized hero name with canonical aspect
+                normalized_hero_name = f"{cleaned_name} {detected_aspect}"
+                setattr(play, 'hero', normalized_hero_name)
 
+            # Use cleaned name (without aspect) for the hero names cache
             if cleaned_name and '/' not in cleaned_name and '／' not in cleaned_name:
                 all_hero_names.add(cleaned_name)
     
