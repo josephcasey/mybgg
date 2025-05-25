@@ -361,14 +361,47 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
         const heroModalId = `hero-detail-${index}-${safeHeroName}`;
         let heroNameDisplay = escapeHTML(hero.name); // Hero name text
 
-        // --- MODIFICATION START --- (Aspect removal logic - already present)
+        // --- MODIFICATION START --- (Aspect removal and alias resolution logic)
         let heroNameForImageLookup = hero.name;
+        const originalHeroName = hero.name; // Store original for debugging
+        
+        // First apply hero aliases to handle nicknames
+        const heroAliases = {
+            "Dr. Strange": "Doctor Strange",
+            "Dr Strange": "Doctor Strange", 
+            "Spidey": "Spider-Man",
+            "Wolvie": "Wolverine"
+        };
+        
+        // Check for exact matches first
+        if (heroAliases[heroNameForImageLookup]) {
+            // console.log(`ALIAS: Exact match "${heroNameForImageLookup}" -> "${heroAliases[heroNameForImageLookup]}"`);
+            heroNameForImageLookup = heroAliases[heroNameForImageLookup];
+        } else {
+            // Check for partial matches (nickname followed by aspect or other text)
+            for (const nickname in heroAliases) {
+                if (heroNameForImageLookup.startsWith(nickname + " ")) {
+                    // Replace the nickname part while keeping any suffix
+                    console.log(`✓ Alias resolved: "${heroNameForImageLookup}" → "${heroNameForImageLookup.replace(nickname, heroAliases[nickname])}"`);
+                    heroNameForImageLookup = heroNameForImageLookup.replace(nickname, heroAliases[nickname]);
+                    break;
+                }
+            }
+        }
+        
+        // Then strip aspects
         const aspects = ["Aggression", "Leadership", "Protection", "Justice"];
         for (const aspect of aspects) {
             if (heroNameForImageLookup.endsWith(aspect)) {
+                const beforeAspectStrip = heroNameForImageLookup;
                 heroNameForImageLookup = heroNameForImageLookup.substring(0, heroNameForImageLookup.length - aspect.length).trim();
+                // console.log(`ASPECT: "${beforeAspectStrip}" -> "${heroNameForImageLookup}"`);
                 break; 
             }
+        }
+        
+        if (originalHeroName !== heroNameForImageLookup) {
+            console.log(`FINAL HERO NAME TRANSFORMATION: "${originalHeroName}" -> "${heroNameForImageLookup}"`);
         }
         // --- MODIFICATION END ---
 
@@ -1484,3 +1517,5 @@ document.addEventListener('DOMContentLoaded', function() {
     enableFastDateTooltips();
     // ...existing code...
 });
+
+// ...existing code...

@@ -26,7 +26,36 @@ def build_hero_to_url_map(hero_names_from_cache, browse_url="https://hallofheroe
     using a fuzzy matching score.
     """
     print(f"Building hero to URL map from {browse_url}...")
-    hero_to_url = {name: None for name in hero_names_from_cache}
+    
+    # Hero alias mapping to handle nicknames and variations
+    hero_aliases = {
+        "Dr. Strange": "Doctor Strange",
+        "Dr Strange": "Doctor Strange", 
+        "Spidey": "Spider-Man",
+        "Wolvie": "Wolverine"
+    }
+    
+    # Apply aliases to hero names (including partial matches for nicknames with aspects)
+    resolved_hero_names = []
+    for name in hero_names_from_cache:
+        resolved_name = name
+        
+        # Check for exact matches first
+        if name in hero_aliases:
+            resolved_name = hero_aliases[name]
+        else:
+            # Check for partial matches (nickname followed by aspect)
+            for nickname, proper_name in hero_aliases.items():
+                if name.startswith(nickname + " "):
+                    # Replace the nickname part while keeping any aspect suffix
+                    resolved_name = name.replace(nickname, proper_name, 1)
+                    break
+        
+        if resolved_name != name:
+            print(f"  Resolving alias: '{name}' -> '{resolved_name}'")
+        resolved_hero_names.append(resolved_name)
+    
+    hero_to_url = {name: None for name in resolved_hero_names}
     try:
         resp = requests.get(browse_url, timeout=15)
         resp.raise_for_status()
@@ -137,7 +166,7 @@ def build_hero_to_url_map(hero_names_from_cache, browse_url="https://hallofheroe
             print(f"Found {len(link_candidates)} potential hero page links for matching after filtering.")
 
 
-        for hero_name in hero_names_from_cache:
+        for hero_name in resolved_hero_names:
             hero_name_lower = hero_name.lower()
             hero_slug_form = hero_name_lower.replace(' ', '-').replace('.', '')
             hero_words_set = set(hero_name_lower.split())
@@ -182,7 +211,7 @@ def build_hero_to_url_map(hero_names_from_cache, browse_url="https://hallofheroe
                 print(f"  Could not map '{hero_name}' from browse page.")
         
         mapped_count = sum(1 for url in hero_to_url.values() if url is not None)
-        print(f"Finished building hero to URL map: {mapped_count}/{len(hero_names_from_cache)} heroes mapped.")
+        print(f"Finished building hero to URL map: {mapped_count}/{len(resolved_hero_names)} heroes mapped.")
                 
     except requests.exceptions.RequestException as e:
         print(f"Error fetching or parsing browse page {browse_url}: {e}")
