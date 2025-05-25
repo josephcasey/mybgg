@@ -500,7 +500,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                         background-image: url('${imageUrl}'); 
                         background-repeat: no-repeat; 
                         background-size: cover; 
-                        background-position: center 40%;
+                        background-position: center 18%;
                         cursor: pointer;
                         z-index: 1;
                     " 
@@ -537,14 +537,13 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
-                <td class="hero-name-bar" style="padding: 2px 8px; position: relative;">
-                    <div style="position:relative;height:8px;background:transparent;width:100%; z-index: 2; pointer-events: none;">
+                <td colspan="5">
+                    <div style="position:relative;height:8px;background:transparent;width:100%;">
                         <div style="height:8px;background:#b3c6ff;width:${(hero.plays / maxPlays) * 100}%;border-radius:4px;position:relative;">
                             <div style="height:8px;background:#3366cc;width:${(hero.plays > 0 ? (hero.wins / hero.plays) * 100 : 0)}%;border-radius:4px;"></div>
                         </div>
                     </div>
                 </td>
-                <td colspan="4"></td>
             </tr>
         `;
 
