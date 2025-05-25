@@ -534,7 +534,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             <tr class="hero-row">
                 <td class="hero-name" style="${tdCellStyles} padding: 8px;">
                     ${imageOverlayHtml}
-                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 8px; left: 8px; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 3px;">${heroNameDisplay}</span>
+                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 0; left: 0; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 0 3px 0 0;">${heroNameDisplay}</span>
                 </td>
                 <td class="number-col" style="background-color: ${aspectColor};">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
@@ -826,7 +826,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             <tr class="villain-row">
                 <td class="villain-name" style="${tdCellStyles} padding: 8px;">
                     ${imageOverlayHtml}
-                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 8px; left: 8px; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 3px;">${escapeHTML(villainNameForDisplay)}</span>
+                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 0; left: 0; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 0 3px 0 0;">${escapeHTML(villainNameForDisplay)}</span>
                 </td>
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
