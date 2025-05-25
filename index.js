@@ -428,13 +428,30 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             }
         }
 
-        let tdCellStyles = "position: relative; cursor: pointer; line-height: 2.2em; min-height: 3.4em;"; // Base styles for the TD, now including min-height
+        let tdCellStyles = "position: relative; line-height: 2.2em; min-height: 3.4em;"; // Base styles for the TD
+        let imageOverlayHtml = ''; // Will contain the hoverable image overlay
 
         if (matchedKeyFromImageData) {
             if (heroImageData[matchedKeyFromImageData] && heroImageData[matchedKeyFromImageData].image) {
                 const imageUrl = escapeHTML(heroImageData[matchedKeyFromImageData].image);
-                // Modify background image styles to fill the cell width (cover) and position with a percentage
-                tdCellStyles += ` background-image: url('${imageUrl}'); background-repeat: no-repeat; background-size: cover; background-position: center 40%;`;
+                // Create a hoverable overlay div that covers the entire cell
+                imageOverlayHtml = `
+                    <div style="
+                        position: absolute; 
+                        top: 0; 
+                        left: 0; 
+                        right: 0; 
+                        bottom: 0; 
+                        background-image: url('${imageUrl}'); 
+                        background-repeat: no-repeat; 
+                        background-size: cover; 
+                        background-position: center 40%;
+                        cursor: pointer;
+                        z-index: 1;
+                    " 
+                    onmouseover="showHeroDetail('${heroModalId}');"
+                    onmouseout="hideHeroDetail('${heroModalId}', event);">
+                    </div>`;
             } else {
                 console.log(`No image property or null image for matched key "${matchedKeyFromImageData}" (from hero "${heroNameForImageLookup}") in heroImageData. Entry:`, heroImageData[matchedKeyFromImageData]);
             }
@@ -443,9 +460,6 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             if (!heroImageData) {
                 console.log(`heroImageData is null or undefined when checking for "${heroNameForImageLookup}"`);
             }
-            // else if (Object.keys(heroImageData).length > 0) {
-                // console.log(`Available heroImageData keys:`, Object.keys(heroImageData)); 
-            // } // This console log can be very verbose, keeping it commented.
         }
 
         // Highlight last played if within last month
@@ -458,10 +472,9 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
 
         tableRowsHtml += `
             <tr class="hero-row">
-                <td class="hero-name" style="${tdCellStyles}" 
-                    onmouseover="showHeroDetail('${heroModalId}');"
-                    onmouseout="hideHeroDetail('${heroModalId}', event);">
-                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.55); text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">${heroNameDisplay}</span>
+                <td class="hero-name" style="${tdCellStyles} padding: 8px;">
+                    ${imageOverlayHtml}
+                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.55); text-shadow: 1px 1px 2px rgba(0,0,0,0.7); position: relative; z-index: 2; pointer-events: none;">${heroNameDisplay}</span>
                 </td>
                 <td class="number-col">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
@@ -469,13 +482,14 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
             </tr>
             <tr class="bar-row">
-                <td colspan="5">
-                    <div style="position:relative;height:8px;background:transparent;width:100%;">
+                <td class="hero-name-bar" style="padding: 2px 8px; position: relative;">
+                    <div style="position:relative;height:8px;background:transparent;width:100%; z-index: 2; pointer-events: none;">
                         <div style="height:8px;background:#b3c6ff;width:${(hero.plays / maxPlays) * 100}%;border-radius:4px;position:relative;">
                             <div style="height:8px;background:#3366cc;width:${(hero.plays > 0 ? (hero.wins / hero.plays) * 100 : 0)}%;border-radius:4px;"></div>
                         </div>
                     </div>
                 </td>
+                <td colspan="4"></td>
             </tr>
         `;
 
