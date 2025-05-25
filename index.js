@@ -35,6 +35,10 @@ let currentVillainSortState = {
 let heroImageData = {}; // To store hero image data
 let villainImageData = {}; // To store villain image data
 
+// Image sizing configuration
+const HERO_IMAGE_HEIGHT = 50; // Height in pixels for hero cards
+const VILLAIN_IMAGE_HEIGHT = 50; // Height in pixels for villain cards
+
 // Initialize a global map to manage table sort event handlers
 if (!window.tableSortHandlers) {
     window.tableSortHandlers = new Map();
@@ -484,7 +488,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             }
         }
 
-        let tdCellStyles = "position: relative; line-height: 2.2em; min-height: 3.4em;"; // Base styles for the TD
+        let tdCellStyles = `position: relative; height: ${HERO_IMAGE_HEIGHT}px; min-height: ${HERO_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle;`; // Base styles for the TD
         let imageOverlayHtml = ''; // Will contain the hoverable image overlay
 
         if (matchedKeyFromImageData) {
@@ -530,7 +534,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             <tr class="hero-row">
                 <td class="hero-name" style="${tdCellStyles} padding: 8px;">
                     ${imageOverlayHtml}
-                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.55); text-shadow: 1px 1px 2px rgba(0,0,0,0.7); position: relative; z-index: 2; pointer-events: none;">${heroNameDisplay}</span>
+                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 8px; left: 8px; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 3px;">${heroNameDisplay}</span>
                 </td>
                 <td class="number-col" style="background-color: ${aspectColor};">${hero.plays}</td>
                 <td class="number-col">${hero.wins}</td>
@@ -777,7 +781,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             }
         }
         
-        let tdCellStyles = "position: relative; line-height: 2.2em; min-height: 3.4em;";
+        let tdCellStyles = `position: relative; height: ${VILLAIN_IMAGE_HEIGHT}px; min-height: ${VILLAIN_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle;`;
         let imageOverlayHtml = '';
         
         if (matchedKeyFromImageData) {
@@ -793,8 +797,8 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                         bottom: 0; 
                         background-image: url('${imageUrl}');
                         background-repeat: no-repeat; 
-                        background-size: cover; 
-                        background-position: center 18%;
+                        background-size: 150% auto; 
+                        background-position: 55% 18%;
                         cursor: pointer;
                         z-index: 1;
                     " 
@@ -822,7 +826,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             <tr class="villain-row">
                 <td class="villain-name" style="${tdCellStyles} padding: 8px;">
                     ${imageOverlayHtml}
-                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.55); text-shadow: 1px 1px 2px rgba(0,0,0,0.7); position: relative; z-index: 2; pointer-events: none;">${escapeHTML(villainNameForDisplay)}</span>
+                    <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 8px; left: 8px; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 3px;">${escapeHTML(villainNameForDisplay)}</span>
                 </td>
                 <td class="number-col">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
