@@ -488,7 +488,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             }
         }
 
-        let tdCellStyles = `position: relative; height: ${HERO_IMAGE_HEIGHT}px; min-height: ${HERO_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle;`; // Base styles for the TD
+        let tdCellStyles = `position: relative; height: ${HERO_IMAGE_HEIGHT}px; min-height: ${HERO_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle; cursor: pointer;`; // Base styles for the TD
         let imageOverlayHtml = ''; // Will contain the hoverable image overlay
 
         if (matchedKeyFromImageData) {
@@ -508,6 +508,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                         background-position: center 18%;
                         cursor: pointer;
                         z-index: 1;
+                        pointer-events: none;
                     " 
                     onmouseover="showHeroDetail('${heroModalId}');"
                     onmouseout="hideHeroDetail('${heroModalId}', event);">
@@ -537,7 +538,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                     <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 0; left: 0; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 0 3px 0 0;">${heroNameDisplay}</span>
                 </td>
                 <td class="number-col" style="background-color: ${aspectColor};">${hero.plays}</td>
-                <td class="number-col">${hero.wins}</td>
+                <td class="number-col" style="cursor: pointer;" onclick="if(typeof window.handleHeroClick === 'function') window.handleHeroClick('${escapeHTML(hero.name).replace(/'/g, "\\'")}');">${hero.wins}</td>
                 <td class="number-col">${hero.winRate}%</td>
                 <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
             </tr>
@@ -781,7 +782,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             }
         }
         
-        let tdCellStyles = `position: relative; height: ${VILLAIN_IMAGE_HEIGHT}px; min-height: ${VILLAIN_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle;`;
+        let tdCellStyles = `position: relative; height: ${VILLAIN_IMAGE_HEIGHT}px; min-height: ${VILLAIN_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle; cursor: pointer;`;
         let imageOverlayHtml = '';
         
         if (matchedKeyFromImageData) {
@@ -801,6 +802,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                         background-position: 55% 18%;
                         cursor: pointer;
                         z-index: 1;
+                        pointer-events: none;
                     " 
                     onmouseover="showVillainDetail('${villainId}');"
                     onmouseout="hideVillainDetail('${villainId}', event);">
@@ -829,7 +831,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                     <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 0; left: 0; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 0 3px 0 0;">${escapeHTML(villainNameForDisplay)}</span>
                 </td>
                 <td class="number-col">${villain.plays}</td>
-                <td class="number-col">${villain.wins}</td>
+                <td class="number-col" style="cursor: pointer;" onclick="if(typeof window.handleVillainClick === 'function') window.handleVillainClick('${escapeHTML(villain.name).replace(/'/g, "\\'")}');">${villain.wins}</td>
                 <td class="number-col win-rate-col">${villain.winRate}%</td>
                 <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
             </tr>
@@ -1089,6 +1091,9 @@ function sortTableByColumn(table, column, asc = true, sortType = 'string') {
     
     console.log(`DEBUG: Table sort complete for column ${column}`);
 }
+
+// Make sortTableByColumn available globally for click handlers
+window.sortTableByColumn = sortTableByColumn;
 
 // Functions to show/hide hero detail modals
 function showHeroDetail(id) {
