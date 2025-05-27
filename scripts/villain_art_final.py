@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -145,7 +146,7 @@ def build_villain_to_url_map(villain_names_from_cache):
         for original_name in original_names:
             villain_url_map[original_name] = dedicated_url
             if dedicated_url:
-                print(f"✓ Mapped '{original_name}' -> '{normalized_name}' -> {dedicated_url}")
+                print(f"+ Mapped '{original_name}' to '{normalized_name}' at {dedicated_url}")
                 matched_count += 1
     
     print(f"Found dedicated pages for {matched_count}/{len(villain_names_from_cache)} villains")
@@ -324,6 +325,54 @@ def fallback_encounter_image(villain, encounter_urls):
     print(f"  -> FAILED: No suitable image found for '{normalized_villain}' in any of {len(encounter_urls)} encounter pages")
     return None, None
 
+def apply_manual_corrections(results):
+    """
+    Apply manual corrections for specific villain image URLs that were identified
+    as needing fixes during testing.
+    """
+    print("\n=== APPLYING MANUAL CORRECTIONS ===")
+    
+    corrections = {
+        "Drang 1/2": {
+            "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/d1.jpg",
+            "reason": "Found in encounter pack page",
+            "source_url": "https://hallofheroeslcg.com/galaxys-most-wanted-encounters-and-mods/"
+        },
+        "Marauders (Gotta Get Away) A": {
+            "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40105a.jpg",
+            "reason": "Found in encounter pack page",
+            "source_url": "https://hallofheroeslcg.com/sinister-motives/"
+        },
+        "Marauders (Morlock Seige) A": {
+            "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40070a.jpg",
+            "reason": "Found in encounter pack page",
+            "source_url": "https://hallofheroeslcg.com/sinister-motives/"
+        },
+        "Sinister 6": {
+            "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/s1-1.jpg",
+            "reason": "Found in encounter pack page",
+            "source_url": "https://hallofheroeslcg.com/sinister-motives/"
+        },
+        "Sinister 6 ": {  # Handle variant with trailing space
+            "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/s1-1.jpg",
+            "reason": "Found in encounter pack page",
+            "source_url": "https://hallofheroeslcg.com/sinister-motives/"
+        }
+    }
+    
+    corrections_applied = 0
+    for villain_name, correction_data in corrections.items():
+        if villain_name in results:
+            old_image = results[villain_name].get("image", "None")
+            results[villain_name] = correction_data
+            print(f"  + Corrected '{villain_name}': {old_image} to {correction_data['image']}")
+            corrections_applied += 1
+        else:
+            print(f"  ! Warning: '{villain_name}' not found in results to correct")
+    
+    print(f"Applied {corrections_applied} manual corrections")
+    return results
+
 def scrape_all_villain_images(villain_page_urls_map):
     """
     Scrape all villain images. Try dedicated pages first, then encounter pages.
@@ -421,6 +470,9 @@ if __name__ == "__main__":
 
     # Step 2: Scrape images using the new map
     villain_images_data = scrape_all_villain_images(villain_url_map)
+    
+    # Step 3: Apply manual corrections for known problematic villains
+    villain_images_data = apply_manual_corrections(villain_images_data)
     
     output_file = "../villain_images_final.json"
     with open(output_file, "w") as f:
