@@ -805,7 +805,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                         z-index: 1;
                         pointer-events: auto;
                     " 
-                    onmouseover="showVillainDetail('${villainId}');"
+                    onmouseover="showVillainDetail('${villainId}', event);"
                     onmouseout="hideVillainDetail('${villainId}', event);"
                     onclick="if(typeof window.handleVillainClick === 'function') window.handleVillainClick('${escapeHTML(villain.name).replace(/'/g, "\\'")}');">
                     </div>`;
@@ -1199,7 +1199,7 @@ function hideHeroDetail(id, event) {
 }
 
 // Functions to show/hide villain detail modals
-function showVillainDetail(id) {
+function showVillainDetail(id, event) {
     console.log(`SHOW_DETAIL: Showing villain detail for ID: ${id}`);
     const modal = document.getElementById(id);
     if (!modal) {
@@ -1283,6 +1283,73 @@ function showVillainDetail(id) {
                 </div>
             `;
             console.log(`SHOW_DETAIL: Emergency table rebuild for ${id} ("${villainName}") complete.`);
+        }
+    }
+    
+    // Position the modal to the left of the triggering element if event is provided
+    if (event && event.target) {
+        const triggerElement = event.target.closest('.villain-name') || event.target;
+        const triggerRect = triggerElement.getBoundingClientRect();
+        const modalContent = modal.querySelector('.villain-modal-content');
+        
+        if (modalContent) {
+            // Reset the transform to default position first
+            modalContent.style.transform = 'none'; // Remove the centering transform
+            
+            // Temporarily show modal to get accurate dimensions
+            modal.style.display = 'block';
+            modal.style.visibility = 'hidden'; // Hide visually but allow measurement
+            
+            // Get actual modal dimensions after rendering
+            const modalRect = modalContent.getBoundingClientRect();
+            const modalWidth = modalRect.width;
+            const modalHeight = modalRect.height;
+            
+            // Hide modal again before positioning
+            modal.style.visibility = 'visible';
+            modal.style.display = 'none';
+            
+            console.log(`DEBUG: Modal dimensions for ${id}: ${modalWidth}x${modalHeight}`);
+            
+            // Calculate horizontal position (to the left)
+            const leftPosition = triggerRect.left - modalWidth - 20; // 20px margin from trigger
+            const finalLeftPosition = Math.max(10, leftPosition);
+            
+            // Calculate optimal vertical position within viewport
+            const viewportHeight = window.innerHeight;
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Available viewport height (accounting for margins)
+            const availableHeight = viewportHeight - 20; // 10px margin top and bottom
+            
+            // If modal is taller than available viewport height, constrain it
+            let constrainedHeight = modalHeight;
+            if (modalHeight > availableHeight) {
+                constrainedHeight = availableHeight;
+                modalContent.style.maxHeight = `${constrainedHeight}px`;
+                modalContent.style.overflowY = 'auto';
+                console.log(`DEBUG: Modal ${id} height constrained from ${modalHeight}px to ${constrainedHeight}px`);
+            }
+            
+            // Try to center the modal vertically in the viewport
+            let optimalTop = scrollTop + (viewportHeight - constrainedHeight) / 2;
+            
+            // Ensure modal doesn't go off the top
+            optimalTop = Math.max(scrollTop + 10, optimalTop);
+            
+            // Ensure modal doesn't go off the bottom
+            const maxTop = scrollTop + viewportHeight - constrainedHeight - 10;
+            optimalTop = Math.min(optimalTop, maxTop);
+            
+            // Final safety check - if still not enough space, position at top of viewport
+            if (optimalTop < scrollTop + 10) {
+                optimalTop = scrollTop + 10;
+            }
+            
+            console.log(`DEBUG: Final positioning for ${id}: top=${optimalTop}px, left=${finalLeftPosition}px`);
+            
+            modalContent.style.top = `${optimalTop}px`;
+            modalContent.style.left = `${finalLeftPosition}px`;
         }
     }
     
