@@ -598,14 +598,14 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 padding: 15px;
                 box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
                 min-width: 350px;
-                max-width: 90%;
+                max-width: min(600px, 80vw);
                 max-height: 90%;
                 overflow: auto;
                 pointer-events: auto;
                 color: black;
             ">
                 <div class="hero-modal-header" style="background-color: #e0e8ff; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #0000aa; border-radius: 5px;">
-                    <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center;">VILLAINS FACED BY ${escapeHTML(hero.name).toUpperCase()}</h3>
+                    <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center; word-wrap: break-word; overflow-wrap: anywhere; white-space: normal; line-height: 1.3; max-width: 25ch; margin-left: auto; margin-right: auto; hyphens: auto;">VILLAINS FACED BY ${escapeHTML(hero.name).toUpperCase()}</h3>
                 </div>
                 <div class="hero-modal-body" style="padding: 10px; background-color: white;">
                     <div class="table-container">
@@ -891,14 +891,14 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                 padding: 15px;
                 box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
                 min-width: 350px;
-                max-width: 90%;
+                max-width: min(600px, 80vw);
                 max-height: 90%;
                 overflow: auto;
                 pointer-events: auto;
                 color: black;
             ">
                 <div class="villain-modal-header" style="background-color: #ffe0e0; padding: 10px; margin-bottom: 10px; border-bottom: 1px solid #990000; border-radius: 5px;">
-                     <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center;">HEROES FACED BY ${escapeHTML(villain.name).toUpperCase()}</h3>
+                     <h3 style="margin: 0; color: black; font-size: 18px; font-weight: bold; text-align: center; word-wrap: break-word; overflow-wrap: anywhere; white-space: normal; line-height: 1.3; max-width: 25ch; margin-left: auto; margin-right: auto; hyphens: auto;">HEROES FACED BY ${escapeHTML(villain.name).toUpperCase()}</h3>
                 </div>
                 <div class="villain-modal-body" style="padding: 10px; background-color: white;">
                     <div class="table-container">

@@ -20,6 +20,7 @@
         "editor.formatOnSave": false,
         "editor.minimap.enabled": false,
         "editor.wordWrap": "off",
-        "workbench.enableExperiments": false
+        "workbench.enableExperiments": false,
+        "chat.agent.maxRequests": 150
     }
 }
