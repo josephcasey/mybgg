@@ -35,6 +35,178 @@ let currentVillainSortState = {
 let heroImageData = {}; // To store hero image data
 let villainImageData = {}; // To store villain image data
 
+// Aspect overlay configuration
+const ASPECT_OVERLAY_ENABLED = true; // Toggle to enable/disable aspect overlays
+const OVERLAY_IMAGES_PATH = 'overlay_images/'; // Path to overlay images directory
+
+// Manual hero to aspect mapping (same as character_art.py)
+const HERO_ASPECT_MAPPING = {
+    'spider-man': 'aggression',
+    'captain america': 'leadership', 
+    'iron man': 'protection',
+    'black widow': 'justice',
+    'doctor strange': 'justice',
+    'hulk': 'aggression',
+    'she-hulk': 'aggression',
+    'thor': 'aggression',
+    'black panther': 'protection',
+    'captain marvel': 'leadership',
+    'ms. marvel': 'protection',
+    'hawkeye': 'leadership',
+    'ant-man': 'leadership',
+    'wasp': 'aggression',
+    'quicksilver': 'protection',
+    'scarlet witch': 'justice',
+    'groot': 'protection',
+    'rocket raccoon': 'aggression',
+    'star-lord': 'leadership',
+    'gamora': 'aggression',
+    'drax': 'protection',
+    'venom': 'justice',
+    'miles morales': 'justice',
+    'ghost-spider': 'justice',
+    'spider-woman': 'justice',
+    'wolverine': 'aggression',
+    'storm': 'leadership',
+    'colossus': 'protection',
+    'nightcrawler': 'aggression',
+    'shadowcat': 'aggression',
+    'cyclops': 'leadership',
+    'phoenix': 'aggression',
+    'rogue': 'protection',
+    'gambit': 'aggression',
+    'jubilee': 'aggression',
+    'cable': 'leadership',
+    'domino': 'leadership',
+    'deadpool': 'aggression',
+    'x-23': 'aggression',
+    'magik': 'justice',
+    'iceman': 'protection',
+    'angel': 'leadership',
+    'bishop': 'justice',
+    'psylocke': 'aggression',
+    'forge': 'leadership'
+};
+
+// Function to detect aspect from hero name
+function detectAspectFromName(heroName) {
+    const cleanName = heroName.toLowerCase().trim();
+    
+    // Strategy 1: Check if hero name contains aspect keywords
+    const aspectKeywords = {
+        'aggression': ['aggression', 'agg'],
+        'leadership': ['leadership', 'lead'],
+        'protection': ['protection', 'prot'],
+        'justice': ['justice', 'just']
+    };
+    
+    for (const [aspect, keywords] of Object.entries(aspectKeywords)) {
+        for (const keyword of keywords) {
+            if (cleanName.includes(keyword)) {
+                return aspect;
+            }
+        }
+    }
+    
+    // Strategy 2: Check manual hero-to-aspect mapping
+    if (HERO_ASPECT_MAPPING[cleanName]) {
+        return HERO_ASPECT_MAPPING[cleanName];
+    }
+    
+    // Strategy 3: Fallback - check if any words in hero name match mapping keys
+    const cleanWords = cleanName.replace('-', ' ').split();
+    for (const [mappedHero, aspect] of Object.entries(HERO_ASPECT_MAPPING)) {
+        const mappedWords = mappedHero.replace('-', ' ').split();
+        if (cleanWords.some(word => mappedWords.includes(word))) {
+            return aspect;
+        }
+    }
+    
+    return null;
+}
+
+// Function to get overlay image URL for a hero (synchronous version)
+function getOverlayImageUrl(heroName, originalImageUrl) {
+    if (!ASPECT_OVERLAY_ENABLED || !originalImageUrl) {
+        return originalImageUrl;
+    }
+    
+    const aspect = detectAspectFromName(heroName);
+    if (!aspect) {
+        console.log(`No aspect detected for ${heroName}, using original image`);
+        return originalImageUrl; // No aspect detected, use original
+    }
+    
+    // Extract base filename from original URL
+    const urlParts = originalImageUrl.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    const baseFilename = filename.split('.')[0];
+    
+    // Construct overlay image path
+    const overlayFilename = `${baseFilename}_${aspect}_overlay.jpg`;
+    const overlayUrl = `${OVERLAY_IMAGES_PATH}${overlayFilename}`;
+    
+    // Check if we've already verified this overlay exists
+    if (window.overlayImageCache && window.overlayImageCache[overlayUrl] !== undefined) {
+        const useOverlay = window.overlayImageCache[overlayUrl];
+        console.log(`${heroName} (${aspect}): ${useOverlay ? 'Using overlay' : 'Using original'} - ${useOverlay ? overlayUrl : originalImageUrl}`);
+        return useOverlay ? overlayUrl : originalImageUrl;
+    }
+    
+    // If not cached, return original for now (cache will be populated async)
+    console.log(`${heroName} (${aspect}): Cache not ready, using original - ${originalImageUrl}`);
+    return originalImageUrl;
+}
+
+// Helper function to check if an image exists
+function checkImageExists(imageUrl) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = imageUrl;
+    });
+}
+
+// Function to pre-cache overlay image availability
+async function cacheOverlayImages(heroData) {
+    console.log('Pre-caching overlay image availability...');
+    window.overlayImageCache = window.overlayImageCache || {};
+    
+    const checkPromises = [];
+    
+    Object.values(heroData).forEach(hero => {
+        if (hero.image) {
+            Object.keys(HERO_ASPECT_MAPPING).forEach(heroName => {
+                const aspect = HERO_ASPECT_MAPPING[heroName];
+                
+                // Extract base filename from original URL
+                const urlParts = hero.image.split('/');
+                const filename = urlParts[urlParts.length - 1];
+                const baseFilename = filename.split('.')[0];
+                
+                // Construct overlay image path
+                const overlayFilename = `${baseFilename}_${aspect}_overlay.jpg`;
+                const overlayUrl = `${OVERLAY_IMAGES_PATH}${overlayFilename}`;
+                
+                // Only check if not already cached
+                if (window.overlayImageCache[overlayUrl] === undefined) {
+                    const promise = checkImageExists(overlayUrl).then(exists => {
+                        window.overlayImageCache[overlayUrl] = exists;
+                        if (exists) {
+                            console.log(`✓ Overlay available: ${overlayFilename}`);
+                        }
+                    });
+                    checkPromises.push(promise);
+                }
+            });
+        }
+    });
+    
+    await Promise.all(checkPromises);
+    console.log(`Cached ${Object.keys(window.overlayImageCache).length} overlay image checks`);
+}
+
 // Image sizing configuration
 const HERO_IMAGE_HEIGHT = 50; // Height in pixels for hero cards
 const VILLAIN_IMAGE_HEIGHT = 50; // Height in pixels for villain cards
@@ -493,7 +665,10 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
 
         if (matchedKeyFromImageData) {
             if (heroImageData[matchedKeyFromImageData] && heroImageData[matchedKeyFromImageData].image) {
-                const imageUrl = escapeHTML(heroImageData[matchedKeyFromImageData].image);
+                const originalImageUrl = heroImageData[matchedKeyFromImageData].image;
+                const imageUrl = getOverlayImageUrl(heroNameForImageLookup, originalImageUrl);
+                const escapedImageUrl = escapeHTML(imageUrl);
+                
                 // Create a hoverable overlay div that covers the entire cell
                 imageOverlayHtml = `
                     <div style="
@@ -502,7 +677,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                         left: 0; 
                         right: 0; 
                         bottom: 0; 
-                        background-image: url('${imageUrl}'); 
+                        background-image: url('${escapedImageUrl}'); 
                         background-repeat: no-repeat; 
                         background-size: cover; 
                         background-position: center 18%;
@@ -1429,6 +1604,12 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Villain image data loaded successfully for in-row display.');
         console.log(`Loaded ${Object.keys(heroImageData).length} hero images and ${Object.keys(villainImageData).length} villain images`);
         
+        // Cache overlay images availability
+        return cacheOverlayImages(heroImageData).then(() => {
+            console.log('Overlay image caching completed');
+        });
+    })
+    .then(() => {
         // Now render the initial tables with image data available
         setTimeout(() => {
             const hits = search.helper?.lastResults?.hits || [];
