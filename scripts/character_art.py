@@ -6,7 +6,12 @@ import json
 from PIL import Image
 import io
 import os
+import tempfile
+import math
 from urllib.parse import urljoin, urlparse # Added urljoin and urlparse
+
+# OCR API configuration
+OCR_API_KEY = "K83990485088957"  # OCR.space API key
 
 BIG_BOX_URLS = [
     "https://hallofheroeslcg.com/core-set-2/",
@@ -293,13 +298,27 @@ def scrape_all_hero_images(hero_page_urls_map):
         
         final_reason = "; ".join(reason_parts)
         
-        # Structure the result with separate fields for first and second images
-        result_data = {
-            "image": img_urls[0] if len(img_urls) > 0 else None,
-            "image2": img_urls[1] if len(img_urls) > 1 else None,
-            "reason": final_reason,
-            "source_url": primary_attempt_url_for_record 
-        }
+        # Use OCR to determine hero vs alter-ego if we have multiple images
+        if len(img_urls) >= 2:
+            print(f"  -> Running OCR analysis for {hero}...")
+            ocr_result = determine_hero_vs_alter_ego_with_ocr(img_urls, hero)
+            
+            # Structure the result with OCR-determined assignments
+            result_data = {
+                "image": ocr_result['hero_image'],
+                "image2": ocr_result['alter_ego_image'],
+                "reason": final_reason + f" | OCR: {ocr_result['ocr_details']}",
+                "source_url": primary_attempt_url_for_record,
+                "ocr_confidence": ocr_result['ocr_confidence']
+            }
+        else:
+            # Structure the result with separate fields for first and second images (no OCR needed)
+            result_data = {
+                "image": img_urls[0] if len(img_urls) > 0 else None,
+                "image2": img_urls[1] if len(img_urls) > 1 else None,
+                "reason": final_reason,
+                "source_url": primary_attempt_url_for_record 
+            }
         
         results[hero] = result_data
         
@@ -409,6 +428,218 @@ def fallback_big_box_image(hero, hero_slug, big_box_urls):
             pass # Silently pass errors for an entire big box page
     print(f"  -> No fallback image found for '{hero}' after checking all big box pages.") # Keep this
     return None
+
+def crop_hero_text_region(image_url):
+    """
+    Download image and crop to the region where HERO/ALTER-EGO text typically appears.
+    Uses improved 3x wider crop region for better OCR accuracy.
+    
+    Args:
+        image_url (str): URL of the image to crop
+        
+    Returns:
+        str: Path to the cropped image file, or None if failed
+    """
+    try:
+        # Download the image
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Open image with PIL
+        image = Image.open(io.BytesIO(response.content))
+        width, height = image.size
+        
+        # Use improved cropping logic: 3x wider region
+        # Position: 65% from left, 55% from top
+        center_x = int(width * 0.65)
+        center_y = int(height * 0.55)
+        
+        # Calculate crop dimensions (3x wider than original)
+        crop_height = 150  # Fixed height
+        crop_width = 450   # 3x width for better text capture
+        
+        # Calculate crop box (left, top, right, bottom) centered on the target position
+        half_width = crop_width // 2
+        half_height = crop_height // 2
+        
+        left = max(0, center_x - half_width)
+        top = max(0, center_y - half_height)
+        right = min(width, center_x + half_width)
+        bottom = min(height, center_y + half_height)
+        
+        # Crop the image
+        cropped = image.crop((left, top, right, bottom))
+        
+        # Save to temporary file
+        temp_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+        cropped.save(temp_file.name, 'JPEG', quality=95)
+        temp_file.close()
+        
+        return temp_file.name
+        
+    except Exception as e:
+        print(f"    Error cropping image: {e}")
+        return None
+
+def check_image_for_hero_with_ocr(image_url):
+    """
+    Download, crop, and OCR an image to check for HERO text.
+    
+    Args:
+        image_url (str): The URL of the image to process
+        
+    Returns:
+        tuple: (contains_hero_boolean, extracted_text, cropped_file_path)
+    """
+    cropped_file = None
+    try:
+        # First, crop the image to focus on the hero text region
+        cropped_file = crop_hero_text_region(image_url)
+        if not cropped_file:
+            return False, None, None
+            
+        # Upload the cropped image for OCR
+        with open(cropped_file, 'rb') as f:
+            files = {'file': f}
+            payload = {
+                'apikey': OCR_API_KEY,
+                'language': 'eng',
+                'isOverlayRequired': 'false',
+                'OCREngine': '2'
+            }
+            
+            response = requests.post('https://api.ocr.space/parse/image', 
+                                   files=files, data=payload, timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('IsErroredOnProcessing', False):
+                    print(f"    OCR Error: {result.get('ErrorMessage', 'Unknown error')}")
+                    return False, None, cropped_file
+                else:
+                    text = result.get('ParsedResults', [{}])[0].get('ParsedText', '').strip()
+                    contains_hero = 'hero' in text.lower()
+                    return contains_hero, text, cropped_file
+            else:
+                print(f"    OCR API error: {response.status_code}")
+                return False, None, cropped_file
+                
+    except Exception as e:
+        print(f"    OCR processing error: {e}")
+        return False, None, cropped_file
+
+def determine_hero_vs_alter_ego_with_ocr(image_urls, hero_name):
+    """
+    Use OCR to determine which image is the hero card and which is the alter-ego card.
+    
+    Args:
+        image_urls (list): List of image URLs (typically 2 images)
+        hero_name (str): Name of the hero for logging
+        
+    Returns:
+        dict: {
+            'hero_image': URL of hero card,
+            'alter_ego_image': URL of alter-ego card,
+            'ocr_confidence': confidence level,
+            'ocr_details': detailed results
+        }
+    """
+    if len(image_urls) < 2:
+        # Fallback to URL pattern if only one image or can't OCR
+        return determine_hero_vs_alter_ego_by_pattern(image_urls, hero_name)
+    
+    print(f"  -> Using OCR to identify hero vs alter-ego for {hero_name}")
+    
+    ocr_results = []
+    temp_files = []
+    
+    try:
+        for i, url in enumerate(image_urls[:2], 1):
+            print(f"    Testing image {i}: {url}")
+            contains_hero, text, temp_file = check_image_for_hero_with_ocr(url)
+            
+            ocr_results.append({
+                'url': url,
+                'contains_hero': contains_hero,
+                'text': text[:50] + '...' if text and len(text) > 50 else text,
+                'image_index': i
+            })
+            
+            if temp_file:
+                temp_files.append(temp_file)
+            
+            # Small delay for API rate limiting
+            time.sleep(1)
+        
+        # Analyze results
+        hero_images = [r for r in ocr_results if r['contains_hero']]
+        alter_ego_images = [r for r in ocr_results if not r['contains_hero']]
+        
+        if len(hero_images) == 1 and len(alter_ego_images) == 1:
+            # Perfect case: found exactly one hero and one alter-ego
+            result = {
+                'hero_image': hero_images[0]['url'],
+                'alter_ego_image': alter_ego_images[0]['url'],
+                'ocr_confidence': 'high',
+                'ocr_details': f"OCR clearly identified hero (img {hero_images[0]['image_index']}) and alter-ego (img {alter_ego_images[0]['image_index']})"
+            }
+            print(f"    ✓ OCR Success: Hero=img{hero_images[0]['image_index']}, Alter-ego=img{alter_ego_images[0]['image_index']}")
+        else:
+            # Fallback to URL pattern
+            print(f"    → OCR inconclusive (hero texts found: {len(hero_images)}), using URL pattern fallback")
+            pattern_result = determine_hero_vs_alter_ego_by_pattern(image_urls, hero_name)
+            pattern_result['ocr_confidence'] = 'low'
+            pattern_result['ocr_details'] = f"OCR found {len(hero_images)} hero texts, fell back to URL pattern"
+            result = pattern_result
+    
+    finally:
+        # Clean up temporary files
+        for temp_file in temp_files:
+            try:
+                os.unlink(temp_file)
+            except:
+                pass
+    
+    return result
+
+def determine_hero_vs_alter_ego_by_pattern(image_urls, hero_name):
+    """
+    Fallback method: Use URL patterns to determine hero vs alter-ego cards.
+    Based on the convention that 'a.jpg' files are typically hero cards.
+    """
+    if len(image_urls) < 2:
+        return {
+            'hero_image': image_urls[0] if image_urls else None,
+            'alter_ego_image': None,
+            'ocr_confidence': 'pattern',
+            'ocr_details': 'Only one image available, assumed to be hero'
+        }
+    
+    # Check URL patterns
+    url1, url2 = image_urls[0], image_urls[1]
+    
+    if url1.endswith('a.jpg') and url2.endswith('b.jpg'):
+        return {
+            'hero_image': url1,
+            'alter_ego_image': url2,
+            'ocr_confidence': 'pattern',
+            'ocr_details': 'Used URL pattern: a.jpg=hero, b.jpg=alter-ego'
+        }
+    elif url1.endswith('b.jpg') and url2.endswith('a.jpg'):
+        return {
+            'hero_image': url2,
+            'alter_ego_image': url1,
+            'ocr_confidence': 'pattern',
+            'ocr_details': 'Used URL pattern: a.jpg=hero, b.jpg=alter-ego (swapped)'
+        }
+    else:
+        # Default: assume first is hero, second is alter-ego
+        return {
+            'hero_image': url1,
+            'alter_ego_image': url2,
+            'ocr_confidence': 'pattern',
+            'ocr_details': 'Used default assumption: first=hero, second=alter-ego'
+        }
 
 if __name__ == "__main__":
     cached_hero_names_path = "cached_hero_names.json" # Assumes script run from project root
