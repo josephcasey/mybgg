@@ -8,6 +8,7 @@ import io
 import os
 import tempfile
 import math
+import argparse
 from urllib.parse import urljoin, urlparse # Added urljoin and urlparse
 
 # OCR API configuration
@@ -288,11 +289,11 @@ def scrape_all_hero_images(hero_page_urls_map):
             print(f"  -> {fallback_reason_prefix}. Attempting fallback for {hero} on big box pages...")
             
             hero_slug_for_fallback = hero.lower().replace(' ', '-').replace('.', '')
-            fallback_img_url = fallback_big_box_image(hero, hero_slug_for_fallback, BIG_BOX_URLS)
+            fallback_img_urls = fallback_big_box_images(hero, hero_slug_for_fallback, BIG_BOX_URLS)
             
-            if fallback_img_url:
-                img_urls = [fallback_img_url]  # Convert single fallback URL to list
-                reason_parts.append("Fallback: Found image in big box page")
+            if fallback_img_urls:
+                img_urls = fallback_img_urls  # Use all fallback images found
+                reason_parts.append(f"Fallback: Found {len(fallback_img_urls)} images in big box pages")
             else:
                 reason_parts.append("Fallback: No image found in big box pages either")
         
@@ -331,7 +332,12 @@ def extract_slug(url):
     """Extract the last non-empty part of the URL as the slug."""
     return url.rstrip('/').split('/')[-1].lower()
 
-def fallback_big_box_image(hero, hero_slug, big_box_urls):
+def fallback_big_box_images(hero, hero_slug, big_box_urls):
+    """
+    Search big box URLs for hero images if not found on the individual hero page.
+    Now returns ALL suitable images found (both hero and alter-ego potentially).
+    Returns: list of image URLs or empty list
+    """
     print(f"  -> Initiating fallback search for '{hero}' on big box pages...") # Keep this high-level
     hero_norm = re.sub(r'[^a-z0-9]', '', hero.lower())
     
@@ -340,6 +346,8 @@ def fallback_big_box_image(hero, hero_slug, big_box_urls):
     # Let's use a range like 0.6 to 0.9
     MIN_ASPECT_RATIO = 0.6
     MAX_ASPECT_RATIO = 0.9
+
+    found_images = []  # Collect ALL suitable images instead of returning first match
 
     for url_item in big_box_urls:
         # Removed: print(f"[FALLBACK DEBUG]   Checking URL: {url_item}")
@@ -403,7 +411,7 @@ def fallback_big_box_image(hero, hero_slug, big_box_urls):
 
                                 if MIN_ASPECT_RATIO <= aspect_ratio <= MAX_ASPECT_RATIO:
                                     print(f"    -> Fallback image found for '{hero}' with suitable aspect ratio: {img_url}") # Keep this
-                                    return img_url
+                                    found_images.append(img_url)  # Collect instead of immediately returning
                                 # else:
                                     # Removed: print(f"[FALLBACK RATIO DEBUG]         Aspect ratio {aspect_ratio:.3f} out of range ({MIN_ASPECT_RATIO}-{MAX_ASPECT_RATIO}).")
                             
@@ -426,8 +434,13 @@ def fallback_big_box_image(hero, hero_slug, big_box_urls):
         except Exception: # Simplified exception logging
             # Removed: print(f"[FALLBACK DEBUG]     Fallback error for {hero} on {url_item}: {e}")
             pass # Silently pass errors for an entire big box page
-    print(f"  -> No fallback image found for '{hero}' after checking all big box pages.") # Keep this
-    return None
+    
+    if found_images:
+        print(f"  -> Found {len(found_images)} fallback images for '{hero}' on big box pages.")
+        return found_images
+    else:
+        print(f"  -> No fallback images found for '{hero}' after checking all big box pages.") # Keep this
+        return []
 
 def crop_hero_text_region(image_url):
     """
@@ -641,8 +654,51 @@ def determine_hero_vs_alter_ego_by_pattern(image_urls, hero_name):
             'ocr_details': 'Used default assumption: first=hero, second=alter-ego'
         }
 
+def parse_arguments():
+    """Parse command line arguments for the script"""
+    parser = argparse.ArgumentParser(description='Scrape Marvel Champions character art from Hall of Heroes')
+    parser.add_argument('--mode', choices=['full', 'update'], default='full',
+                       help='full: Process all heroes (default), update: Only process heroes with single images to find missing alter-ego cards')
+    return parser.parse_args()
+
+def load_existing_hero_data(output_file):
+    """Load existing hero_images.json if it exists"""
+    try:
+        with open(output_file, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"No existing {output_file} found. Running in full mode.")
+        return {}
+    except json.JSONDecodeError:
+        print(f"Error reading {output_file}. Running in full mode.")
+        return {}
+
+def filter_heroes_for_update_mode(hero_names, existing_data):
+    """Filter heroes to only those with single images (missing alter-ego cards)"""
+    heroes_needing_update = []
+    
+    for hero_name in hero_names:
+        if hero_name in existing_data:
+            hero_data = existing_data[hero_name]
+            # Check if hero has primary image but missing secondary image
+            if hero_data.get('image') and not hero_data.get('image2'):
+                heroes_needing_update.append(hero_name)
+                print(f"  -> {hero_name}: Has primary image, missing alter-ego card")
+        else:
+            # Hero not in existing data at all
+            heroes_needing_update.append(hero_name)
+            print(f"  -> {hero_name}: Not in existing data")
+    
+    return heroes_needing_update
+
 if __name__ == "__main__":
-    cached_hero_names_path = "cached_hero_names.json" # Assumes script run from project root
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    cached_hero_names_path = "../cached_hero_names.json" # Path from scripts directory
+    output_file = "../hero_images.json"
+    
+    # Load hero names
     hero_names = []
     try:
         with open(cached_hero_names_path, "r") as f:
@@ -662,13 +718,46 @@ if __name__ == "__main__":
         print("No hero names to process. Exiting.")
         exit()
 
+    # Load existing data if in update mode
+    existing_data = {}
+    if args.mode == 'update':
+        print(f"\n=== UPDATE MODE ===")
+        print("Loading existing hero data...")
+        existing_data = load_existing_hero_data(output_file)
+        
+        # Filter heroes to only those needing updates
+        print(f"Filtering heroes for update mode...")
+        heroes_to_process = filter_heroes_for_update_mode(hero_names, existing_data)
+        
+        if not heroes_to_process:
+            print("No heroes need updating. All heroes already have both images or don't exist.")
+            exit()
+        
+        print(f"\nFound {len(heroes_to_process)} heroes needing updates:")
+        for hero in heroes_to_process:
+            print(f"  - {hero}")
+        print()
+    else:
+        print(f"\n=== FULL MODE ===")
+        print("Processing all heroes...")
+        heroes_to_process = hero_names
+
     # Step 1: Build the map from hero names to their URLs on the browse page
-    hero_url_map = build_hero_to_url_map(hero_names)
+    hero_url_map = build_hero_to_url_map(heroes_to_process)
 
     # Step 2: Scrape images using the new map
     hero_images_data = scrape_all_hero_images(hero_url_map)
     
-    output_file = "hero_images.json"
+    # Step 3: Merge with existing data if in update mode
+    if args.mode == 'update' and existing_data:
+        print(f"\nMerging new data with existing data...")
+        # Start with existing data
+        final_data = existing_data.copy()
+        # Update with new results
+        final_data.update(hero_images_data)
+        hero_images_data = final_data
+
+    # Step 4: Save results
     with open(output_file, "w") as f:
         json.dump(hero_images_data, f, indent=2)
     print(f"Done. Results saved to {output_file}")
@@ -681,7 +770,10 @@ if __name__ == "__main__":
     unmatched_heroes = [k for k, v in hero_images_data.items() if not v["image"]]
     
     print(f"\\n[SUMMARY]")
-    print(f"Total heroes processed: {total}")
+    print(f"Mode: {args.mode.upper()}")
+    if args.mode == 'update':
+        print(f"Heroes processed in this update: {len(heroes_to_process)}")
+    print(f"Total heroes in dataset: {total}")
     print(f"Heroes with primary images found: {heroes_with_primary_image}")
     print(f"Heroes with secondary images found: {heroes_with_secondary_image}")
     print(f"Heroes with both images found: {heroes_with_both_images}")
