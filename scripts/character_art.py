@@ -219,60 +219,66 @@ def build_hero_to_url_map(hero_names_from_cache, browse_url="https://hallofheroe
         print(f"An unexpected error occurred in build_hero_to_url_map: {e}")
     return hero_to_url
 
-def get_hero_image_url(hero_name, hero_url):
-    """Scrape the hero's page and try to find the main hero card art image URL from the first item in a tiled gallery."""
+def get_hero_image_urls(hero_name, hero_url):
+    """Scrape the hero's page and try to find the first and second hero card art image URLs from a tiled gallery."""
     try:
         resp = requests.get(hero_url, timeout=10)
         resp.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
         soup = BeautifulSoup(resp.text, "html.parser")
         
+        image_urls = []
+        
         # Find the tiled gallery div
         gallery = soup.find("div", class_="tiled-gallery__gallery")
         if gallery:
-            # Find the first figure element with class 'tiled-gallery__item' within the gallery
-            first_item = gallery.find("figure", class_="tiled-gallery__item")
-            if first_item:
-                # Find the img tag within the first item
-                img_tag = first_item.find("img")
+            # Find the first two figure elements with class 'tiled-gallery__item' within the gallery
+            gallery_items = gallery.find_all("figure", class_="tiled-gallery__item", limit=2)
+            
+            for item in gallery_items:
+                # Find the img tag within each item
+                img_tag = item.find("img")
                 if img_tag:
                     # Prioritize 'data-orig-file' as it often holds the full-resolution image
                     if img_tag.get("data-orig-file"):
-                        return img_tag["data-orig-file"]
+                        image_urls.append(img_tag["data-orig-file"])
                     # Fallback to 'src' if 'data-orig-file' is not present
                     elif img_tag.get("src"):
-                        return img_tag["src"]
+                        image_urls.append(img_tag["src"])
+        
+        return image_urls
         
     except requests.exceptions.RequestException as e:
         print(f"Error fetching URL for {hero_name} ({hero_url}): {e}")
     except Exception as e:
         # Catch any other exceptions during parsing or processing
         print(f"An unexpected error occurred while processing {hero_name} ({hero_url}): {e}")
-    return None
+    return []
 
 def scrape_all_hero_images(hero_page_urls_map):
     """
     Scrape all hero pages based on the mapped URLs.
     Falls back to big box pages if necessary.
-    Returns a dict of hero name -> {image_url, reason, source_url}.
+    Returns a dict of hero name -> {image, image2, reason, source_url}.
     """
     results = {}
     for hero, mapped_hero_page_url in hero_page_urls_map.items():
         print(f"Processing {hero} (Mapped URL from browse: {mapped_hero_page_url}) ...")
-        img_url = None
+        img_urls = []
         reason_parts = []
         
         primary_attempt_url_for_record = mapped_hero_page_url if mapped_hero_page_url else "N/A (no browse page match)"
 
         if mapped_hero_page_url:
-            img_url = get_hero_image_url(hero, mapped_hero_page_url)
-            if img_url:
-                reason_parts.append("Fetched from mapped hero page gallery")
+            img_urls = get_hero_image_urls(hero, mapped_hero_page_url)
+            if img_urls:
+                reason_parts.append(f"Fetched {len(img_urls)} image(s) from mapped hero page gallery")
             else:
                 reason_parts.append("Attempted mapped hero page, not found in gallery")
         else:
             reason_parts.append("No specific hero page URL found on /browse/")
 
-        if not img_url:
+        # If no images found, try fallback (keeping original fallback logic for first image)
+        if not img_urls:
             fallback_reason_prefix = reason_parts[-1] if reason_parts else "Initial attempt failed"
             print(f"  -> {fallback_reason_prefix}. Attempting fallback for {hero} on big box pages...")
             
@@ -280,18 +286,25 @@ def scrape_all_hero_images(hero_page_urls_map):
             fallback_img_url = fallback_big_box_image(hero, hero_slug_for_fallback, BIG_BOX_URLS)
             
             if fallback_img_url:
-                img_url = fallback_img_url
+                img_urls = [fallback_img_url]  # Convert single fallback URL to list
                 reason_parts.append("Fallback: Found image in big box page")
             else:
                 reason_parts.append("Fallback: No image found in big box pages either")
         
         final_reason = "; ".join(reason_parts)
-        results[hero] = {
-            "image": img_url,
+        
+        # Structure the result with separate fields for first and second images
+        result_data = {
+            "image": img_urls[0] if len(img_urls) > 0 else None,
+            "image2": img_urls[1] if len(img_urls) > 1 else None,
             "reason": final_reason,
             "source_url": primary_attempt_url_for_record 
         }
-        print(f"  -> Result for {hero}: {'Found' if img_url else 'Not found'} (Reason: {final_reason})")
+        
+        results[hero] = result_data
+        
+        image_count_msg = f"Found {len(img_urls)} image(s)" if img_urls else "Not found"
+        print(f"  -> Result for {hero}: {image_count_msg} (Reason: {final_reason})")
         time.sleep(0.25) # Slightly reduced sleep
     return results
 
@@ -431,12 +444,16 @@ if __name__ == "__main__":
 
     # Summary
     total = len(hero_images_data)
-    matched = sum(1 for v in hero_images_data.values() if v["image"])
+    heroes_with_primary_image = sum(1 for v in hero_images_data.values() if v["image"])
+    heroes_with_secondary_image = sum(1 for v in hero_images_data.values() if v["image2"])
+    heroes_with_both_images = sum(1 for v in hero_images_data.values() if v["image"] and v["image2"])
     unmatched_heroes = [k for k, v in hero_images_data.items() if not v["image"]]
     
     print(f"\\n[SUMMARY]")
     print(f"Total heroes processed: {total}")
-    print(f"Heroes with images found: {matched}")
-    print(f"Heroes without images: {len(unmatched_heroes)}")
+    print(f"Heroes with primary images found: {heroes_with_primary_image}")
+    print(f"Heroes with secondary images found: {heroes_with_secondary_image}")
+    print(f"Heroes with both images found: {heroes_with_both_images}")
+    print(f"Heroes without any images: {len(unmatched_heroes)}")
     if unmatched_heroes:
         print(f"Unmatched hero names: {', '.join(unmatched_heroes)}")
