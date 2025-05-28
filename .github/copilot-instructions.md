@@ -8,7 +8,9 @@
     "Use UTF-8 encoding and readable print/logging",
     "Prefer pytest, flake8 or ruff",
     "VSCode terminal usage assumed",
-    "Avoid virtualenvs or poetry unless explicitly asked"
+    "Avoid virtualenvs or poetry unless explicitly asked",
+    "keep all test code in separate copilot-test directory",
+    "do not create new files that supercede existing ones",
   ],
   "description": "Inject my Claude prompt context"
 }
