@@ -891,3 +891,112 @@ body {
 .villain-details-popup .stats-table td {
     background-color: #ffffff !important; /* Solid white background, important */
 }
+
+/* Aspect Overlay Transitions */
+.aspect-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Fade in overlay on parent hover */
+.hero-image-container:hover .aspect-overlay {
+    opacity: 1;
+}
+
+/* Alternative: Gradient fade overlay (always visible but subtle) */
+.aspect-overlay-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.6;
+    background: linear-gradient(45deg, transparent 30%, var(--overlay-color) 70%);
+    transition: opacity 0.3s ease-in-out;
+}
+
+.hero-image-container:hover .aspect-overlay-gradient {
+    opacity: 0.8;
+}
+
+/* Smooth entrance animation */
+.aspect-overlay-smooth {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    background-color: var(--overlay-color);
+    animation: fadeInOverlay 0.8s ease-out 0.2s forwards;
+}
+
+@keyframes fadeInOverlay {
+    0% {
+        opacity: 0;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+}
+
+/* Pulsing overlay effect */
+.aspect-overlay-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+    background-color: var(--overlay-color);
+    opacity: 0.2;
+    animation: pulseOverlay 3s ease-in-out infinite;
+}
+
+@keyframes pulseOverlay {
+    0%, 100% {
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* Static overlay (no animation) */
+.aspect-overlay-static {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 2;
+    background-color: var(--overlay-color);
+    opacity: 0.3;
+}
+
+/* Image container class for proper hover targeting */
+.hero-image-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    cursor: pointer;
+    z-index: 1;
+    pointer-events: auto;
+}
