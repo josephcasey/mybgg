@@ -907,7 +907,7 @@ body {
     bottom: 0;
     background-repeat: no-repeat;
     background-size: cover;
-    background-position: center 18%;
+    background-position: 60% 18%;
     pointer-events: auto;
     transition: transform 0.3s ease;
 }
@@ -989,4 +989,59 @@ body {
     bottom: 0;
     opacity: 0.3;
     pointer-events: none;
+}
+
+/* Vivid animation style - always visible gradient from left edge */
+.aspect-overlay-vivid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Fallback for browsers that don't support newer CSS */
+    background: linear-gradient(to right, 
+        var(--overlay-color) 0%, 
+        var(--overlay-color) 20%, 
+        transparent 45%
+    );
+    opacity: 1;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+/* Aspect-specific overrides with fully opaque left 20% */
+.hero-image-container.aspect-aggression .aspect-overlay-vivid {
+    background: linear-gradient(to right, 
+        rgb(255, 0, 0) 0%, 
+        rgb(255, 0, 0) 20%, 
+        transparent 45%
+    );
+}
+
+.hero-image-container.aspect-leadership .aspect-overlay-vivid {
+    background: linear-gradient(to right, 
+        rgb(0, 100, 255) 0%, 
+        rgb(0, 100, 255) 20%, 
+        transparent 45%
+    );
+}
+
+.hero-image-container.aspect-protection .aspect-overlay-vivid {
+    background: linear-gradient(to right, 
+        rgb(0, 200, 0) 0%, 
+        rgb(0, 200, 0) 20%, 
+        transparent 45%
+    );
+}
+
+.hero-image-container.aspect-justice .aspect-overlay-vivid {
+    background: linear-gradient(to right, 
+        rgb(255, 220, 0) 0%, 
+        rgb(255, 220, 0) 20%, 
+        transparent 45%
+    );
+}
+
+.hero-image-container:hover .aspect-overlay-vivid {
+    opacity: 0.95;
 }

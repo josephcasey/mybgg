@@ -45,7 +45,8 @@ const OVERLAY_IMAGES_PATH = 'overlay_images/'; // Path to overlay images directo
 // 'gradient' - Gradient overlay with hover intensity change
 // 'pulse' - Subtle pulsing effect
 // 'static' - No animation, just solid overlay
-const OVERLAY_ANIMATION_STYLE = 'smooth';
+// 'vivid' - Always visible vivid gradient from left edge fading out
+const OVERLAY_ANIMATION_STYLE = 'vivid';
 
 // Manual hero to aspect mapping (same as character_art.py)
 const HERO_ASPECT_MAPPING = {
@@ -683,29 +684,30 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                 const originalImageUrl = heroImageData[matchedKeyFromImageData].image;
                 const escapedImageUrl = escapeHTML(originalImageUrl);
                 
-                // Determine overlay color based on detected aspect
+                // Determine overlay color based on detected aspect (vivid colors for always-visible gradients)
                 let overlayColor = 'rgba(0,0,0,0)'; // Default: transparent
                 if (detectedAspect) {
                     switch (detectedAspect) {
                         case 'Aggression':
-                            overlayColor = 'rgba(255, 0, 0, 0.3)'; // Semi-transparent red
+                            overlayColor = 'rgba(255, 0, 0, 0.8)'; // Vivid red
                             break;
                         case 'Leadership':
-                            overlayColor = 'rgba(0, 100, 255, 0.3)'; // Semi-transparent blue
+                            overlayColor = 'rgba(0, 100, 255, 0.8)'; // Vivid blue
                             break;
                         case 'Protection':
-                            overlayColor = 'rgba(0, 200, 0, 0.3)'; // Semi-transparent green
+                            overlayColor = 'rgba(0, 200, 0, 0.8)'; // Vivid green
                             break;
                         case 'Justice':
-                            overlayColor = 'rgba(255, 255, 0, 0.3)'; // Semi-transparent yellow
+                            overlayColor = 'rgba(255, 220, 0, 0.8)'; // Vivid yellow
                             break;
                     }
                 }
                 
                 // Create a hoverable overlay div with configurable CSS transitions
                 const overlayClass = `aspect-overlay-${OVERLAY_ANIMATION_STYLE}`;
+                const aspectClass = detectedAspect ? `aspect-${detectedAspect.toLowerCase()}` : '';
                 imageOverlayHtml = `
-                    <div class="hero-image-container" style="
+                    <div class="hero-image-container ${aspectClass}" style="
                         position: absolute; 
                         top: 0; 
                         left: 0; 
@@ -714,14 +716,14 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                         background-image: url('${escapedImageUrl}'); 
                         background-repeat: no-repeat; 
                         background-size: cover; 
-                        background-position: center 18%;
+                        background-position: 60% 18%;
                         --overlay-color: ${overlayColor};
                         pointer-events: auto;
                     " 
                     onmouseover="showHeroDetail('${heroModalId}');"
                     onmouseout="hideHeroDetail('${heroModalId}', event);"
                     onclick="if(typeof window.handleHeroClick === 'function') window.handleHeroClick('${escapeHTML(hero.name).replace(/'/g, "\\'")}');">
-                        <div class="${overlayClass}" style="background-color: ${overlayColor};"></div>
+                        <div class="${overlayClass}"></div>
                     </div>`;
             } else {
                 console.log(`No image property or null image for matched key "${matchedKeyFromImageData}" (from hero "${heroNameForImageLookup}") in heroImageData. Entry:`, heroImageData[matchedKeyFromImageData]);
@@ -1009,7 +1011,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                         background-image: url('${imageUrl}');
                         background-repeat: no-repeat; 
                         background-size: 150% auto; 
-                        background-position: 55% 18%;
+                        background-position: 65% 18%;
                         cursor: pointer;
                         z-index: 1;
                         pointer-events: auto;

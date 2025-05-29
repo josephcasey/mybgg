@@ -11,6 +11,7 @@
     "Avoid virtualenvs or poetry unless explicitly asked",
     "keep all test code in separate copilot-test directory",
     "do not create new files that supercede existing ones",
+    "do not handle any git operations",
   ],
   "description": "Inject my Claude prompt context"
 }
