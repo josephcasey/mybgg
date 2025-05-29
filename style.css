@@ -906,7 +906,7 @@ body {
     right: 0;
     bottom: 0;
     background-repeat: no-repeat;
-    background-size: 125% auto;
+    background-size: 110% auto;
     background-position: 10% 18%;
     pointer-events: auto;
     transition: transform 0.3s ease;
@@ -991,7 +991,7 @@ body {
     pointer-events: none;
 }
 
-/* Vivid animation style - always visible gradient from left edge */
+/* Vivid animation style - always visible gradient from left edge with right fade */
 .aspect-overlay-vivid {
     position: absolute;
     top: 0;
@@ -1002,19 +1002,23 @@ body {
     background: linear-gradient(to right, 
         var(--overlay-color) 0%, 
         var(--overlay-color) 20%, 
-        transparent 45%
+        transparent 45%,
+        transparent 90%,
+        var(--overlay-color) 100%
     );
     opacity: 1;
     pointer-events: none;
     transition: opacity 0.2s ease;
 }
 
-/* Aspect-specific overrides with fully opaque left 20% */
+/* Aspect-specific overrides with fully opaque left 20% and right 10% fade */
 .hero-image-container.aspect-aggression .aspect-overlay-vivid {
     background: linear-gradient(to right, 
         rgb(255, 0, 0) 0%, 
         rgb(255, 0, 0) 20%, 
-        transparent 45%
+        transparent 45%,
+        transparent 90%,
+        rgb(255, 0, 0) 100%
     );
 }
 
@@ -1022,7 +1026,9 @@ body {
     background: linear-gradient(to right, 
         rgb(0, 100, 255) 0%, 
         rgb(0, 100, 255) 20%, 
-        transparent 45%
+        transparent 45%,
+        transparent 90%,
+        rgb(0, 100, 255) 100%
     );
 }
 
@@ -1030,7 +1036,9 @@ body {
     background: linear-gradient(to right, 
         rgb(0, 200, 0) 0%, 
         rgb(0, 200, 0) 20%, 
-        transparent 45%
+        transparent 45%,
+        transparent 90%,
+        rgb(0, 200, 0) 100%
     );
 }
 
@@ -1038,7 +1046,9 @@ body {
     background: linear-gradient(to right, 
         rgb(255, 220, 0) 0%, 
         rgb(255, 220, 0) 20%, 
-        transparent 45%
+        transparent 45%,
+        transparent 90%,
+        rgb(255, 220, 0) 100%
     );
 }
 
