@@ -1055,3 +1055,44 @@ body {
 .hero-image-container:hover .aspect-overlay-vivid {
     opacity: 0.95;
 }
+
+/* Villain Image Container and Overlay System */
+.villain-image-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-repeat: no-repeat;
+    background-size: 110% auto;
+    background-position: 10% 18%;
+    pointer-events: auto;
+    transition: transform 0.3s ease;
+}
+
+/* Black vivid overlay for villains - always visible gradient from left edge with right fade */
+.villain-overlay-vivid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to right, 
+        rgb(0, 0, 0) 0%, 
+        rgb(0, 0, 0) 20%, 
+        transparent 45%,
+        transparent 90%,
+        rgb(0, 0, 0) 100%
+    );
+    opacity: 1;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.villain-image-container:hover .villain-overlay-vivid {
+    opacity: 0.95;
+}
+
+.hero-image-container:hover .aspect-overlay-vivid {
+    opacity: 0.95;
+}

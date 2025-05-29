@@ -1002,7 +1002,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                 const imageUrl = escapeHTML(villainImageData[matchedKeyFromImageData].image);
                 console.log(`✅ VILLAIN IMAGE MATCH: "${originalVillainName}" matched "${matchedKeyFromImageData}" -> ${imageUrl}`);
                 imageOverlayHtml = `
-                    <div style="
+                    <div class="villain-image-container" style="
                         position: absolute; 
                         top: 0; 
                         left: 0; 
@@ -1010,8 +1010,8 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                         bottom: 0; 
                         background-image: url('${imageUrl}');
                         background-repeat: no-repeat; 
-                        background-size: 150% auto; 
-                        background-position: 55% 18%;
+                        background-size: 110% auto; 
+                        background-position: 10% 18%;
                         cursor: pointer;
                         z-index: 1;
                         pointer-events: auto;
@@ -1019,6 +1019,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                     onmouseover="showVillainDetail('${villainId}', event);"
                     onmouseout="hideVillainDetail('${villainId}', event);"
                     onclick="if(typeof window.handleVillainClick === 'function') window.handleVillainClick('${escapeHTML(villain.name).replace(/'/g, "\\'")}');">
+                        <div class="villain-overlay-vivid"></div>
                     </div>`;
             } else {
                 console.log(`❌ No image property or null image for matched key "${matchedKeyFromImageData}" (from villain "${villainNameForImageLookup}") in villainImageData.`);
@@ -1043,7 +1044,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                     ${imageOverlayHtml}
                     <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 0; left: 0; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 0 3px 0 0;">${escapeHTML(villainNameForDisplay)}</span>
                 </td>
-                <td class="number-col">${villain.plays}</td>
+                <td class="number-col" style="background: linear-gradient(to right, rgb(0, 0, 0) 0%, white 100%);">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col win-rate-col">${villain.winRate}%</td>
                 <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
