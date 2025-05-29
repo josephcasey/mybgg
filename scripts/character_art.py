@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import time
 import re
 import json
-from PIL import Image, ImageDraw
+from PIL import Image
 import io
 import os
 import tempfile
@@ -13,63 +13,6 @@ from urllib.parse import urljoin, urlparse # Added urljoin and urlparse
 
 # OCR API configuration
 OCR_API_KEY = "K83990485088957"  # OCR.space API key
-
-# Aspect color mapping (matching index.js colors)
-ASPECT_COLORS = {
-    'aggression': '#FF6666',    # More vivid red
-    'leadership': '#4D9FFF',    # More vivid blue  
-    'protection': '#66FF66',    # More vivid green
-    'justice': '#FFFF4D'        # More vivid yellow
-}
-
-# Manual hero to aspect mapping
-HERO_ASPECT_MAPPING = {
-    'spider-man': 'aggression',
-    'captain america': 'leadership', 
-    'iron man': 'protection',
-    'black widow': 'justice',
-    'doctor strange': 'justice',
-    'hulk': 'aggression',
-    'she-hulk': 'aggression',
-    'thor': 'aggression',
-    'black panther': 'protection',
-    'captain marvel': 'leadership',
-    'ms. marvel': 'protection',
-    'hawkeye': 'leadership',
-    'ant-man': 'leadership',
-    'wasp': 'aggression',
-    'quicksilver': 'protection',
-    'scarlet witch': 'justice',
-    'groot': 'protection',
-    'rocket raccoon': 'aggression',
-    'star-lord': 'leadership',
-    'gamora': 'aggression',
-    'drax': 'protection',
-    'venom': 'justice',
-    'miles morales': 'justice',
-    'ghost-spider': 'justice',
-    'spider-woman': 'justice',
-    'wolverine': 'aggression',
-    'storm': 'leadership',
-    'colossus': 'protection',
-    'nightcrawler': 'aggression',
-    'shadowcat': 'aggression',
-    'cyclops': 'leadership',
-    'phoenix': 'aggression',
-    'rogue': 'protection',
-    'gambit': 'aggression',
-    'jubilee': 'aggression',
-    'cable': 'leadership',
-    'domino': 'leadership',
-    'deadpool': 'aggression',
-    'x-23': 'aggression',
-    'magik': 'justice',
-    'iceman': 'protection',
-    'angel': 'leadership',
-    'bishop': 'justice',
-    'psylocke': 'aggression',
-    'forge': 'leadership'
-}
 
 BIG_BOX_URLS = [
     "https://hallofheroeslcg.com/core-set-2/",
@@ -82,143 +25,6 @@ BIG_BOX_URLS = [
     "https://hallofheroeslcg.com/the-age-of-apocalypse/",
     "https://hallofheroeslcg.com/agents-of-shield/",
 ]
-
-def hex_to_rgb(hex_color):
-    """Convert hex color to RGB tuple"""
-    hex_color = hex_color.lstrip('#')
-    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-
-def detect_aspect_from_name(hero_name):
-    """
-    Detect aspect from hero name using multiple strategies
-    """
-    clean_name = hero_name.lower().strip()
-    
-    # Strategy 1: Check if hero name contains aspect keywords
-    aspect_keywords = {
-        'aggression': ['aggression', 'agg'],
-        'leadership': ['leadership', 'lead'],
-        'protection': ['protection', 'prot'],
-        'justice': ['justice', 'just']
-    }
-    
-    for aspect, keywords in aspect_keywords.items():
-        for keyword in keywords:
-            if keyword in clean_name:
-                return aspect
-    
-    # Strategy 2: Check manual hero-to-aspect mapping
-    if clean_name in HERO_ASPECT_MAPPING:
-        return HERO_ASPECT_MAPPING[clean_name]
-    
-    # Strategy 3: Fallback - check if any words in hero name match mapping keys
-    clean_words = clean_name.replace('-', ' ').split()
-    for mapped_hero, aspect in HERO_ASPECT_MAPPING.items():
-        mapped_words = mapped_hero.replace('-', ' ').split()
-        if any(word in mapped_words for word in clean_words):
-            return aspect
-    
-    return None
-
-def create_gradient_overlay(image, aspect_color, opacity_start=15, fade_width=20):
-    """
-    Create a gradient overlay on the left side of the image.
-    - opacity_start: percentage from left where fade begins (15%)
-    - fade_width: percentage width of fade area (20%)
-    """
-    width, height = image.size
-    
-    # Create overlay image
-    overlay = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    
-    # Convert hex color to RGB
-    rgb_color = hex_to_rgb(aspect_color)
-    
-    # Calculate positions
-    fade_start_x = int(width * opacity_start / 100)  # 15% from left
-    fade_end_x = int(width * (opacity_start + fade_width) / 100)  # 35% from left (15% + 20%)
-    
-    # Draw gradient
-    for x in range(width):
-        if x < fade_start_x:
-            # Fully opaque until fade_start_x
-            alpha = 255
-        elif x < fade_end_x:
-            # Gradient fade from fully opaque to transparent
-            progress = (x - fade_start_x) / (fade_end_x - fade_start_x)
-            alpha = int(255 * (1 - progress))
-        else:
-            # Fully transparent after fade
-            alpha = 0
-        
-        if alpha > 0:
-            for y in range(height):
-                overlay.putpixel((x, y), (*rgb_color, alpha))
-    
-    # Composite overlay onto original image
-    result = Image.alpha_composite(image.convert('RGBA'), overlay)
-    return result.convert('RGB')
-
-def download_and_process_image(url, hero_name, aspect, output_dir):
-    """Download image and create aspect overlay version"""
-    try:
-        # Download image
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        
-        # Open image
-        image = Image.open(io.BytesIO(response.content))
-        
-        # Create overlay version
-        overlay_image = create_gradient_overlay(image, ASPECT_COLORS[aspect])
-        
-        # Generate filenames
-        base_filename = os.path.basename(url).split('.')[0]
-        
-        original_filename = f"{base_filename}_original.jpg"
-        overlay_filename = f"{base_filename}_{aspect}_overlay.jpg"
-        
-        # Save original
-        original_path = os.path.join(output_dir, original_filename)
-        image.convert('RGB').save(original_path, 'JPEG', quality=95)
-        
-        # Save overlay version
-        overlay_path = os.path.join(output_dir, overlay_filename)
-        overlay_image.save(overlay_path, 'JPEG', quality=95)
-        
-        return {
-            'original': original_path,
-            'overlay': overlay_path,
-            'aspect': aspect
-        }
-        
-    except Exception as e:
-        print(f"  ! Error processing {url}: {e}")
-        return None
-
-def process_hero_aspect_overlays(hero_name, image_url, output_dir):
-    """Process a hero's image to create aspect overlay version"""
-    if not image_url:
-        return None
-    
-    # Detect aspect
-    aspect = detect_aspect_from_name(hero_name)
-    if not aspect:
-        print(f"  -> No aspect detected for {hero_name}, skipping overlay")
-        return None
-    
-    print(f"  -> Creating {aspect} aspect overlay for {hero_name}")
-    
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Download and process image
-    result = download_and_process_image(image_url, hero_name, aspect, output_dir)
-    
-    if result:
-        print(f"     ✓ Saved: {os.path.basename(result['original'])} & {os.path.basename(result['overlay'])}")
-    
-    return result
 
 def build_hero_to_url_map(hero_names_from_cache, browse_url="https://hallofheroeslcg.com/browse/"):
     """
@@ -853,8 +659,6 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Scrape Marvel Champions character art from Hall of Heroes')
     parser.add_argument('--mode', choices=['full', 'update'], default='full',
                        help='full: Process all heroes (default), update: Only process heroes with single images to find missing alter-ego cards')
-    parser.add_argument('--aspect-overlays', action='store_true',
-                       help='Create aspect-colored overlay versions of hero images')
     return parser.parse_args()
 
 def load_existing_hero_data(output_file):
@@ -952,27 +756,6 @@ if __name__ == "__main__":
         # Update with new results
         final_data.update(hero_images_data)
         hero_images_data = final_data
-
-    # Step 3.5: Create aspect overlays if requested
-    if args.aspect_overlays:
-        print(f"\n=== CREATING ASPECT OVERLAYS ===")
-        overlay_output_dir = "../overlay_images"
-        overlay_count = 0
-        
-        for hero_name, hero_data in hero_images_data.items():
-            if hero_data.get('image'):  # Only process heroes with primary images
-                print(f"Processing aspect overlay for {hero_name}...")
-                result = process_hero_aspect_overlays(hero_name, hero_data['image'], overlay_output_dir)
-                if result:
-                    overlay_count += 1
-                    # Optionally store overlay info in the data
-                    hero_data['overlay'] = {
-                        'aspect': result['aspect'],
-                        'overlay_path': result['overlay'],
-                        'original_path': result['original']
-                    }
-        
-        print(f"Created aspect overlays for {overlay_count} heroes in {overlay_output_dir}")
 
     # Step 4: Save results
     with open(output_file, "w") as f:
