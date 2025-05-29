@@ -784,6 +784,12 @@ body {
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     z-index: 1000;
+}
+
+/* Villain popups positioned to the left to avoid occluding other villains */
+.villain-details-popup {
+    left: auto;
+    right: 100%;
     min-width: 300px;
     max-height: 400px;
     overflow-y: auto;
@@ -892,111 +898,95 @@ body {
     background-color: #ffffff !important; /* Solid white background, important */
 }
 
-/* Aspect Overlay Transitions */
-.aspect-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-/* Fade in overlay on parent hover */
-.hero-image-container:hover .aspect-overlay {
-    opacity: 1;
-}
-
-/* Alternative: Gradient fade overlay (always visible but subtle) */
-.aspect-overlay-gradient {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0.6;
-    background: linear-gradient(45deg, transparent 30%, var(--overlay-color) 70%);
-    transition: opacity 0.3s ease-in-out;
-}
-
-.hero-image-container:hover .aspect-overlay-gradient {
-    opacity: 0.8;
-}
-
-/* Smooth entrance animation */
-.aspect-overlay-smooth {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0;
-    background-color: var(--overlay-color);
-    animation: fadeInOverlay 0.8s ease-out 0.2s forwards;
-}
-
-@keyframes fadeInOverlay {
-    0% {
-        opacity: 0;
-        transform: scale(1.1);
-    }
-    100% {
-        opacity: 0.3;
-        transform: scale(1);
-    }
-}
-
-/* Pulsing overlay effect */
-.aspect-overlay-pulse {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-    background-color: var(--overlay-color);
-    opacity: 0.2;
-    animation: pulseOverlay 3s ease-in-out infinite;
-}
-
-@keyframes pulseOverlay {
-    0%, 100% {
-        opacity: 0.2;
-    }
-    50% {
-        opacity: 0.4;
-    }
-}
-
-/* Static overlay (no animation) */
-.aspect-overlay-static {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 2;
-    background-color: var(--overlay-color);
-    opacity: 0.3;
-}
-
-/* Image container class for proper hover targeting */
+/* CSS Overlay System for Hero Aspect Detection */
 .hero-image-container {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    cursor: pointer;
-    z-index: 1;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center 18%;
     pointer-events: auto;
+    transition: transform 0.3s ease;
+}
+
+/* Smooth animation style - default */
+.aspect-overlay-smooth {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+.hero-image-container:hover .aspect-overlay-smooth {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Hover animation style */
+.aspect-overlay-hover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.hero-image-container:hover .aspect-overlay-hover {
+    opacity: 1;
+}
+
+/* Gradient animation style */
+.aspect-overlay-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--overlay-color) 0%, transparent 50%, var(--overlay-color) 100%);
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.hero-image-container:hover .aspect-overlay-gradient {
+    opacity: 0.8;
+}
+
+/* Pulse animation style */
+.aspect-overlay-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.4;
+    animation: pulse 2s infinite;
+    pointer-events: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+/* Static animation style - no animation */
+.aspect-overlay-static {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.3;
+    pointer-events: none;
 }
