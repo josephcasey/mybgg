@@ -715,8 +715,8 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
                         bottom: 0; 
                         background-image: url('${escapedImageUrl}'); 
                         background-repeat: no-repeat; 
-                        background-size: cover; 
-                        background-position: 60% 18%;
+                        background-size: 100% right; 
+                        background-position: 10% 18%;
                         --overlay-color: ${overlayColor};
                         pointer-events: auto;
                     " 
@@ -1011,7 +1011,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                         background-image: url('${imageUrl}');
                         background-repeat: no-repeat; 
                         background-size: 150% auto; 
-                        background-position: 65% 18%;
+                        background-position: 55% 18%;
                         cursor: pointer;
                         z-index: 1;
                         pointer-events: auto;

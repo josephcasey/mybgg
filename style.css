@@ -906,8 +906,8 @@ body {
     right: 0;
     bottom: 0;
     background-repeat: no-repeat;
-    background-size: cover;
-    background-position: 60% 18%;
+    background-size: 125% auto;
+    background-position: 10% 18%;
     pointer-events: auto;
     transition: transform 0.3s ease;
 }
