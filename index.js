@@ -1040,6 +1040,9 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             }
         }
         
+        // Detect villain difficulty first (before generating image overlay)
+        const detectedDifficulty = detectVillainDifficulty(villain.name);
+        
         let tdCellStyles = `position: relative; height: ${VILLAIN_IMAGE_HEIGHT}px; min-height: ${VILLAIN_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle; cursor: pointer;`;
         let imageOverlayHtml = '';
         
@@ -1048,7 +1051,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
                 const imageUrl = escapeHTML(villainImageData[matchedKeyFromImageData].image);
                 console.log(`✅ VILLAIN IMAGE MATCH: "${originalVillainName}" matched "${matchedKeyFromImageData}" -> ${imageUrl}`);
                 imageOverlayHtml = `
-                    <div class="villain-image-container" style="
+                    <div class="villain-image-container difficulty-${detectedDifficulty}" style="
                         position: absolute; 
                         top: 0; 
                         left: 0; 
@@ -1084,8 +1087,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             ? ' style="color: red;"'
             : '';
 
-        // Detect villain difficulty and determine color for plays cell (similar to hero aspect detection)
-        const detectedDifficulty = detectVillainDifficulty(villain.name);
+        // Determine color for plays cell based on already detected difficulty
         let difficultyColor = 'rgb(128, 128, 128)'; // Default grey
         if (detectedDifficulty === 'standard') {
             difficultyColor = 'rgb(128, 128, 128)'; // Grey for Standard difficulty
