@@ -142,6 +142,52 @@ function detectAspectFromName(heroName) {
     return null;
 }
 
+// Function to detect villain difficulty from villain name (similar to hero aspect detection)
+function detectVillainDifficulty(villainName) {
+    const cleanName = villainName.toLowerCase().trim();
+    
+    // Standard difficulty patterns (easier): names ending in A, A1, 1/2
+    const standardPatterns = [
+        /\s*\ba\b\s*$/,          // Ends with "A"
+        /\s*\ba1\b\s*$/,         // Ends with "A1"
+        /\s*\b1\/2\b\s*$/,       // Ends with "1/2"
+        /\b1\/2$/,               // Ends with "1/2" (no spaces)
+        /\s*\(standard\)$/i,     // Ends with "(Standard)"
+        /\s*\(easy\)$/i          // Ends with "(Easy)"
+    ];
+    
+    // Expert difficulty patterns (harder): names ending in 2/3, B, B1, C, numbers 2-4
+    const expertPatterns = [
+        /\s*\bb\b\s*$/,          // Ends with "B"
+        /\s*\bb1\b\s*$/,         // Ends with "B1"
+        /\s*\bc\b\s*$/,          // Ends with "C"
+        /\s*\b2\/3\b\s*$/,       // Ends with "2/3"
+        /\b2\/3$/,               // Ends with "2/3" (no spaces)
+        /\s*\b3\/4\b\s*$/,       // Ends with "3/4"
+        /\b3\/4$/,               // Ends with "3/4" (no spaces)
+        /\s*\b[2-4]\b\s*$/,      // Ends with single digits 2, 3, or 4
+        /\s*\(expert\)$/i,       // Ends with "(Expert)"
+        /\s*\(heroic\)$/i        // Ends with "(Heroic)"
+    ];
+    
+    // Check for standard difficulty patterns first
+    for (const pattern of standardPatterns) {
+        if (pattern.test(cleanName)) {
+            return 'standard';
+        }
+    }
+    
+    // Check for expert difficulty patterns
+    for (const pattern of expertPatterns) {
+        if (pattern.test(cleanName)) {
+            return 'expert';
+        }
+    }
+    
+    // Default to standard if no specific indicator found
+    return 'standard';
+}
+
 // Function to get overlay image URL for a hero (synchronous version)
 function getOverlayImageUrl(heroName, originalImageUrl) {
     if (!ASPECT_OVERLAY_ENABLED || !originalImageUrl) {
@@ -1038,13 +1084,22 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             ? ' style="color: red;"'
             : '';
 
+        // Detect villain difficulty and determine color for plays cell (similar to hero aspect detection)
+        const detectedDifficulty = detectVillainDifficulty(villain.name);
+        let difficultyColor = 'rgb(128, 128, 128)'; // Default grey
+        if (detectedDifficulty === 'standard') {
+            difficultyColor = 'rgb(128, 128, 128)'; // Grey for Standard difficulty
+        } else if (detectedDifficulty === 'expert') {
+            difficultyColor = 'rgb(0, 0, 0)'; // Black for Expert difficulty
+        }
+
         tableRowsHtml += `
             <tr class="villain-row">
                 <td class="villain-name" style="${tdCellStyles} padding: 8px;">
                     ${imageOverlayHtml}
                     <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 0; left: 0; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 0 3px 0 0;">${escapeHTML(villainNameForDisplay)}</span>
                 </td>
-                <td class="number-col" style="background: linear-gradient(to right, rgb(0, 0, 0) 0%, white 100%);">${villain.plays}</td>
+                <td class="number-col" style="background: linear-gradient(to right, ${difficultyColor} 0%, white 100%);">${villain.plays}</td>
                 <td class="number-col">${villain.wins}</td>
                 <td class="number-col win-rate-col">${villain.winRate}%</td>
                 <td class="date-col"${highlightLastPlayed} data-timestamp="${lastPlayedRaw}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
@@ -2047,9 +2102,7 @@ function enableFastDateTooltips() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // ...existing code...
     enableFastDateTooltips();
-    // ...existing code...
+ 
 });
 
-// ...existing code...
