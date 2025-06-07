@@ -12,6 +12,7 @@
     "keep all test code in separate copilot-test directory",
     "do not create new files that supercede existing ones",
     "do not handle any git operations",
+    "before you make any edits confirm you are adhering to the copilot-instructions.md file in this workspace",
   ],
   "description": "Inject my Claude prompt context"
 }
