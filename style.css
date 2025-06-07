@@ -1092,21 +1092,21 @@ body {
 /* Difficulty-specific overrides with fully opaque left 20% and right 10% fade */
 .villain-image-container.difficulty-standard .villain-overlay-vivid {
     background: linear-gradient(to right, 
-        rgb(128, 128, 128) 0%, 
-        rgb(128, 128, 128) 20%, 
-        transparent 45%,
-        transparent 90%,
-        rgb(128, 128, 128) 100%
-    );
-}
-
-.villain-image-container.difficulty-expert .villain-overlay-vivid {
-    background: linear-gradient(to right, 
         rgb(0, 0, 0) 0%, 
         rgb(0, 0, 0) 20%, 
         transparent 45%,
         transparent 90%,
         rgb(0, 0, 0) 100%
+    );
+}
+
+.villain-image-container.difficulty-expert .villain-overlay-vivid {
+    background: linear-gradient(to right, 
+        rgb(255, 0, 0) 0%, 
+        rgb(255, 0, 0) 20%, 
+        transparent 45%,
+        transparent 90%,
+        rgb(255, 0, 0) 100%
     );
 }
 

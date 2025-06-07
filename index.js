@@ -146,12 +146,18 @@ function detectAspectFromName(heroName) {
 function detectVillainDifficulty(villainName) {
     const cleanName = villainName.toLowerCase().trim();
     
+    // Debug logging for specific problematic case
+    if (villainName.includes('Crossbones')) {
+        console.log(`DEBUG DIFFICULTY: Testing "${villainName}" -> cleaned: "${cleanName}"`);
+    }
+    
     // Standard difficulty patterns (easier): names ending in A, A1, 1/2
     const standardPatterns = [
         /\s*\ba\b\s*$/,          // Ends with "A"
         /\s*\ba1\b\s*$/,         // Ends with "A1"
         /\s*\b1\/2\b\s*$/,       // Ends with "1/2"
         /\b1\/2$/,               // Ends with "1/2" (no spaces)
+        /1\/2$/,                 // Simple 1/2 pattern without word boundary
         /\s*\(standard\)$/i,     // Ends with "(Standard)"
         /\s*\(easy\)$/i          // Ends with "(Easy)"
     ];
@@ -163,8 +169,10 @@ function detectVillainDifficulty(villainName) {
         /\s*\bc\b\s*$/,          // Ends with "C"
         /\s*\b2\/3\b\s*$/,       // Ends with "2/3"
         /\b2\/3$/,               // Ends with "2/3" (no spaces)
+        /2\/3$/,                 // Simple 2/3 pattern without word boundary
         /\s*\b3\/4\b\s*$/,       // Ends with "3/4"
         /\b3\/4$/,               // Ends with "3/4" (no spaces)
+        /3\/4$/,                 // Simple 3/4 pattern without word boundary
         /\s*\b[2-4]\b\s*$/,      // Ends with single digits 2, 3, or 4
         /\s*\(expert\)$/i,       // Ends with "(Expert)"
         /\s*\(heroic\)$/i        // Ends with "(Heroic)"
@@ -173,6 +181,9 @@ function detectVillainDifficulty(villainName) {
     // Check for standard difficulty patterns first
     for (const pattern of standardPatterns) {
         if (pattern.test(cleanName)) {
+            if (villainName.includes('Crossbones')) {
+                console.log(`DEBUG DIFFICULTY: "${villainName}" matched STANDARD pattern: ${pattern}`);
+            }
             return 'standard';
         }
     }
@@ -180,6 +191,9 @@ function detectVillainDifficulty(villainName) {
     // Check for expert difficulty patterns
     for (const pattern of expertPatterns) {
         if (pattern.test(cleanName)) {
+            if (villainName.includes('Crossbones')) {
+                console.log(`DEBUG DIFFICULTY: "${villainName}" matched EXPERT pattern: ${pattern}`);
+            }
             return 'expert';
         }
     }
@@ -1088,11 +1102,11 @@ function renderSortedVillainStats(villains, sortState, allHits) {
             : '';
 
         // Determine color for plays cell based on already detected difficulty
-        let difficultyColor = 'rgb(128, 128, 128)'; // Default grey
+        let difficultyColor = 'rgb(0, 0, 0)'; // Default black
         if (detectedDifficulty === 'standard') {
-            difficultyColor = 'rgb(128, 128, 128)'; // Grey for Standard difficulty
+            difficultyColor = 'rgb(0, 0, 0)'; // Black for Standard difficulty
         } else if (detectedDifficulty === 'expert') {
-            difficultyColor = 'rgb(0, 0, 0)'; // Black for Expert difficulty
+            difficultyColor = 'rgb(255, 0, 0)'; // Aggression red for Expert difficulty
         }
 
         tableRowsHtml += `
