@@ -1,0 +1,28 @@
+{
+  "name": "marvel-champions-bgg-stats",
+  "version": "1.0.0",
+  "description": "Marvel Champions statistics tracker for boardgamegeek collection",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "build": "chmod +x build.sh && ./build.sh",
+    "dev": "python3 -m http.server 8080",
+    "deploy": "echo 'Ready for Render deployment'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/mybgg.git"
+  },
+  "keywords": [
+    "marvel-champions",
+    "boardgamegeek",
+    "statistics",
+    "algolia",
+    "games"
+  ],
+  "author": "Jo",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
