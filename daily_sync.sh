@@ -186,8 +186,6 @@ Your Marvel Champions statistics are up to date on your website."
                     fi
                 else
                     # New plays found - send success email with details
-                else
-                    # New plays found - send success email with details
                     PLAYS_DIFFERENCE=$((INDEXED_PLAYS - PREV_INDEXED_COUNT))
                     if [ $PLAYS_DIFFERENCE -lt 0 ]; then
                         PLAYS_DIFFERENCE=0
