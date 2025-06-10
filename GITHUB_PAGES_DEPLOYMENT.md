@@ -54,6 +54,40 @@ I've created `update_and_deploy.sh` for you! This script:
 4. Ask for commit message
 5. Push to GitHub Pages automatically
 
+### 🕘 **Automated Daily Sync Script**
+
+I've also created `daily_sync.sh` for automatic daily updates! This script:
+
+- ✅ **Runs automatically** on computer login (via macOS Launch Agent)
+- ✅ **Checks if data is fresh** (only syncs once per day)
+- ✅ **Smart timing** (8:00 AM daily + first login if after 8 AM)
+- ✅ **Background operation** (doesn't interrupt your work)
+- ✅ **Comprehensive logging** to multiple log files
+- ✅ **Email summaries** to josephjcasey@gmail.com with sync results
+
+### 🛠️ **Setup Daily Auto-Sync:**
+
+```bash
+# One-time setup (creates macOS Launch Agent)
+./setup_login_agent.sh
+
+# Test email functionality (optional)
+./test_email.sh
+
+# Remove automation if needed
+./remove_login_agent.sh
+```
+
+This creates a macOS Launch Agent that runs automatically when you log into your computer.
+
+### 📅 **Daily Sync Behavior:**
+
+- **Every day at 8:00 AM**: Automatic BGG data sync
+- **First login after 8:00 AM**: Runs immediately if missed morning sync
+- **Background operation**: Won't interrupt your work
+- **Once per day limit**: Smart deduplication prevents multiple syncs
+- **Manual override**: Run `./daily_sync.sh` anytime
+
 ### ⚠️ What GitHub Pages CANNOT Host:
 
 **Python Scripts (Run Locally):**
@@ -146,3 +180,43 @@ git push origin master
 
 Your Marvel Champions BGG Statistics Tracker will be live at:
 **https://josephcasey.github.io/mybgg/**
+
+## 📝 Release Notes & Deployment History
+
+### 🔄 **Recent Deployments:**
+
+This section tracks major updates and improvements to your Marvel Champions BGG app:
+
+#### **June 2025 - Full Automation & Email System**
+- ✅ **GitHub Pages Deployment Setup** - Complete static hosting solution
+- ✅ **macOS Launch Agent** - Automated daily BGG syncing at 8:00 AM
+- ✅ **Email Notification System** - Three types of daily summary emails
+- ✅ **Enhanced Daily Sync** - Detailed play tracking and new hero detection
+- ✅ **Deployment Scripts** - `update_and_deploy.sh`, `quick_deploy.sh`, `daily_sync.sh`
+- ✅ **Management Tools** - `setup_login_agent.sh`, `remove_login_agent.sh`, `test_email.sh`
+
+#### **Previous Versions:**
+- 📊 **v1.0.0 (May 2024)** - Initial statistics overlay, side-by-side tables, bar visualizations
+- 🎯 See [`release_notes.md`](release_notes.md) for detailed version history
+
+### 🚀 **Latest Features:**
+- **Automatic Daily Sync**: BGG data updates without manual intervention
+- **Email Summaries**: Know immediately when new plays are added
+- **Smart Detection**: Tracks new heroes, play counts, and collection growth
+- **GitHub Pages Hosting**: Fast, reliable, free static site hosting
+- **Launch Agent Automation**: macOS system-level scheduling for reliability
+
+### 📈 **Deployment Metrics:**
+- **Hosting Cost**: $0 (GitHub Pages free tier)
+- **Update Frequency**: Daily automatic sync + manual on-demand
+- **Email Notifications**: 3 types (Success, No New Plays, Already Synced)
+- **Data Sources**: BoardGameGeek API + Algolia search index
+- **Automation**: macOS Launch Agent (8:00 AM daily + login triggers)
+
+---
+
+**🔗 Quick Links:**
+- 🌐 **Live Site**: https://josephcasey.github.io/mybgg/
+- 📚 **Full Documentation**: This deployment guide
+- 📊 **Version History**: [`release_notes.md`](release_notes.md)
+- 🔧 **Source Code**: [GitHub Repository](https://github.com/josephcasey/mybgg)

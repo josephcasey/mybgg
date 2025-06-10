@@ -39,3 +39,76 @@
 - Fixed an issue where extra tables could appear after the main stats tables.
 - Fixed villain table rendering and modal data population edge cases.
 - Fixed overlay and table layout issues on different screen sizes.
+
+## [v2.0.0] - 2025-06-10
+
+### 🚀 Major Features - Deployment Automation & Email System
+
+#### **GitHub Pages Deployment**
+- **Static Hosting Setup**: Complete migration to GitHub Pages for free, reliable hosting
+- **Automated Deployment Scripts**: 
+  - `update_and_deploy.sh` - Interactive data update and deployment
+  - `quick_deploy.sh` - Deploy current files without data update
+- **Build Configuration**: Optimized static site deployment with proper cache headers
+
+#### **Daily Automation System**
+- **macOS Launch Agent**: System-level automation that runs daily at 8:00 AM
+- **Smart Scheduling**: Runs on first login if missed morning sync
+- **Background Operation**: Non-intrusive automation that doesn't interrupt workflow
+- **Setup Scripts**: 
+  - `setup_login_agent.sh` - One-click automation setup
+  - `remove_login_agent.sh` - Easy removal of automation
+
+#### **Email Notification System**
+- **Three Email Types**:
+  - **SUCCESS**: New plays found with detailed summaries
+  - **NO NEW PLAYS**: Confirmation when no changes detected
+  - **ALREADY SYNCED**: Status when sync already completed today
+- **Rich Content**: Play details, hero counts, win/loss tracking, collection growth
+- **Smart Detection**: Tracks new heroes discovered and play count changes
+
+#### **Enhanced Data Processing**
+- **Detailed Play Tracking**: Shows most recent plays with hero, villain, date, and outcome
+- **Collection Analytics**: Tracks hero collection growth over time
+- **Multi-Hero Filtering**: Intelligent filtering of complex team plays
+- **Progress Metrics**: Before/after comparisons for sync operations
+
+### 🔧 Technical Improvements
+
+#### **Deployment Infrastructure**
+- **Git Integration**: Automatic commit and push to GitHub Pages
+- **Version Control**: All deployment changes tracked in git history
+- **Error Handling**: Comprehensive error detection and reporting
+- **Logging System**: Multi-level logging (sync, agent, error logs)
+
+#### **Data Sync Enhancements**
+- **API Key Management**: Automatic extraction from VSCode launch.json
+- **Cache Optimization**: BGG API caching for faster subsequent runs
+- **Deduplication Logic**: Prevents unnecessary syncs and API calls
+- **Throttling**: Rate limiting to respect BGG API guidelines
+
+#### **Development Tools**
+- **Test Scripts**: Email functionality testing with `test_email.sh`
+- **Manual Override**: Ability to run sync manually anytime
+- **Status Monitoring**: Launch agent status checking commands
+- **Backup Systems**: Automatic backup of configuration files
+
+### 📊 Deployment Metrics
+- **Hosting Cost**: $0 (GitHub Pages free tier)
+- **Sync Frequency**: Daily automatic + manual on-demand
+- **Email Delivery**: 100% automated notification system
+- **Uptime**: 24/7 static hosting with GitHub's CDN
+- **Data Sources**: BoardGameGeek API + Algolia search index
+
+### 🎯 Benefits Delivered
+- **Zero-Maintenance**: Set up once, runs automatically forever
+- **Complete Transparency**: Email summaries show exactly what changed
+- **Professional Hosting**: Fast, reliable GitHub Pages deployment
+- **Data Integrity**: Version-controlled data updates with full history
+- **Developer Experience**: Simple scripts for all operations
+
+### 📚 Documentation
+- **Complete Deployment Guide**: [`GITHUB_PAGES_DEPLOYMENT.md`](GITHUB_PAGES_DEPLOYMENT.md)
+- **Copilot Instructions**: Enhanced developer guidelines
+- **Setup Procedures**: Step-by-step automation setup
+- **Troubleshooting**: Common issues and solutions
