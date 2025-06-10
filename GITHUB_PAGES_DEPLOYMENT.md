@@ -88,6 +88,21 @@ This creates a macOS Launch Agent that runs automatically when you log into your
 - **Once per day limit**: Smart deduplication prevents multiple syncs
 - **Manual override**: Run `./daily_sync.sh` anytime
 
+### 📧 **Email Notifications:**
+
+The system now includes robust email delivery:
+
+- **AppleScript Integration**: Automatically sends emails via Mail.app
+- **No manual intervention**: Emails are sent automatically
+- **Fallback notifications**: macOS notifications if email fails
+- **Email logging**: All emails logged to `~/mybgg_email_log.txt`
+- **Three email types**:
+  - ✅ **SUCCESS**: New plays found with detailed summaries
+  - 📊 **NO NEW PLAYS**: Confirmation when no changes detected  
+  - 🔄 **ALREADY SYNCED**: Status when sync already completed today
+
+**Test email system**: `./test_email.sh`
+
 ### ⚠️ What GitHub Pages CANNOT Host:
 
 **Python Scripts (Run Locally):**

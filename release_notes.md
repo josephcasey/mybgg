@@ -1,5 +1,57 @@
 # Release Notes
 
+## [v2.0.1] - 2024-12-31
+
+### Bug Fixes
+
+- **Enhanced Email Delivery:**  
+  Fixed email system to use AppleScript for automatic sending via Mail.app instead of requiring manual intervention. Emails now send automatically without user interaction.
+
+- **Improved Email Reliability:**  
+  - AppleScript integration for automatic email sending
+  - Multiple fallback methods (notification + file logging)
+  - Better error handling and timeout management
+  - Gmail delivery issues resolved
+
+- **Email Testing:**  
+  Updated `test_email.sh` to properly test the new AppleScript email system
+
+## [v2.0.0] - 2024-12-31
+
+### Major Features - GitHub Pages Deployment & Automation
+
+- **GitHub Pages Hosting:**  
+  Complete migration from Render to GitHub Pages for static site hosting. No more credit card requirements or hosting fees.
+
+- **Daily Automation System:**  
+  - macOS Launch Agent for true daily automation (8:00 AM + login triggers)
+  - Smart deduplication prevents multiple syncs per day
+  - Background operation that won't interrupt your work
+  - Setup: `./setup_login_agent.sh`, Remove: `./remove_login_agent.sh`
+
+- **Comprehensive Email Notifications:**  
+  Three types of detailed email summaries sent to josephjcasey@gmail.com:
+  - ✅ SUCCESS: New plays found with hero/villain breakdowns
+  - 📊 NO NEW PLAYS: Confirmation when no changes detected  
+  - 🔄 ALREADY SYNCED: Status when sync already completed today
+
+- **Multiple Deployment Scripts:**  
+  - `update_and_deploy.sh`: Interactive data update + GitHub deployment
+  - `quick_deploy.sh`: Deploy current files without data updates
+  - `daily_sync.sh`: Automated daily BGG sync with email notifications
+
+- **Enhanced Documentation:**  
+  Complete deployment guide with step-by-step instructions in `GITHUB_PAGES_DEPLOYMENT.md`
+
+### Technical Improvements
+
+- **Algolia API Key Management:**  
+  Automatic extraction from `.vscode/launch.json` during deployment
+- **Python Dependencies:**  
+  All BGG sync functionality preserved with local Python execution
+- **Backup Systems:**  
+  Multiple fallback methods for email delivery and notifications
+
 ## [v1.0.0] - 2024-05-09
 
 ### Features & Improvements

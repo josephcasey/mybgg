@@ -16,13 +16,10 @@ TODAY=$(date '+%Y-%m-%d')
 send_email_summary() {
     local status="$1"
     local details="$2"
-    local subject="Marvel Champions BGG Daily Sync - $TODAY"
+    local subject="Marvel Champions BGG Daily Sync - $TODAY - $status"
     
     # Create email body
-    cat > /tmp/sync_email.txt << EOF
-Subject: $subject
-
-Marvel Champions BGG Daily Sync Report
+    local email_body="Marvel Champions BGG Daily Sync Report
 =====================================
 Date: $TODAY
 Time: $(date '+%H:%M:%S')
@@ -34,19 +31,36 @@ $details
 Your Marvel Champions BGG Statistics Tracker
 https://josephcasey.github.io/mybgg/
 
-This is an automated message from your daily sync script.
-EOF
+This is an automated message from your daily sync script."
 
-    # Send email using mail command
-    if command -v mail >/dev/null 2>&1; then
-        mail "$EMAIL_ADDRESS" < /tmp/sync_email.txt
-        log_message "📧 Email summary sent to $EMAIL_ADDRESS"
-    else
-        log_message "⚠️  Mail command not available - skipping email"
+    # Try multiple email methods
+    local email_sent=false
+    
+    # Method 1: Use our Python script (opens Mail.app + notification)
+    if command -v python3 >/dev/null 2>&1 && [ -f "$MYBGG_DIR/send_email.py" ]; then
+        if python3 "$MYBGG_DIR/send_email.py" "$EMAIL_ADDRESS" "$subject" "$email_body"; then
+            email_sent=true
+            log_message "📧 Email composed via Mail.app for $EMAIL_ADDRESS"
+        fi
     fi
     
-    # Clean up temp file
-    rm -f /tmp/sync_email.txt
+    # Method 2: macOS notification as backup
+    if ! $email_sent; then
+        if command -v osascript >/dev/null 2>&1; then
+            osascript -e "display notification \"Marvel Champions BGG sync completed! Status: $status\" with title \"BGG Daily Sync\""
+            log_message "🔔 macOS notification sent (email fallback)"
+            email_sent=true
+        fi
+    fi
+    
+    # Method 3: Log to file as final fallback
+    if ! $email_sent; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - EMAIL SUMMARY:" >> "$MYBGG_DIR/email_log.txt"
+        echo "Subject: $subject" >> "$MYBGG_DIR/email_log.txt"
+        echo "$email_body" >> "$MYBGG_DIR/email_log.txt"
+        echo "----------------------------------------" >> "$MYBGG_DIR/email_log.txt"
+        log_message "📝 Email summary logged to email_log.txt"
+    fi
 }
 
 # Function to log messages with timestamp
