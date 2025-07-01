@@ -1,5 +1,27 @@
 # Release Notes
 
+## [v2.1.0] - 2025-07-01
+
+### 🐍 **Python Environment Management**
+
+- **Virtual Environment Support**: Added `setup_venv.sh` script for clean Python dependency management
+- **Automated Environment Activation**: All deployment scripts now automatically use virtual environment if available
+- **Dependency Isolation**: Prevents conflicts with system Python packages
+- **Enhanced Installation**: Graceful handling of problematic packages (Pillow, colorgram.py)
+- **Cross-Script Compatibility**: Virtual environment support in `daily_sync.sh`, `update_and_deploy.sh`, and `send_email.py`
+
+### 🔧 **Developer Experience Improvements**
+
+- **Updated Copilot Instructions**: Now recommend virtual environments for dependency management
+- **Enhanced Documentation**: Updated `GITHUB_PAGES_DEPLOYMENT.md` with virtual environment setup steps
+- **Better Error Handling**: Improved troubleshooting section with environment-specific guidance
+- **Automated Setup**: One-command setup for new development environments
+
+### 🚀 **Breaking Changes**
+
+- **Recommended Setup**: New projects should start with `./setup_venv.sh` before running other scripts
+- **Dependency Management**: System-level pip installations no longer recommended
+
 ## [v2.0.1] - 2024-12-31
 
 ### Bug Fixes

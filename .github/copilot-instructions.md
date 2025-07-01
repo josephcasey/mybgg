@@ -5,12 +5,14 @@ Marvel Champions BGG Statistics Tracker - A static web application deployed via 
 
 ## 💻 **Jo's Development Environment**
 - **OS**: macOS Big Sur
-- **Python**: Always use Python 3 (`python3`, `pip3`); no virtual environments used
-- **Installation**: `pip3 install --user ...`
+- **Python**: Use virtual environments for dependency management
+- **Virtual Environment**: `venv` located at `./venv/` in project root
+- **Installation**: `pip install ...` within activated virtual environment
+- **Activation**: `source venv/bin/activate` before running Python scripts
 - **Encoding**: UTF-8 encoding and readable print/logging
 - **Testing**: Prefer pytest, flake8 or ruff
 - **Terminal**: VSCode terminal usage assumed
-- **Dependencies**: Avoid virtualenvs or poetry unless explicitly asked
+- **Dependencies**: Always use virtual environments for Python dependencies
 
 ## 📋 **Development Guidelines**
 
@@ -35,6 +37,11 @@ Marvel Champions BGG Statistics Tracker - A static web application deployed via 
 - **Email**: Automated summaries to josephjcasey@gmail.com
 
 ## 🔧 **Key Components to Consider**
+
+### **Python Environment:**
+- `setup_venv.sh` - Creates and configures virtual environment with all dependencies
+- `venv/` directory - Isolated Python environment (automatically used by all scripts)
+- Virtual environment activation is handled automatically by deployment scripts
 
 ### **Deployment Scripts:**
 - `update_and_deploy.sh` - Interactive data update and GitHub deployment
@@ -62,3 +69,4 @@ Marvel Champions BGG Statistics Tracker - A static web application deployed via 
 3. **Preserve existing JSON data files** - they contain user's game statistics
 4. **Maintain backward compatibility** with existing automation setup
 5. **Document breaking changes** clearly in deployment guide
+6. **Use virtual environment** - Run `./setup_venv.sh` for new setups or dependency issues

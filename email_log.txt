@@ -1,0 +1,29 @@
+2025-06-10 11:58:46 - EMAIL TEST:
+Subject: Marvel Champions BGG Daily Sync - TEST EMAIL
+Marvel Champions BGG Daily Sync Test
+===================================
+Date: 2025-06-10
+Time: 11:58:42
+Status: TEST
+
+This is a test email to verify that your daily sync script can send email summaries.
+
+If you receive this email, the email functionality is working correctly!
+
+Test Summary:
+• System: Darwin 20.6.0
+• Shell: /bin/bash
+• Python: Python 3.8.9
+• From directory: /Users/jo/mybgg
+
+Next Steps:
+1. If you received this via Mail.app: ✅ Email setup is working!
+2. If you got a macOS notification: 🔔 Notification backup is working!
+3. If neither worked: Check the email_log.txt file
+
+---
+Your Marvel Champions BGG Statistics Tracker
+https://josephcasey.github.io/mybgg/
+
+This is a test message from your daily sync setup.
+----------------------------------------

@@ -37,8 +37,16 @@ This is an automated message from your daily sync script."
     local email_sent=false
     
     # Method 1: Use our Python script (opens Mail.app + notification)
-    if command -v python3 >/dev/null 2>&1 && [ -f "$MYBGG_DIR/send_email.py" ]; then
-        if python3 "$MYBGG_DIR/send_email.py" "$EMAIL_ADDRESS" "$subject" "$email_body"; then
+    if command -v python >/dev/null 2>&1 && [ -f "$MYBGG_DIR/send_email.py" ]; then
+        # Use virtual environment if available
+        if [ -d "$MYBGG_DIR/venv" ]; then
+            source "$MYBGG_DIR/venv/bin/activate"
+            PYTHON_EMAIL_CMD="python"
+        else
+            PYTHON_EMAIL_CMD="python3"
+        fi
+        
+        if $PYTHON_EMAIL_CMD "$MYBGG_DIR/send_email.py" "$EMAIL_ADDRESS" "$subject" "$email_body"; then
             email_sent=true
             log_message "📧 Email composed via Mail.app for $EMAIL_ADDRESS"
         fi
@@ -97,11 +105,21 @@ run_sync() {
         if [ -n "$algolia_admin_key" ]; then
             log_message "✅ Found Algolia admin API key"
             
+            # Check if virtual environment exists and activate it
+            if [ -d "$MYBGG_DIR/venv" ]; then
+                log_message "🐍 Activating Python virtual environment..."
+                source "$MYBGG_DIR/venv/bin/activate"
+                PYTHON_CMD="python"
+            else
+                log_message "⚠️  Virtual environment not found, using system Python"
+                PYTHON_CMD="python3"
+            fi
+            
             # Run the Python sync script and capture output
             log_message "📥 Downloading latest BGG data and updating Algolia..."
             
             # Capture the output from the Python script
-            if PYTHON_OUTPUT=$(python3 scripts/download_and_index.py --apikey "$algolia_admin_key" --cache_bgg 2>&1); then
+            if PYTHON_OUTPUT=$($PYTHON_CMD scripts/download_and_index.py --apikey "$algolia_admin_key" --cache_bgg 2>&1); then
                 # Extract key information from output
                 TOTAL_PLAYS=$(echo "$PYTHON_OUTPUT" | grep -o "Imported [0-9]* Marvel Champions plays" | grep -o "[0-9]*" || echo "unknown")
                 UNIQUE_HEROES=$(echo "$PYTHON_OUTPUT" | grep -o "Saved [0-9]* unique hero names" | grep -o "[0-9]*" || echo "unknown")

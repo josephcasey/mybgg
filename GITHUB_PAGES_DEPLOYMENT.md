@@ -30,6 +30,22 @@
 
 ## Part 2: Local Python Automation
 
+### 🐍 **Python Environment Setup (First Time)**
+
+Before running any scripts, set up your Python virtual environment:
+
+```bash
+./setup_venv.sh
+```
+
+This script will:
+- ✅ Create a virtual environment in `./venv/`
+- ✅ Install all required Python dependencies
+- ✅ Handle problematic package installations gracefully
+- ✅ Set up isolated Python environment for the project
+
+**All deployment scripts automatically use this virtual environment!**
+
 ### 🤖 Automated Update Script
 
 I've created `update_and_deploy.sh` for you! This script:
@@ -150,6 +166,11 @@ git push origin master
 
 ### 🐛 Troubleshooting:
 
+**If Python scripts fail:**
+- First, check if virtual environment is set up: `ls -la venv/`
+- If missing, run: `./setup_venv.sh`
+- If packages are missing: Re-run `./setup_venv.sh`
+
 **If site doesn't load:**
 - Check GitHub Pages is enabled in Settings → Pages
 - Wait 1-2 minutes for deployment
@@ -162,6 +183,11 @@ git push origin master
 **If Algolia search fails:**
 - Verify credentials in `config.json`
 - Check browser console for errors
+
+**If daily sync fails:**
+- Check email logs for error details
+- Ensure virtual environment is working: `source venv/bin/activate && python --version`
+- Test manually: `./daily_sync.sh`
 
 ## Part 5: Benefits of This Setup
 

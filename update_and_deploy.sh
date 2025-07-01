@@ -34,6 +34,16 @@ if [[ $update_data =~ ^[Yy]$ ]]; then
     # Get Algolia admin API key from launch.json
     echo "🔑 Reading Algolia admin API key from .vscode/launch.json..."
     
+    # Check if virtual environment exists and activate it
+    if [ -d "venv" ]; then
+        echo "🐍 Activating Python virtual environment..."
+        source venv/bin/activate
+        PYTHON_CMD="python"
+    else
+        echo "⚠️  Virtual environment not found, using system Python"
+        PYTHON_CMD="python3"
+    fi
+    
     if [ -f ".vscode/launch.json" ]; then
         # Extract API key from launch.json using grep and sed
         algolia_admin_key=$(grep -o '"--apikey", "[^"]*"' .vscode/launch.json | sed 's/"--apikey", "\([^"]*\)"/\1/')
@@ -43,7 +53,7 @@ if [[ $update_data =~ ^[Yy]$ ]]; then
             
             # Run the data download script
             echo "🔍 Downloading latest BGG data and updating Algolia index..."
-            python3 scripts/download_and_index.py --apikey "$algolia_admin_key" --cache_bgg
+            $PYTHON_CMD scripts/download_and_index.py --apikey "$algolia_admin_key" --cache_bgg
         else
             echo "❌ Could not extract API key from launch.json"
             echo "   Please check the format in .vscode/launch.json"
@@ -56,7 +66,7 @@ if [[ $update_data =~ ^[Yy]$ ]]; then
         if [ -n "$algolia_admin_key" ]; then
             # Run the data download script
             echo "🔍 Downloading latest BGG data and updating Algolia index..."
-            python3 scripts/download_and_index.py --apikey "$algolia_admin_key" --cache_bgg
+            $PYTHON_CMD scripts/download_and_index.py --apikey "$algolia_admin_key" --cache_bgg
         else
             echo "❌ No API key provided. Skipping data update."
             echo "   You can still deploy current data files."
