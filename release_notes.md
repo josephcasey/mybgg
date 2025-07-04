@@ -1,5 +1,50 @@
 # Release Notes
 
+## [v2.2.0] - 2025-07-04
+
+### 🤝 **Advanced Multi-Hero Team Analysis System**
+
+- **95.2% Parsing Success Rate**: Dramatically improved from 74% to 95.2% accuracy in decoding multi-hero plays
+- **Comprehensive Hero Detection**: Handles 62+ Marvel Champions heroes with native aspect mapping
+- **Robust Truncation Handling**: Successfully parses BGG field limit truncations (Ph→Phoenix, Gh→Ghost-Spider, SP/→SP//dr)
+- **Special Character Support**: Correctly handles SP//dr double-slash notation and full-width characters (／)
+- **Dual-Aspect Hero Recognition**: Identifies Spider-Woman Justice/Aggression as single hero (not multi-hero)
+
+### 📊 **Enhanced Statistics & Analytics**
+
+- **Real-time Decode Rate Monitoring**: Clear success/failure statistics with specific examples
+- **Team Performance Analysis**: Win rates, partnership frequency, and unique combinations
+- **Partnership Insights**: Most played hero combinations with detailed success rates
+- **Comprehensive Output**: Terminal-based analysis with 40 successfully decoded team games
+
+### 🎯 **Intelligent Parsing Features**
+
+- **Partial Name Matching**: Fuzzy logic for very short truncations using cached hero database
+- **Native Aspect Database**: Complete mapping of heroes to their canonical aspects
+- **Context-Aware Expansion**: Smart hero name completion based on Marvel Champions roster
+- **Edge Case Handling**: Graceful failure for ambiguous or incomplete data
+
+### 🔧 **Technical Improvements**
+
+- **Enhanced Code Organization**: Separated multi-hero detection, parsing, and analysis logic
+- **Improved Error Reporting**: Specific examples of failed parsing cases for future enhancement
+- **Performance Optimization**: Efficient hero matching using JSON cache file
+- **Maintainable Architecture**: Clear separation of concerns for parsing vs. analysis
+
+### 📈 **Analysis Results Summary**
+
+```
+🤝 Multi-Hero Detection & Parsing:
+   Total multi-hero plays detected: 42
+   Successfully decoded: 40 (95.2%)
+   Failed to decode: 2 (4.8%)
+
+🏆 Top Team Performance:
+   28 unique team combinations analyzed
+   Phoenix + Shadowcat: 100% win rate
+   Groot & Rocket partnerships: Most frequent (4 games)
+```
+
 ## [v2.1.0] - 2025-07-01
 
 ### 🐍 **Python Environment Management**

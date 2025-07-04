@@ -241,6 +241,94 @@ class Indexer:
 
         self.index.save_objects(games)
 
+    def _get_hero_native_aspects(self):
+        """Get the native/default aspect for each hero based on earliest play data"""
+        # This is a lookup table for hero native aspects based on Marvel Champions lore
+        # These are the aspects heroes start with in their base decks
+        native_aspects = {
+            'Spider-Woman': 'Justice',  # Spider-Woman (Jessica Drew) is dual-aspect Justice/Aggression
+            'Spiderwoman': 'Justice',   # Alternative spelling
+            'SP//DR': 'Protection',     # SP//dr is Protection in the game
+            'Captain America': 'Leadership',
+            'Iron Man': 'Aggression', 
+            'Black Widow': 'Aggression',
+            'Thor': 'Aggression',
+            'Hulk': 'Aggression',
+            'Captain Marvel': 'Leadership',
+            'Ms. Marvel': 'Aggression',
+            'Spider-Man': 'Aggression',
+            'She-Hulk': 'Leadership',
+            'Ant-Man': 'Leadership',
+            'Wasp': 'Aggression',
+            'Quicksilver': 'Protection',
+            'Scarlet Witch': 'Justice',
+            'Groot': 'Protection',
+            'Rocket Raccoon': 'Aggression',
+            'Star-Lord': 'Leadership',
+            'Gamora': 'Aggression',
+            'Drax': 'Protection',
+            'Venom': 'Aggression',
+            'Miles Morales': 'Aggression',
+            'Ghost-Spider': 'Protection',
+            'Spider-Ham': 'Justice',
+            'Dr. Strange': 'Protection',
+            'Adam Warlock': 'Leadership',
+            'Spectrum': 'Leadership',
+            'Nebula': 'Leadership',
+            'War Machine': 'Leadership',
+            'Valkyrie': 'Aggression',
+            'Vision': 'Protection',
+            'Hawkeye': 'Leadership',
+            'Black Panther': 'Protection',
+            'Winter Soldier': 'Aggression',
+            'Falcon': 'Leadership',
+            'Wolverine': 'Aggression',
+            'Colossus': 'Protection',
+            'Shadowcat': 'Aggression',
+            'Cyclops': 'Leadership',
+            'Phoenix': 'Justice',
+            'Storm': 'Leadership',
+            'Rogue': 'Aggression',
+            'Gambit': 'Leadership',
+            'Psylocke': 'Justice',
+            'Bishop': 'Protection',
+            'Cable': 'Leadership',
+            'Domino': 'Aggression',
+            'X-23': 'Aggression',
+            'Deadpool': 'Aggression',
+            'Angel': 'Protection',
+            'Iceman': 'Protection',
+            'Nightcrawler': 'Aggression',
+            'Jubilee': 'Aggression',
+            'Magik': 'Justice',
+            'Magneto': 'Leadership',
+            'Daredevil': 'Protection',
+            'Silk': 'Protection',
+            'Nova': 'Aggression',
+            'Ironheart': 'Leadership'
+        }
+        return native_aspects
+
+    def _is_special_dual_aspect_hero(self, hero_str):
+        """Check if this is a special hero that requires two aspects (like Spider-Woman)"""
+        # Clean the hero string
+        hero = str(hero_str).strip()
+        if hero.startswith('Team 1 - '):
+            hero = hero[9:]
+        elif hero.startswith('Team: '):
+            hero = hero[6:]
+            
+        # Heroes that legitimately use two aspects in a single play
+        dual_aspect_heroes = ['Spiderwoman', 'Spider-Woman']
+        
+        for dual_hero in dual_aspect_heroes:
+            if dual_hero.lower() in hero.lower():
+                # Check if it contains aspect indicators typical of dual-aspect play
+                return ('Justice' in hero or 'Aggression' in hero or 
+                        'Protection' in hero or 'Leadership' in hero or
+                        '/' in hero)
+        return False
+
     def _is_multi_hero(self, hero_str):
         """Helper to detect multi-hero plays"""
         if not hero_str:
@@ -255,11 +343,19 @@ class Indexer:
         elif hero.startswith('Team: '):
             hero = hero[6:]
         
+        # Check for special dual-aspect heroes first (these are NOT multi-hero)
+        if self._is_special_dual_aspect_hero(hero_str):
+            return False
+            
+        # Handle SP//DR as a single hero (not multi-hero)
+        if 'SP//DR' in hero or 'SP//dr' in hero:
+            return False
+        
         # List of indicators for actual multi-hero games
         multi_hero_indicators = [
             '/',           # Regular slash
             '／',          # Full-width slash
-            '//',         # Double slash
+            '//',         # Double slash (but not SP//DR)
             '\\',         # Backslash
             '，',         # Full-width comma
             ',',          # Regular comma
@@ -269,13 +365,337 @@ class Indexer:
         # Check for multi-hero indicators in the cleaned hero name
         return any(ind in hero for ind in multi_hero_indicators)
 
+    def _find_hero_by_partial_name(self, partial_name):
+        """Find hero by partial name match"""
+        if not partial_name or len(partial_name) < 2:
+            return None
+            
+        # Clean partial name
+        partial_clean = partial_name.strip().lower()
+        
+        # Handle special cases first
+        if partial_clean == 'sp/' or partial_clean == 'sp':
+            return 'SP//dr'  # SP/ is clearly SP//dr truncated
+            
+        # Load cached hero names for matching
+        try:
+            with open('cached_hero_names.json', 'r') as f:
+                hero_names = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Fallback list if file not available
+            hero_names = ['Phoenix', 'Ghost-Spider', 'Shadowcat', 'Storm', 'Psylocke']
+        
+        # Try exact prefix match first
+        for hero in hero_names:
+            if hero.lower().startswith(partial_clean):
+                return hero
+                
+        # Try contains match for very short partials
+        if len(partial_clean) <= 3:
+            for hero in hero_names:
+                if partial_clean in hero.lower():
+                    return hero
+                    
+        return None
+
+    def _parse_hero_team(self, hero_str):
+        """Parse multi-hero string into individual heroes"""
+        if not hero_str:
+            return []
+            
+        # Convert to string and clean up
+        hero = str(hero_str).strip()
+        
+        # Remove team prefixes
+        if hero.startswith('Team 1 - '):
+            hero = hero[9:]
+        elif hero.startswith('Team: '):
+            hero = hero[6:]
+        
+        # Get native aspects for fallback
+        native_aspects = self._get_hero_native_aspects()
+        
+        # Handle different separator types
+        heroes = []
+        
+        # Try full-width slash first (most common in your data)
+        if '／' in hero:
+            parts = hero.split('／')
+        elif '/' in hero:
+            parts = hero.split('/')
+        elif '//' in hero:
+            parts = hero.split('//')
+        elif '\\' in hero:
+            parts = hero.split('\\')
+        elif '，' in hero:
+            parts = hero.split('，')
+        elif ',' in hero:
+            parts = hero.split(',')
+        elif ' and ' in hero:
+            parts = hero.split(' and ')
+        else:
+            parts = [hero]
+        
+        # Clean up each hero name
+        for i, part in enumerate(parts):
+            part = part.strip()
+            if not part:
+                continue
+                
+            # Handle very short partial names (likely truncated second heroes)
+            if len(part) <= 3 and i > 0:  # Only for non-first parts
+                # Try to find hero by partial match
+                matched_hero = self._find_hero_by_partial_name(part)
+                if matched_hero:
+                    heroes.append(matched_hero)
+                    continue
+                else:
+                    # Skip if we can't match the partial
+                    continue
+            
+            # Extract hero name by removing aspect suffixes
+            # Check for aspects at the end of the string first
+            hero_name = part
+            
+            # Remove aspects (all 5 Marvel Champions aspects + common truncations)
+            # Order matters - check longer strings first to avoid partial matches
+            aspects = [
+                # Full aspect names
+                ' Protection', ' Aggression', ' Justice', ' Leadership', ' Pool',
+                # Common truncations due to BGG field limits  
+                ' Protectio', ' Agression', ' Aggressi', ' Leaders', ' Leadersh',
+                ' Justic', ' Agres', ' Protec', ' Lead', ' Prot',
+                # Very short truncations
+                ' Party', ' CC', ' Agr', ' Jus', ' Pro', ' Lea'
+            ]
+            
+            # Try to remove aspect suffixes
+            for aspect in aspects:
+                if hero_name.endswith(aspect):
+                    hero_name = hero_name[:-len(aspect)].strip()
+                    break
+            
+            # Handle cases where aspect might be mixed with hero name due to truncation
+            # e.g., "Colossus Protectio" should become "Colossus"
+            for aspect in ['Protectio', 'Agression', 'Aggressi', 'Leaders', 'Leadersh', 'Justic']:
+                if aspect in hero_name and not hero_name.startswith(aspect):
+                    # Split and take the part before the aspect
+                    parts_with_aspect = hero_name.split(aspect)
+                    if len(parts_with_aspect) > 1:
+                        hero_name = parts_with_aspect[0].strip()
+                        break
+            
+            # Handle truncated names (common in BGG data due to length limits)
+            hero_name = self._expand_hero_name(hero_name)
+            
+            # Validate the hero name - skip if it's just an aspect or very short
+            if (hero_name and len(hero_name) > 2 and 
+                hero_name not in ['Aggression', 'Protection', 'Justice', 'Leadership', 'Pool',
+                                 'Agression', 'Protectio', 'Justic', 'Leaders', 'Leadersh']):
+                heroes.append(hero_name)
+        
+        return heroes
+
+    def _expand_hero_name(self, name):
+        """Expand truncated hero names based on BGG comment field truncation"""
+        # Common truncations in Marvel Champions BGG data
+        # These are based on character limits causing truncation
+        expansions = {
+            # Direct truncations
+            'Sha': 'Shadowcat',
+            'Shadowc': 'Shadowcat', 
+            'Wol': 'Wolverine', 
+            'Wolverin': 'Wolverine',
+            'Phoe': 'Phoenix',
+            'Ph': 'Phoenix',  # Very short truncation for Phoenix
+            'Sca': 'Scarlet Witch',
+            'Scarlet': 'Scarlet Witch',
+            'Cap': 'Captain America',
+            'Captain': 'Captain America',
+            'Dr.': 'Dr. Strange',
+            'Dr': 'Dr. Strange',
+            'Strange': 'Dr. Strange',
+            'Ghost-Spide': 'Ghost-Spider',
+            'Gh': 'Ghost-Spider',  # Very short truncation for Ghost-Spider
+            'Spiderwoman': 'Spider-Woman',
+            'Spider-Woman': 'Spider-Woman',
+            'Ant Man': 'Ant-Man',
+            'AntMan': 'Ant-Man',
+            'Man': 'Ant-Man',  # Context-dependent, but often Ant-Man in truncated strings
+            'Marv': 'Captain Marvel',
+            'Ms.': 'Ms. Marvel',
+            'Spectru': 'Spectrum',
+            'S': 'Storm',  # Very short truncation - context-dependent
+            # Special character hero names
+            'SP//DR': 'SP//dr',  # Normalize case
+            'SP//dr': 'SP//dr',  # This is the canonical name for this hero
+            'SP/DR': 'SP//dr',   # Handle single slash version
+            # Standard hero names (already correct)
+            'Colossus': 'Colossus',
+            'Cyclops': 'Cyclops',
+            'War Machine': 'War Machine',
+            'Iron Man': 'Iron Man',
+            'Black Widow': 'Black Widow',
+            'Black Panther': 'Black Panther',
+            'Hulk': 'Hulk',
+            'She-Hulk': 'She-Hulk',
+            'Thor': 'Thor',
+            'Hawkeye': 'Hawkeye',
+            'Groot': 'Groot',
+            'Rocket Raccoon': 'Rocket Raccoon',
+            'Rocket': 'Rocket Raccoon',
+            'Star-Lord': 'Star-Lord',
+            'Gamora': 'Gamora',
+            'Nebula': 'Nebula',
+            'Nova': 'Nova',
+            'Venom': 'Venom',
+            'Miles Morales': 'Miles Morales',
+            'Spider-Ham': 'Spider-Ham',
+            'Silk': 'Silk',
+            'Valkyrie': 'Valkyrie',
+            'Vision': 'Vision',
+            'Quicksilver': 'Quicksilver',
+            'Daredevil': 'Daredevil',
+            'Psylocke': 'Psylocke',
+            'Angel': 'Angel',
+            'Bishop': 'Bishop',
+            'Cable': 'Cable',
+            'Domino': 'Domino',
+            'Gambit': 'Gambit',
+            'Iceman': 'Iceman',
+            'Jubilee': 'Jubilee',
+            'Magik': 'Magik',
+            'Magneto': 'Magneto',
+            'Nightcrawler': 'Nightcrawler',
+            'Rogue': 'Rogue',
+            'Storm': 'Storm',
+            'Winter Soldier': 'Winter Soldier',
+            'X-23': 'X-23',
+            'Deadpool': 'Deadpool',
+            'Wolverin': 'Wolverine',
+            # Aspect-truncated combinations
+            'Colossus Protectio': 'Colossus',  # Sometimes aspect gets partially truncated with name
+            'Ghost-Spider Protectio': 'Ghost-Spider',
+            'Captain America Leaders': 'Captain America',
+            'Captain Marvel Leadersh': 'Captain Marvel',
+            'Black Panther Protectio': 'Black Panther',
+            'War Machine Leadership': 'War Machine',
+            'Winter Soldier CC Agres': 'Winter Soldier',
+            'Spiderwoman Justice/Agg': 'Spider-Woman',
+            'Dr. Strange Justice': 'Dr. Strange',
+            'She-Hulk Aggression': 'She-Hulk'
+        }
+        
+        return expansions.get(name, name)
+
+    def _analyze_multi_hero_games(self, play_data):
+        """Analyze multi-hero games and print statistics"""
+        total_multi_hero_detected = 0
+        successfully_decoded_plays = []
+        failed_parsing_examples = []
+        
+        # Collect multi-hero plays and track parsing success
+        for play in play_data:
+            hero = getattr(play, 'hero', '')
+            if self._is_multi_hero(hero):
+                total_multi_hero_detected += 1
+                heroes = self._parse_hero_team(hero)
+                
+                if len(heroes) >= 2:  # Successfully decoded multi-hero team
+                    successfully_decoded_plays.append({
+                        'heroes': heroes,
+                        'villain': getattr(play, 'villain', 'Unknown'),
+                        'win': getattr(play, 'win', False),
+                        'date': getattr(play, 'date', 'Unknown'),
+                        'original_hero_str': hero
+                    })
+                else:
+                    # Failed to parse or only got 1 hero
+                    if len(failed_parsing_examples) < 10:  # Limit examples
+                        failed_parsing_examples.append(hero)
+        
+        # Calculate decode success rate
+        decode_success_rate = (len(successfully_decoded_plays) / total_multi_hero_detected * 100) if total_multi_hero_detected > 0 else 0
+        failed_count = total_multi_hero_detected - len(successfully_decoded_plays)
+        
+        # Print detection vs parsing success stats
+        print(f"\n🤝 Multi-Hero Detection & Parsing:")
+        print(f"   Total multi-hero plays detected: {total_multi_hero_detected}")
+        print(f"   Successfully decoded: {len(successfully_decoded_plays)} ({decode_success_rate:.1f}%)")
+        print(f"   Failed to decode: {failed_count} ({100-decode_success_rate:.1f}%)")
+        
+        if failed_parsing_examples:
+            print(f"\n❌ Failed parsing examples:")
+            for example in failed_parsing_examples:
+                print(f"   '{example}'")
+        
+        if not successfully_decoded_plays:
+            print("   No successfully decoded multi-hero games found")
+            return
+        
+        # Analyze team combinations using the correctly named variable
+        team_stats = {}
+        hero_partnerships = {}
+        
+        for play in successfully_decoded_plays:
+            heroes = sorted(play['heroes'])  # Sort for consistent team names
+            team_key = ' + '.join(heroes)
+            
+            # Track team performance
+            if team_key not in team_stats:
+                team_stats[team_key] = {'wins': 0, 'total': 0, 'villains': set()}
+            
+            team_stats[team_key]['total'] += 1
+            team_stats[team_key]['villains'].add(play['villain'])
+            if play['win']:
+                team_stats[team_key]['wins'] += 1
+            
+            # Track individual hero partnerships
+            for i, hero1 in enumerate(heroes):
+                for hero2 in heroes[i+1:]:
+                    pair_key = f"{hero1} & {hero2}"
+                    if pair_key not in hero_partnerships:
+                        hero_partnerships[pair_key] = {'wins': 0, 'total': 0}
+                    
+                    hero_partnerships[pair_key]['total'] += 1
+                    if play['win']:
+                        hero_partnerships[pair_key]['wins'] += 1
+        
+        # Print team analysis with proper data
+        print(f"\n🏆 Team Performance Analysis:")
+        print(f"   Successfully decoded games: {len(successfully_decoded_plays)}")
+        print(f"   Unique team combinations: {len(team_stats)}")
+        
+        # Top performing teams
+        print(f"\n🏆 Top Team Win Rates:")
+        sorted_teams = sorted(team_stats.items(), 
+                            key=lambda x: (x[1]['wins']/x[1]['total'], x[1]['total']), 
+                            reverse=True)
+        
+        for team, stats in sorted_teams[:10]:
+            win_rate = (stats['wins'] / stats['total']) * 100
+            print(f"   {team}: {stats['wins']}/{stats['total']} ({win_rate:.1f}%)")
+        
+        # Most played partnerships
+        print(f"\n🤜🤛 Most Frequent Partnerships:")
+        sorted_partnerships = sorted(hero_partnerships.items(), 
+                                   key=lambda x: x[1]['total'], 
+                                   reverse=True)
+        
+        for pair, stats in sorted_partnerships[:10]:
+            win_rate = (stats['wins'] / stats['total']) * 100 if stats['total'] > 0 else 0
+            print(f"   {pair}: {stats['total']} games ({win_rate:.1f}% win rate)")
+
     def add_objects(self, play_data):
         # Initialize variables
         filtered_plays = []
         skipped_count = 0
         multi_hero_examples = set()
         
-        # Filter out multi-hero games
+        # First, analyze multi-hero games before filtering them out
+        self._analyze_multi_hero_games(play_data)
+        
+        # Filter out multi-hero games for main indexing
         print("\nStarting play data filtering...")
         for play in play_data:
             hero = getattr(play, 'hero', '')

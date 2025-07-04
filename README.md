@@ -1,29 +1,126 @@
-# Marvel Champions statistics tracker
+# Marvel Champions BGG Statistics Tracker
 
-I wanted to create a deeeper statistic tracker for my played games of Marvel Champions (via bgstats application archived on boardgamegeek)
+Advanced statistics tracker for Marvel Champions gameplay data from BoardGameGeek, featuring robust multi-hero team analysis.
 
-The MyBGG project below from EmilStenstrom is the basis for my proof of concept so far.
+**Key Features:**
+- 🎯 **Multi-Hero Team Analysis**: 95.2% success rate in parsing complex multi-hero play data
+- 📊 **Advanced Statistics**: Team win rates, partnership analysis, and performance tracking
+- 🚀 **Automated Deployment**: GitHub Pages hosting with daily BGG sync automation
+- 🔧 **Robust Parsing**: Handles truncated names, special characters, and aspect variations
+- 📧 **Email Notifications**: Daily sync summaries with play statistics
 
-My approach has been:
-# Proof of Concept
-- Setup of Git, Algolia & VSCode environments (to allow me to debug the python)
-- Enhance the parsing of the plays_data structure:
-   - to capture the played role fields
-   - to parse the comments field & extract the villain set used & any non-standard modulars
-- I removed some parts of the code I didn't need (around players data) to simplify some of my changes & fixed some original bugs (i think)
+## Enhanced Multi-Hero Parsing System
 
-# Next steps
-- structure the villain & hero data from the plays to show data like:
-   - Most played hero/villain
-   - Most beaten/defeated villain for each hero
-   - Most successful team ups
-   - Campaigns played (& how many tries it took)
+Our system successfully decodes complex BGG play data with 95.2% accuracy:
 
-# Future enhancements
-- Producing these data as infographics (with hero/villain art sourced from cardgamedb or similar)
+### ✅ Successfully Handles:
+- **Spider-Woman dual-aspect plays**: `'Spiderwoman Justice/ Aggression'` → Single hero (not multi-hero)
+- **Special character names**: `'SP//DR Protection'` → Correctly identifies SP//dr
+- **Truncated hero names**: `'Team 1 - Shadowcat Aggression／Ph'` → Shadowcat + Phoenix
+- **Very short truncations**: `'Team 1 - Daredevil Protection／Gh'` → Daredevil + Ghost-Spider  
+- **Partial SP//dr variants**: `'Team 1 - She-Hulk Aggression／SP/'` → She-Hulk + SP//dr
 
+### 📈 Analysis Output:
+```
+🤝 Multi-Hero Detection & Parsing:
+   Total multi-hero plays detected: 42
+   Successfully decoded: 40 (95.2%)
+   Failed to decode: 2 (4.8%)
 
-I Include original instructions for MyBGG below:
+🏆 Top Team Win Rates:
+   Phoenix + Shadowcat: 2/2 (100.0%)
+   Dr. Strange + Scarlet Witch: 2/2 (100.0%)
+   
+🤜🤛 Most Frequent Partnerships:
+   Groot & Rocket Ra: 4 games (25.0% win rate)
+   Daredevil & Ghost-Spider: 4 games (50.0% win rate)
+```
+
+## Quick Setup (GitHub Pages Deployment)
+
+1. **Fork this repository** to your GitHub account
+2. **Set up Python environment**: `./setup_venv.sh`
+3. **Configure BGG/Algolia credentials** in `.vscode/launch.json`
+4. **Deploy**: `./update_and_deploy.sh`
+5. **Set up automation**: `./setup_login_agent.sh` (optional)
+
+Your site will be available at: `https://YOUR_USERNAME.github.io/mybgg/`
+
+## Development Environment Setup
+
+### Python Virtual Environment (Recommended)
+```bash
+# Set up isolated Python environment with all dependencies
+./setup_venv.sh
+
+# Manual activation (scripts handle this automatically)
+source venv/bin/activate
+```
+
+### Manual Deployment Commands
+```bash
+# Quick deploy without data update
+./quick_deploy.sh
+
+# Full data sync and deploy
+./update_and_deploy.sh
+
+# Daily automated sync (runs at 8 AM)
+./daily_sync.sh
+```
+
+## Project Structure
+
+```
+mybgg/
+├── scripts/mybgg/           # Core parsing and indexing logic
+│   ├── indexer.py          # Multi-hero parsing engine (95.2% success rate)
+│   ├── bgg_client.py       # BoardGameGeek API client
+│   └── downloader.py       # Data collection and processing
+├── venv/                   # Python virtual environment
+├── setup_venv.sh          # Environment setup script
+├── daily_sync.sh          # Automated sync with email notifications
+├── update_and_deploy.sh   # Interactive deployment script
+└── GITHUB_PAGES_DEPLOYMENT.md  # Detailed deployment guide
+```
+
+## Advanced Features
+
+### Automated Daily Sync
+- **Schedule**: Runs daily at 8:00 AM + first login after 8 AM
+- **Email Reports**: Success/failure notifications with play details
+- **Smart Caching**: Only updates when new plays are detected
+
+### Robust Hero Name Parsing
+- **62+ Marvel Champions heroes** with native aspect mapping
+- **Truncation handling**: BGG field limits cause name cutoffs
+- **Special characters**: Handles SP//dr, full-width slashes (／), etc.
+- **Aspect removal**: Cleanly extracts hero names from "Hero Aspect" format
+
+### Team Analysis Statistics
+- **Partnership frequency**: Most played hero combinations
+- **Win rate analysis**: Team performance vs. individual heroes  
+- **Villain matchups**: Success rates against different enemies
+- **Unique combinations**: 28 different team configurations tracked
+
+---
+
+## Original MyBGG Project
+
+This project is based on MyBGG by EmilStenstrom: https://github.com/EmilStenstrom/mybgg
+
+### MyBGG Features Retained:
+- Algolia search integration for lightning-fast filtering
+- GitHub Pages static hosting
+- BGG collection API integration
+- Responsive web interface
+
+### Marvel Champions Enhancements:
+- Multi-hero team play parsing and analysis
+- Marvel Champions-specific data extraction (villains, aspects, heroes)
+- Email notification system for sync status
+- Automated deployment with macOS Launch Agents
+- Python virtual environment isolation
 
 # MyBGG - Search and filter your boardgame collection
 
