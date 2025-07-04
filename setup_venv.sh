@@ -31,7 +31,7 @@ source venv/bin/activate
 
 # Upgrade pip
 echo "🔧 Upgrading pip..."
-python -m pip install --upgrade pip
+python3 -m pip install --upgrade pip
 
 # Install dependencies from requirements.txt
 echo "📚 Installing Python dependencies..."
@@ -49,7 +49,7 @@ echo "✅ Virtual environment setup complete!"
 echo ""
 echo "📋 Next steps:"
 echo "   1. Activate the environment: source venv/bin/activate"
-echo "   2. Test the BGG sync: python scripts/download_and_index.py"
+echo "   2. Test the BGG sync: python3 scripts/download_and_index.py"
 echo "   3. Deactivate when done: deactivate"
 echo ""
 echo "🔧 For daily automation, the scripts will automatically use this environment"

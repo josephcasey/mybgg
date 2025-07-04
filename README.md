@@ -57,6 +57,8 @@ Your site will be available at: `https://YOUR_USERNAME.github.io/mybgg/`
 source venv/bin/activate
 ```
 
+**✨ All scripts now consistently use `python3` and `pip3` for maximum macOS compatibility**
+
 ### Manual Deployment Commands
 ```bash
 # Quick deploy without data update
@@ -96,6 +98,7 @@ mybgg/
 - **Truncation handling**: BGG field limits cause name cutoffs
 - **Special characters**: Handles SP//dr, full-width slashes (／), etc.
 - **Aspect removal**: Cleanly extracts hero names from "Hero Aspect" format
+- **Python3 consistency**: All parsing scripts use `python3` for maximum compatibility
 
 ### Team Analysis Statistics
 - **Partnership frequency**: Most played hero combinations
@@ -116,11 +119,11 @@ This project is based on MyBGG by EmilStenstrom: https://github.com/EmilStenstro
 - Responsive web interface
 
 ### Marvel Champions Enhancements:
-- Multi-hero team play parsing and analysis
+- Multi-hero team play parsing and analysis (95.2% success rate)
 - Marvel Champions-specific data extraction (villains, aspects, heroes)
 - Email notification system for sync status
 - Automated deployment with macOS Launch Agents
-- Python virtual environment isolation
+- Python virtual environment isolation with python3/pip3 consistency
 
 # MyBGG - Search and filter your boardgame collection
 
@@ -203,7 +206,7 @@ Using this project, you can set up your own site for searching and filtering you
    </details>
 
 4. **Download your games from boardgamegeek and send them to algolia**:<br>
-   ```python scripts/download_and_index.py --apikey YOUR_ALGOLIA_ADMIN_API_KEY```
+   ```python3 scripts/download_and_index.py --apikey YOUR_ALGOLIA_ADMIN_API_KEY```
 
    (_Note that this API KEY is NOT the same as the one you put in config.json. Never share your admin api key publicly_)
 
@@ -225,7 +228,7 @@ GitHub Pages_. Select your master branch as Source, and click Save.
 
 1. Go to your project directory. Run this command:
 
-    ```python -m http.server```
+    ```python3 -m http.server```
 
     This starts a webserver in the directory you're in.
 

@@ -38,7 +38,7 @@ if [[ $update_data =~ ^[Yy]$ ]]; then
     if [ -d "venv" ]; then
         echo "🐍 Activating Python virtual environment..."
         source venv/bin/activate
-        PYTHON_CMD="python"
+        PYTHON_CMD="python3"
     else
         echo "⚠️  Virtual environment not found, using system Python"
         PYTHON_CMD="python3"

@@ -38,13 +38,13 @@ Before running any scripts, set up your Python virtual environment:
 ./setup_venv.sh
 ```
 
-This script will:
-- ✅ Create a virtual environment in `./venv/`
+**This script will:**
+- ✅ Create isolated Python 3 virtual environment
 - ✅ Install all required Python dependencies
-- ✅ Handle problematic package installations gracefully
+- ✅ Configure proper python3/pip3 usage throughout the project
 - ✅ Set up isolated Python environment for the project
 
-**All deployment scripts automatically use this virtual environment!**
+**✨ Important**: All scripts now consistently use `python3` and `pip3` commands for maximum compatibility across macOS systems.
 
 ### 🤖 Automated Update Script
 
@@ -186,7 +186,7 @@ git push origin master
 
 **If daily sync fails:**
 - Check email logs for error details
-- Ensure virtual environment is working: `source venv/bin/activate && python --version`
+- Ensure virtual environment is working: `source venv/bin/activate && python3 --version`
 - Test manually: `./daily_sync.sh`
 
 ## Part 5: Benefits of This Setup

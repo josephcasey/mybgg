@@ -37,11 +37,11 @@ This is an automated message from your daily sync script."
     local email_sent=false
     
     # Method 1: Use our Python script (opens Mail.app + notification)
-    if command -v python >/dev/null 2>&1 && [ -f "$MYBGG_DIR/send_email.py" ]; then
+    if command -v python3 >/dev/null 2>&1 && [ -f "$MYBGG_DIR/send_email.py" ]; then
         # Use virtual environment if available
         if [ -d "$MYBGG_DIR/venv" ]; then
             source "$MYBGG_DIR/venv/bin/activate"
-            PYTHON_EMAIL_CMD="python"
+            PYTHON_EMAIL_CMD="python3"
         else
             PYTHON_EMAIL_CMD="python3"
         fi
@@ -109,7 +109,7 @@ run_sync() {
             if [ -d "$MYBGG_DIR/venv" ]; then
                 log_message "🐍 Activating Python virtual environment..."
                 source "$MYBGG_DIR/venv/bin/activate"
-                PYTHON_CMD="python"
+                PYTHON_CMD="python3"
             else
                 log_message "⚠️  Virtual environment not found, using system Python"
                 PYTHON_CMD="python3"

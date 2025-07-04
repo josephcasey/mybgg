@@ -1,166 +1,107 @@
 {
-  "Nightcrawler": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/10/48001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/10/48001b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "https://hallofheroeslcg.com/nightcrawler-kurt-wagner/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/48001a_aggression_overlay.jpg",
-      "original_path": "../overlay_images/48001a_original.jpg"
-    }
-  },
-  "Iceman": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/46001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/46001b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "https://hallofheroeslcg.com/iceman-bobby-drake/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/46001a_protection_overlay.jpg",
-      "original_path": "../overlay_images/46001a_original.jpg"
-    }
-  },
-  "Bishop": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45001b.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 39 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/45001a_justice_overlay.jpg",
-      "original_path": "../overlay_images/45001a_original.jpg"
-    }
-  },
-  "Wolverine": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/35001b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/35001a.jpg",
+  "Phoenix": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/a0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/a0a.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/logan-wolverine/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/35001b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/35001b_original.jpg"
-    }
-  },
-  "Ironheart": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/i0a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/i0b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR found 0 hero texts, fell back to URL pattern",
-    "source_url": "https://hallofheroeslcg.com/ironheart-riri-williams/",
-    "ocr_confidence": "low"
-  },
-  "Hulk": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/06/hulk0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/06/hulk0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/bruce-banner-hulk/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/hulk0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/hulk0b_original.jpg"
-    }
-  },
-  "Scarlet Witch": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/03/s0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/03/s0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/scarlet-witch/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/s0b_justice_overlay.jpg",
-      "original_path": "../overlay_images/s0b_original.jpg"
-    }
-  },
-  "Magik": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45030a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45030b.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 47 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/45030a_justice_overlay.jpg",
-      "original_path": "../overlay_images/45030a_original.jpg"
-    }
+    "source_url": "https://hallofheroeslcg.com/jean-grey-phoenix/",
+    "ocr_confidence": "high"
   },
   "Hawkeye": {
     "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/h1b.jpg",
     "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/h1a.jpg",
     "reason": "No specific hero page URL found on /browse/; Fallback: Found 34 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
     "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/h1b_leadership_overlay.jpg",
-      "original_path": "../overlay_images/h1b_original.jpg"
-    }
+    "ocr_confidence": "high"
   },
-  "Spider-Ham": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/07/h0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/07/h0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/spider-ham-peter-porker/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/h0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/h0b_original.jpg"
-    }
-  },
-  "Angel": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/42001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/42001b.jpg",
+  "Captain America": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/01/0a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/01/0b.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "https://hallofheroeslcg.com/angel-warren-worthington-iii/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/42001a_leadership_overlay.jpg",
-      "original_path": "../overlay_images/42001a_original.jpg"
-    }
+    "source_url": "https://hallofheroeslcg.com/captain-america/",
+    "ocr_confidence": "high"
   },
-  "Ant Man": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/11/a0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/11/a0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/ant-man/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/a0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/a0b_original.jpg"
-    }
-  },
-  "Rocket Raccoon": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/r0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/r0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 42 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+  "Nick Fury": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50034a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50034b.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 19 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
     "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/r0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/r0b_original.jpg"
-    }
+    "ocr_confidence": "high"
+  },
+  "Iron Man": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/tony0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/tony0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 22 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Maria Hill": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50001b.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 17 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Spider-Man": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/peter0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/peter0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 39 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Psylocke": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/41001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/41001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/psylocke-betsy-braddock/",
+    "ocr_confidence": "high"
+  },
+  "Daredevil": {
+    "image": null,
+    "image2": null,
+    "reason": "No specific hero page URL found on /browse/; Fallback: No image found in big box pages either",
+    "source_url": "N/A (no browse page match)"
+  },
+  "Black Widow": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/04/w1b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/04/w1a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/natasha-romanoff-black-widow/",
+    "ocr_confidence": "high"
+  },
+  "Scarlet Witch": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/03/s0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/03/s0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/scarlet-witch/",
+    "ocr_confidence": "high"
   },
   "Wasp": {
     "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/12/0b-1.jpg",
     "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/12/0a-1.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
     "source_url": "https://hallofheroeslcg.com/wasp/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/0b-1_aggression_overlay.jpg",
-      "original_path": "../overlay_images/0b-1_original.jpg"
-    }
+    "ocr_confidence": "high"
+  },
+  "Jubilee": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/47001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/47001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/jubilee-jubilation-lee/",
+    "ocr_confidence": "high"
+  },
+  "Domino": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40037a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40037b.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 46 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Nightcrawler": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/10/48001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/10/48001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/nightcrawler-kurt-wagner/",
+    "ocr_confidence": "high"
   },
   "Shuri": {
     "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/05/51001a.jpg",
@@ -169,29 +110,12 @@
     "source_url": "https://hallofheroeslcg.com/black-panther-shuri/",
     "ocr_confidence": "high"
   },
-  "Venom": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/07/v0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/07/v0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/venom/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/v0b_justice_overlay.jpg",
-      "original_path": "../overlay_images/v0b_original.jpg"
-    }
-  },
-  "Spider-Man": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/peter0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/peter0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 39 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/peter0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/peter0b_original.jpg"
-    }
+  "Ironheart": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/i0a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/i0b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR found 0 hero texts, fell back to URL pattern",
+    "source_url": "https://hallofheroeslcg.com/ironheart-riri-williams/",
+    "ocr_confidence": "low"
   },
   "Jessica Jones": {
     "image": null,
@@ -199,33 +123,113 @@
     "reason": "No specific hero page URL found on /browse/; Fallback: No image found in big box pages either",
     "source_url": "N/A (no browse page match)"
   },
-  "Gamora": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/g0b-1.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/g0a-1.jpg",
+  "Silk": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/05/52001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/05/52001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/silk-cindy-moon/",
+    "ocr_confidence": "high"
+  },
+  "War Machine": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/11/2-1.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/11/1-1.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/gamora/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/g0b-1_aggression_overlay.jpg",
-      "original_path": "../overlay_images/g0b-1_original.jpg"
-    }
+    "source_url": "https://hallofheroeslcg.com/war-machine/",
+    "ocr_confidence": "high"
+  },
+  "Bishop": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45001b.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 39 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Wolverine": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/35001b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/35001a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/logan-wolverine/",
+    "ocr_confidence": "high"
+  },
+  "Shadowcat": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/s0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/s0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 19 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Star-Lord": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/peter-quill-star-lord/",
+    "ocr_confidence": "high"
+  },
+  "Falcon": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/06/53001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/06/53001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/falcon-sam-wilson/",
+    "ocr_confidence": "high"
+  },
+  "Storm": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/s0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/s0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/ororo-munroe-storm/",
+    "ocr_confidence": "high"
+  },
+  "Cyclops": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0b-1.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0a-1.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/scott-summers-cyclops/",
+    "ocr_confidence": "high"
+  },
+  "Agent 13": {
+    "image": null,
+    "image2": null,
+    "reason": "No specific hero page URL found on /browse/; Fallback: No image found in big box pages either",
+    "source_url": "N/A (no browse page match)"
+  },
+  "Winter Soldier": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/06/54001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/06/54001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/winter-soldier-bucky-barnes/",
+    "ocr_confidence": "high"
   },
   "Doctor Strange": {
     "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/06/strange0b.jpg",
     "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/06/strange0a.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
     "source_url": "https://hallofheroeslcg.com/stephen-strange-doctor-strange/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/strange0b_justice_overlay.jpg",
-      "original_path": "../overlay_images/strange0b_original.jpg"
-    }
+    "ocr_confidence": "high"
   },
-  "Maria Hill": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50001b.jpg",
+  "Cable": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40001b.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 42 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Captain Marvel": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/carol0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/carol0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 22 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Ms. Marvel": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/05/m0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/05/m0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/ms-marvel/",
+    "ocr_confidence": "high"
+  },
+  "Ghost-Spider": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0b-1.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0a-1.jpg",
     "reason": "No specific hero page URL found on /browse/; Fallback: Found 17 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
     "source_url": "N/A (no browse page match)",
     "ocr_confidence": "high"
@@ -237,140 +241,6 @@
     "source_url": "https://hallofheroeslcg.com/nebula/",
     "ocr_confidence": "high"
   },
-  "Daredevil": {
-    "image": null,
-    "image2": null,
-    "reason": "No specific hero page URL found on /browse/; Fallback: No image found in big box pages either",
-    "source_url": "N/A (no browse page match)"
-  },
-  "Iron Man": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/tony0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/tony0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 22 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/tony0b_protection_overlay.jpg",
-      "original_path": "../overlay_images/tony0b_original.jpg"
-    }
-  },
-  "Nova": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/n0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/n0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/sam-alexander-nova/",
-    "ocr_confidence": "high"
-  },
-  "Star-Lord": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/peter-quill-star-lord/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/0b_leadership_overlay.jpg",
-      "original_path": "../overlay_images/0b_original.jpg"
-    }
-  },
-  "Agent 13": {
-    "image": null,
-    "image2": null,
-    "reason": "No specific hero page URL found on /browse/; Fallback: No image found in big box pages either",
-    "source_url": "N/A (no browse page match)"
-  },
-  "Thor": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/thor0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/thor0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/thor/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/thor0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/thor0b_original.jpg"
-    }
-  },
-  "Spiderwoman": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/j0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/j0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 28 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high"
-  },
-  "Gambit": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/g0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/g0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/gambit-remy-lebeau/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/g0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/g0b_original.jpg"
-    }
-  },
-  "Cyclops": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0b-1.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0a-1.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/scott-summers-cyclops/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/c0b-1_leadership_overlay.jpg",
-      "original_path": "../overlay_images/c0b-1_original.jpg"
-    }
-  },
-  "Rogue": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/r0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/r0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/rogue-anna-marie/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/r0b_protection_overlay.jpg",
-      "original_path": "../overlay_images/r0b_original.jpg"
-    }
-  },
-  "Ms. Marvel": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/05/m0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/05/m0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/ms-marvel/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/m0b_protection_overlay.jpg",
-      "original_path": "../overlay_images/m0b_original.jpg"
-    }
-  },
-  "Storm": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/s0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/11/s0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/ororo-munroe-storm/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/s0b_leadership_overlay.jpg",
-      "original_path": "../overlay_images/s0b_original.jpg"
-    }
-  },
-  "Quicksilver": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/12/0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/12/0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/quicksilver/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/0b_protection_overlay.jpg",
-      "original_path": "../overlay_images/0b_original.jpg"
-    }
-  },
   "Vision": {
     "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/01/1b.jpg",
     "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/01/1a.jpg",
@@ -378,182 +248,19 @@
     "source_url": "https://hallofheroeslcg.com/vision/",
     "ocr_confidence": "high"
   },
-  "Phoenix": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/a0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/a0a.jpg",
+  "Gamora": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/g0b-1.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/05/g0a-1.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/jean-grey-phoenix/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/a0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/a0b_original.jpg"
-    }
-  },
-  "Ghost-Spider": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0b-1.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0a-1.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 17 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/0b-1_justice_overlay.jpg",
-      "original_path": "../overlay_images/0b-1_original.jpg"
-    }
-  },
-  "X-23": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/12/43001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/12/43001b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "https://hallofheroeslcg.com/x-23-laura-kinney/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/43001a_aggression_overlay.jpg",
-      "original_path": "../overlay_images/43001a_original.jpg"
-    }
-  },
-  "Nick Fury": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50034a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/03/50034b.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 19 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
+    "source_url": "https://hallofheroeslcg.com/gamora/",
     "ocr_confidence": "high"
   },
-  "Black Widow": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/04/w1b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/04/w1a.jpg",
+  "Rogue": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/r0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/r0a.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/natasha-romanoff-black-widow/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/w1b_justice_overlay.jpg",
-      "original_path": "../overlay_images/w1b_original.jpg"
-    }
-  },
-  "Captain America": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/01/0a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/01/0b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "https://hallofheroeslcg.com/captain-america/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/0a_leadership_overlay.jpg",
-      "original_path": "../overlay_images/0a_original.jpg"
-    }
-  },
-  "War Machine": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/11/2-1.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/11/1-1.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/war-machine/",
+    "source_url": "https://hallofheroeslcg.com/rogue-anna-marie/",
     "ocr_confidence": "high"
-  },
-  "Domino": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40037a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40037b.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 46 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/40037a_leadership_overlay.jpg",
-      "original_path": "../overlay_images/40037a_original.jpg"
-    }
-  },
-  "Psylocke": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/41001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/41001b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "https://hallofheroeslcg.com/psylocke-betsy-braddock/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/41001a_aggression_overlay.jpg",
-      "original_path": "../overlay_images/41001a_original.jpg"
-    }
-  },
-  "Colossus": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 17 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/c0b_protection_overlay.jpg",
-      "original_path": "../overlay_images/c0b_original.jpg"
-    }
-  },
-  "Jubilee": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/47001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/47001b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/jubilee-jubilation-lee/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/47001a_aggression_overlay.jpg",
-      "original_path": "../overlay_images/47001a_original.jpg"
-    }
-  },
-  "Miles Morales": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 17 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "justice",
-      "overlay_path": "../overlay_images/0b_justice_overlay.jpg",
-      "original_path": "../overlay_images/0b_original.jpg"
-    }
-  },
-  "Valkyrie": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/12/0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/12/0a.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "https://hallofheroeslcg.com/brunnhilde-valkyrie/",
-    "ocr_confidence": "high"
-  },
-  "Cable": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/08/40001b.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 42 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/40001a_leadership_overlay.jpg",
-      "original_path": "../overlay_images/40001a_original.jpg"
-    }
-  },
-  "Captain Marvel": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/carol0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/carol0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 22 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "leadership",
-      "overlay_path": "../overlay_images/carol0b_leadership_overlay.jpg",
-      "original_path": "../overlay_images/carol0b_original.jpg"
-    }
-  },
-  "Shadowcat": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/s0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/s0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 19 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/s0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/s0b_original.jpg"
-    }
   },
   "Magneto": {
     "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/11/49001a.jpg",
@@ -562,23 +269,25 @@
     "source_url": "https://hallofheroeslcg.com/magneto-erik-lehnsherr/",
     "ocr_confidence": "high"
   },
-  "Groot": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/g0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/g0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 42 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
-    "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/g0b_protection_overlay.jpg",
-      "original_path": "../overlay_images/g0b_original.jpg"
-    }
+  "Venom": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/07/v0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/07/v0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/venom/",
+    "ocr_confidence": "high"
   },
-  "Silk": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/05/52001a.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/05/52001b.jpg",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
-    "source_url": "https://hallofheroeslcg.com/silk-cindy-moon/",
+  "Hulk": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/06/hulk0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/06/hulk0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/bruce-banner-hulk/",
+    "ocr_confidence": "high"
+  },
+  "Quicksilver": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/12/0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/12/0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/quicksilver/",
     "ocr_confidence": "high"
   },
   "Deadpool": {
@@ -586,42 +295,125 @@
     "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/12/44001b.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
     "source_url": "https://hallofheroeslcg.com/deadpool/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/44001a_aggression_overlay.jpg",
-      "original_path": "../overlay_images/44001a_original.jpg"
-    }
+    "ocr_confidence": "high"
   },
-  "She-Hulk": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/jennifer0b.jpg",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/jennifer0a.jpg",
-    "reason": "No specific hero page URL found on /browse/; Fallback: Found 22 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+  "Spiderwoman": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/j0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/j0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 28 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
     "source_url": "N/A (no browse page match)",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "aggression",
-      "overlay_path": "../overlay_images/jennifer0b_aggression_overlay.jpg",
-      "original_path": "../overlay_images/jennifer0b_original.jpg"
-    }
+    "ocr_confidence": "high"
   },
-  "Winter Soldier": {
-    "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/04/mc54_announce_cards_buckybarnes.png",
-    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/04/mc54_announce_cards_wintersoldier.png",
-    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR found 0 hero texts, fell back to URL pattern",
-    "source_url": "https://hallofheroeslcg.com/winter-soldier-bucky-barnes/",
-    "ocr_confidence": "low"
+  "Rocket Raccoon": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/r0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/r0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 42 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
   },
   "Black Panther": {
     "image": "https://hallofheroeslcg.com/wp-content/uploads/2025/05/51001a.jpg",
     "image2": "https://hallofheroeslcg.com/wp-content/uploads/2025/05/51001b.jpg",
     "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
     "source_url": "https://hallofheroeslcg.com/black-panther-shuri/",
-    "ocr_confidence": "high",
-    "overlay": {
-      "aspect": "protection",
-      "overlay_path": "../overlay_images/51001a_protection_overlay.jpg",
-      "original_path": "../overlay_images/51001a_original.jpg"
-    }
+    "ocr_confidence": "high"
+  },
+  "Colossus": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/10/c0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 17 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Gambit": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/g0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/01/g0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/gambit-remy-lebeau/",
+    "ocr_confidence": "high"
+  },
+  "She-Hulk": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/jennifer0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2019/12/jennifer0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 22 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Iceman": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/46001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/07/46001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/iceman-bobby-drake/",
+    "ocr_confidence": "high"
+  },
+  "Thor": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/thor0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/09/thor0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/thor/",
+    "ocr_confidence": "high"
+  },
+  "Ant Man": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2020/11/a0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2020/11/a0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/ant-man/",
+    "ocr_confidence": "high"
+  },
+  "Groot": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/g0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/04/g0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 42 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Miles Morales": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/03/0a.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 17 images in big box pages | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Magik": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45030a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2024/04/45030b.jpg",
+    "reason": "No specific hero page URL found on /browse/; Fallback: Found 47 images in big box pages | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "N/A (no browse page match)",
+    "ocr_confidence": "high"
+  },
+  "Spider-Ham": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/07/h0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/07/h0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/spider-ham-peter-porker/",
+    "ocr_confidence": "high"
+  },
+  "Angel": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/42001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/10/42001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/angel-warren-worthington-iii/",
+    "ocr_confidence": "high"
+  },
+  "X-23": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2023/12/43001a.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2023/12/43001b.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 1) and alter-ego (img 2)",
+    "source_url": "https://hallofheroeslcg.com/x-23-laura-kinney/",
+    "ocr_confidence": "high"
+  },
+  "Nova": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/n0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2022/05/n0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/sam-alexander-nova/",
+    "ocr_confidence": "high"
+  },
+  "Valkyrie": {
+    "image": "https://hallofheroeslcg.com/wp-content/uploads/2021/12/0b.jpg",
+    "image2": "https://hallofheroeslcg.com/wp-content/uploads/2021/12/0a.jpg",
+    "reason": "Fetched 2 image(s) from mapped hero page gallery | OCR: OCR clearly identified hero (img 2) and alter-ego (img 1)",
+    "source_url": "https://hallofheroeslcg.com/brunnhilde-valkyrie/",
+    "ocr_confidence": "high"
   }
 }

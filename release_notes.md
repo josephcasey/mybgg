@@ -10,6 +10,13 @@
 - **Special Character Support**: Correctly handles SP//dr double-slash notation and full-width characters (／)
 - **Dual-Aspect Hero Recognition**: Identifies Spider-Woman Justice/Aggression as single hero (not multi-hero)
 
+### 🔧 **Python Environment Standardization**
+
+- **Consistent python3/pip3 Usage**: All scripts now use `python3` and `pip3` commands explicitly for maximum macOS compatibility
+- **Updated Virtual Environment**: Virtual environment setup and activation consistently use `python3`
+- **Enhanced Documentation**: All examples and troubleshooting guides reference `python3` commands
+- **Cross-Script Compatibility**: Unified Python command usage across `setup_venv.sh`, `daily_sync.sh`, `update_and_deploy.sh`, and documentation
+
 ### 📊 **Enhanced Statistics & Analytics**
 
 - **Real-time Decode Rate Monitoring**: Clear success/failure statistics with specific examples
