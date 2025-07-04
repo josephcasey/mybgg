@@ -7,6 +7,14 @@
 </head>
 <body>
     <div class="wrapper">
+        <!-- Navigation tabs -->
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="solo">Solo Heroes</button>
+                <button class="tab-button" data-tab="team">Team Games</button>
+            </div>
+        </div>
+        
         <div id="searchbox" class="searchbox"></div>
         <div class="stats-panel">
             <div class="time-filter">
@@ -25,6 +33,17 @@
             <h2>{{villain}}</h2>
             <div class="play-details">
                 <p>Hero: {{hero}}</p>
+                <p>Result: {{#win}}Victory! 🎉{{/win}}{{^win}}Defeat 💀{{/win}}</p>
+                <p>Date: {{date}}</p>
+            </div>
+        </div>
+    </template>
+
+    <template id="team-hit-template">
+        <div class="play-card team-play">
+            <h2>{{villain}}</h2>
+            <div class="play-details">
+                <p>Team: {{team_composition}}</p>
                 <p>Result: {{#win}}Victory! 🎉{{/win}}{{^win}}Defeat 💀{{/win}}</p>
                 <p>Date: {{date}}</p>
             </div>

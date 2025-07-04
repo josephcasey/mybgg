@@ -384,6 +384,14 @@ body {
     color: #b71c1c;
 }
 
+.play-card.team-play {
+    border-left: 4px solid #4CAF50;
+}
+
+.play-card.team-play h2:before {
+    content: "👥 ";
+}
+
 .play-details p {
     margin: 0.5em 0;
 }
@@ -1116,4 +1124,96 @@ body {
 
 .hero-image-container:hover .aspect-overlay-vivid {
     opacity: 0.95;
+}
+
+/* Tab styling */
+.tab-container {
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
+    padding: 0 1em;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 1em 1.5em;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+    color: #b71c1c;
+    background: rgba(183, 28, 28, 0.05);
+}
+
+.tab-button.active {
+    color: #b71c1c;
+    border-bottom-color: #b71c1c;
+    background: rgba(183, 28, 28, 0.05);
+}
+
+/* Table sorting styles */
+.sortable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+.sortable:hover {
+    background-color: #e5e5e5;
+}
+
+.sortable::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border: 4px solid transparent;
+    opacity: 0.3;
+}
+
+.sortable.sort-asc::after {
+    border-bottom-color: #333;
+    border-top: none;
+    opacity: 1;
+}
+
+.sortable.sort-desc::after {
+    border-top-color: #333;
+    border-bottom: none;
+    opacity: 1;
+}
+
+/* Team play styles */
+.team-row {
+    position: relative;
+}
+
+.team-name {
+    font-weight: bold;
+}
+
+.team-play .play-details {
+    padding: 10px;
+}
+
+.team-play h2 {
+    color: #2c5aa0;
+    margin-bottom: 10px;
+}
+
+.team-play .play-details p {
+    margin: 5px 0;
 }

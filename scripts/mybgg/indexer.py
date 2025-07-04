@@ -2,6 +2,7 @@ import io
 import re
 import time
 import json
+import copy
 import datetime
 
 import colorgram
@@ -34,12 +35,19 @@ class Indexer:
             'searchableAttributes': [
                 'villain',
                 'hero',
+                'hero1',
+                'hero2', 
+                'team_composition',
                 'date',
                 'location'
             ],
             'attributesForFaceting': [
                 'searchable(villain)',
                 'searchable(hero)',
+                'searchable(hero1)',
+                'searchable(hero2)',
+                'searchable(team_composition)',
+                'searchable(play_type)',
                 'date',
                 'win',
                 'location'
@@ -692,36 +700,58 @@ class Indexer:
         skipped_count = 0
         multi_hero_examples = set()
         
-        # First, analyze multi-hero games before filtering them out
+        # First, analyze multi-hero games before processing them
         self._analyze_multi_hero_games(play_data)
         
-        # Filter out multi-hero games for main indexing
-        print("\nStarting play data filtering...")
+        # Separate solo and team plays for indexing
+        print("\nProcessing play data for solo and team indexing...")
+        solo_plays = []
+        team_plays = []
+        multi_hero_examples = set()
+        skipped_count = 0
+        
         for play in play_data:
             hero = getattr(play, 'hero', '')
             if self._is_multi_hero(hero):
                 multi_hero_examples.add(hero)
-                skipped_count += 1
+                # Try to decode the team composition
+                team_heroes = self._parse_hero_team(hero)
+                if team_heroes and len(team_heroes) >= 2:
+                    # Create a team play record
+                    team_play = copy.deepcopy(play)
+                    setattr(team_play, 'hero1', team_heroes[0])
+                    setattr(team_play, 'hero2', team_heroes[1])
+                    setattr(team_play, 'team_composition', ' + '.join(team_heroes))
+                    setattr(team_play, 'play_type', 'team')
+                    team_plays.append(team_play)
+                else:
+                    skipped_count += 1
                 continue
                 
-            # Clean up hero name by removing team prefix
+            # Clean up hero name by removing team prefix for solo plays
             if isinstance(hero, str):
                 if hero.startswith('Team 1 - '):
                     hero = hero[9:]
                 elif hero.startswith('Team: '):
                     hero = hero[6:]
                 setattr(play, 'hero', hero)
+                setattr(play, 'play_type', 'solo')
                 
-            filtered_plays.append(play)
+            solo_plays.append(play)
         
-        # Print filtering summary with examples
-        print(f"\nFiltering summary:")
+        # Combine all plays for indexing
+        filtered_plays = solo_plays + team_plays
+        
+        # Print processing summary with examples
+        print(f"\nProcessing summary:")
         print(f"- Original count: {len(play_data)}")
-        print(f"- Skipped {skipped_count} multi-hero plays")
-        print(f"- Final count: {len(filtered_plays)}")
+        print(f"- Solo plays: {len(solo_plays)}")
+        print(f"- Team plays: {len(team_plays)}")
+        print(f"- Skipped (unparseable): {skipped_count}")
+        print(f"- Total indexed: {len(filtered_plays)}")
         if multi_hero_examples:
-            print("\nExamples of filtered multi-hero plays:")
-            for example in sorted(list(multi_hero_examples))[:10]:
+            print("\nExamples of processed multi-hero plays:")
+            for example in sorted(list(multi_hero_examples))[:5]:
                 print(f"  - {example}")
         
         # Convert the filtered play data to dictionaries

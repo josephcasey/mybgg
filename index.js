@@ -10,6 +10,7 @@ const search = instantsearch({
                 date: undefined
             },
             configure: {
+                filters: 'play_type:solo',
                 hitsPerPage: 1000  // Get all hits in one page for stats
             }
         }
@@ -25,6 +26,12 @@ let currentSortState = {
     sortType: 'number'
 };
 
+let currentHeroSortState = {
+    column: 1, // Default sort by Plays
+    asc: false, // Default descending
+    sortType: 'number'
+};
+
 let currentVillainData = [];
 let currentVillainSortState = {
     column: 1, // Default sort by Plays
@@ -34,6 +41,10 @@ let currentVillainSortState = {
 
 let heroImageData = {}; // To store hero image data
 let villainImageData = {}; // To store villain image data
+
+// Image data loading state
+let imageDataLoaded = false;
+let pendingStatsUpdate = null;
 
 // Aspect overlay configuration
 const ASPECT_OVERLAY_ENABLED = false; // Toggle to enable/disable aspect overlays (disabled: using CSS overlays instead)
@@ -360,7 +371,8 @@ search.addWidgets([
     instantsearch.widgets.configure({
         hitsPerPage: 1000,
         distinct: true,
-        clickAnalytics: true
+        clickAnalytics: true,
+        filters: 'play_type:solo' // Default to solo games
     }),
     
     instantsearch.widgets.searchBox({
@@ -372,10 +384,15 @@ search.addWidgets([
         container: '.hits',
         templates: {
             empty: 'No results found.',
-            item: '' // Remove rendering of individual play tiles
+            item(hit, { html, components }) {
+                // Use custom rendering based on current tab
+                return renderHit(hit);
+            }
         },
-        escapeHTML: true,
+        escapeHTML: false, // Allow custom HTML
         transformItems(items) {
+            // Trigger stats update after items are processed
+            setTimeout(() => computeStats(items), 0);
             return items;
         },
         cssClasses: {
@@ -399,19 +416,75 @@ search.addWidgets([
         container: '#stats-container',
         templates: {
             text() {
-                // Remove main statistics area rendering
-                return '';
+                return '<div class="statistics"><div id="hero-stats-table"></div><div id="villain-stats-table"></div></div>';
             }
         }
     })
 ]);
 
+// Start the search instance
+search.start();
+
+// Initialize image data loading
+loadImageData();
+
+// Load image data
+async function loadImageData() {
+    try {
+        console.log('Loading hero image data...');
+        const heroResponse = await fetch('hero_images.json');
+        heroImageData = await heroResponse.json();
+        console.log('Hero image data loaded:', Object.keys(heroImageData).length, 'entries');
+        
+        console.log('Loading villain image data...');
+        const villainResponse = await fetch('villain_images_final.json');
+        villainImageData = await villainResponse.json();
+        console.log('Villain image data loaded:', Object.keys(villainImageData).length, 'entries');
+        
+        // Pre-cache overlay images if enabled
+        if (ASPECT_OVERLAY_ENABLED) {
+            await cacheOverlayImages(heroImageData);
+        }
+        
+        console.log('Image data loading complete');
+        imageDataLoaded = true;
+        
+        // Process any pending stats update
+        if (pendingStatsUpdate) {
+            console.log('Processing deferred stats update');
+            const hits = pendingStatsUpdate;
+            pendingStatsUpdate = null;
+            computeStats(hits);
+        }
+    } catch (error) {
+        console.error('Error loading image data:', error);
+        // Set to empty objects so the app still works without images
+        heroImageData = {};
+        villainImageData = {};
+        imageDataLoaded = true; // Still mark as loaded so app continues to work
+        
+        // Process any pending stats update even without images
+        if (pendingStatsUpdate) {
+            console.log('Processing deferred stats update (without images)');
+            const hits = pendingStatsUpdate;
+            pendingStatsUpdate = null;
+            computeStats(hits);
+        }
+    }
+}
 
 /**
  * Computes overall statistics from hit results
  */
 function computeStats(hits) {
     console.log('Computing stats for hits:', hits.length);
+    
+    // If image data hasn't loaded yet, store the hits and wait
+    if (!imageDataLoaded) {
+        console.log('Image data not loaded yet, deferring stats computation');
+        pendingStatsUpdate = hits;
+        return;
+    }
     
     // Initialize counters and collections
     const heroStats = {};
@@ -465,6 +538,9 @@ function computeStats(hits) {
         villainCount: villains.length,
         heroNames: heroes.map(h => h.name)
     });
+    
+    // Update the display with computed stats
+    updateStatsDisplay(heroes, villains, hits);
     
     return { heroes, villains };
 }
@@ -1204,899 +1280,362 @@ function renderSortedVillainStats(villains, sortState, allHits) {
     return { tableRowsHtml, modalsHtml };
 }
 
-function initTableSort() {
-    console.log("DEBUG: initTableSort called");
-    const headers = document.querySelectorAll('table.sortable th[data-sort]');
-    console.log('DEBUG: Table headers found:', {
-        count: headers.length,
-        headers: Array.from(headers).map(h => ({
-            text: h.textContent,
-            classes: h.className,
-            sortType: h.getAttribute('data-sort')
-        }))
-    });
-
-    headers.forEach(headerCell => {
-        if (window.tableSortHandlers.has(headerCell)) {
-            headerCell.removeEventListener('click', window.tableSortHandlers.get(headerCell));
-            window.tableSortHandlers.delete(headerCell);
-        }
-
-        const newHandler = (event) => {
-            console.log(`DEBUG: Header clicked: ${headerCell.textContent}`);
-            
-            if (isEditing) {
-                console.log('Sorting prevented - editing in progress');
-                return;
-            }
-
-            const tableElement = headerCell.closest('table.sortable');
-            if (!tableElement) {
-                console.error("DEBUG: Could not find parent table.sortable for header:", headerCell);
-                return;
-            }
-            
-            const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
-            const sortType = headerCell.getAttribute('data-sort') || 'string';
-            
-            let newAscending;
-            let targetSortState = null;
-
-            if (tableElement.closest('.left-box-sbs')) {
-                targetSortState = currentSortState;
-                console.log("DEBUG: Identified Hero table, using currentSortState:", currentSortState);
-            } else if (tableElement.closest('.right-box-sbs')) {
-                targetSortState = currentVillainSortState;
-                console.log("DEBUG: Identified Villain table, using currentVillainSortState:", currentVillainSortState);
-            }
-
-
-            if (targetSortState) {
-                if (targetSortState.column === headerIndex) {
-                    newAscending = !targetSortState.asc;
-                    console.log(`DEBUG: Same column (${headerIndex}), toggling asc to ${newAscending}`);
-                } else {
-                    newAscending = false; // New column, default to descending
-                    console.log(`DEBUG: New column (${headerIndex}), setting asc to false (descending)`);
-                }
-                targetSortState.column = headerIndex;
-                targetSortState.asc = newAscending; // This should be a boolean
-                targetSortState.sortType = sortType;
-            } else {
-                console.warn("DEBUG: targetSortState not identified. Using visual fallback for sort direction.");
-                if (headerCell.classList.contains('th-sort-asc') || headerCell.classList.contains('th-sort-desc')) {
-                    newAscending = headerCell.classList.contains('th-sort-desc'); 
-                } else {
-                    newAscending = false; // Default to descending for a fresh click
-                }
-                console.log(`DEBUG: Fallback: newAscending set to ${newAscending}`);
-            }
-            
-            tableElement.querySelectorAll('th[data-sort]').forEach(th => {
-                th.classList.remove('th-sort-asc', 'th-sort-desc');
-            });
-            headerCell.classList.add(newAscending === true ? 'th-sort-asc' : 'th-sort-desc');
-            
-            event.stopPropagation();
-            
-            sortTableByColumn(tableElement, headerIndex, newAscending, sortType);
-        };
-
-        headerCell.addEventListener('click', newHandler);
-        window.tableSortHandlers.set(headerCell, newHandler);
-        console.log(`DEBUG: Added click handler to header: ${headerCell.textContent}`);
-    });
-}
-
-// sortTableByColumn function (as provided in your last context, lines 965-1017)
-function sortTableByColumn(table, column, asc = true, sortType = 'string') {
-    console.log(`DEBUG: sortTableByColumn called:`, {
-        table: table ? table.className : 'null', // Avoid logging full element
-        column: column,
-        asc: asc,
-        sortType: sortType
-    });
+/**
+ * Updates the stats display based on current tab and computed data
+ */
+function updateStatsDisplay(heroes, villains, allHits) {
+    const heroTableContainer = document.getElementById('hero-stats-table');
+    const villainTableContainer = document.getElementById('villain-stats-table');
     
-    const dirModifier = asc ? 1 : -1;
-    const tBody = table.tBodies[0];
-    if (!tBody) {
-        console.error("DEBUG: tBody not found in table:", table);
-        return;
-    }
-    console.log(`DEBUG: tBody found`);
-    
-    const rowPairs = [];
-    // Ensure we only select direct children tr elements of tbody that are not .bar-row
-    const rows = Array.from(tBody.children).filter(tr => tr.tagName === 'TR' && !tr.classList.contains('bar-row'));
-    console.log(`DEBUG: Found ${rows.length} data rows to sort`);
-    
-    rows.forEach((row, i) => {
-        const col = row.querySelector(`td:nth-child(${column + 1})`);
-        let sortValue;
-        if (col && col.hasAttribute('data-timestamp')) {
-            sortValue = parseFloat(col.getAttribute('data-timestamp')) || 0;
-        } else if (sortType === 'number') {
-            const value = col?.textContent?.trim() || '';
-            sortValue = parseFloat(value.replace(/[^0-9.-]+/g, "")) || 0;
-            if (value.includes('%')) { // Handle percentages correctly
-                 sortValue = parseFloat(value.replace('%', '')) || 0;
-            }
-        } else {
-            const value = col?.textContent?.trim() || '';
-            sortValue = value.toLowerCase(); // Case-insensitive sort for strings
-        }
-        
-        const barRow = row.nextElementSibling;
-        if (barRow?.classList.contains('bar-row')) {
-            rowPairs.push({ row, barRow, sortValue });
-        } else {
-            // If no barRow, push only the data row. This handles tables without bar rows.
-            rowPairs.push({ row, sortValue }); 
-        }
-        
-        if (i < 3) { // Log first few for brevity
-            // console.log(`DEBUG: Row ${i} data:`, { text: value, sortValue: sortValue, hasBarRow: !!(barRow?.classList.contains('bar-row')) });
-        }
-    });
-
-    console.log(`DEBUG: About to sort ${rowPairs.length} row pairs. First pair sortValue: ${rowPairs.length > 0 ? rowPairs[0].sortValue : 'N/A'}`);
-    
-    rowPairs.sort((a, b) => {
-        if (typeof a.sortValue === 'number' && typeof b.sortValue === 'number') {
-            // Numeric sort fallback for date columns with data-timestamp
-            if (isNaN(a.sortValue) && isNaN(b.sortValue)) return 0;
-            if (isNaN(a.sortValue)) return asc ? 1 : -1;
-            if (isNaN(b.sortValue)) return asc ? -1 : 1;
-            return (a.sortValue - b.sortValue) * dirModifier;
-        }
-        return String(a.sortValue).localeCompare(String(b.sortValue)) * dirModifier;
-    });
-
-    // console.log(`DEBUG: First 3 rows after sorting:`, rowPairs.slice(0, 3).map(p => ({ sortValue: p.sortValue, text: p.row.cells[column]?.textContent.trim() })));
-    
-    console.log(`DEBUG: Clearing table body`);
-    while (tBody.firstChild) {
-        tBody.removeChild(tBody.firstChild);
-    }
-
-    console.log(`DEBUG: Adding sorted rows back to table`);
-    rowPairs.forEach(pair => {
-        tBody.appendChild(pair.row);
-        if (pair.barRow) { // Only append barRow if it exists for this pair
-            tBody.appendChild(pair.barRow);
-        }
-    });
-
-    console.log(`DEBUG: Updating sort indicators in sortTableByColumn`);
-    table.querySelectorAll('th[data-sort]').forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-    const headerCell = table.querySelector(`th:nth-child(${column + 1})`);
-    if (headerCell && headerCell.hasAttribute('data-sort')) {
-        headerCell.classList.add(asc === true ? 'th-sort-asc' : 'th-sort-desc');
-    }
-    
-    console.log(`DEBUG: Table sort complete for column ${column}`);
-}
-
-// Make sortTableByColumn available globally for click handlers
-window.sortTableByColumn = sortTableByColumn;
-
-// Functions to show/hide hero detail modals
-function showHeroDetail(id) {
-    console.log(`Showing hero detail for ID: ${id}`);
-    const modal = document.getElementById(id);
-    if (!modal) {
-        console.error(`Modal NOT found for ID ${id}`);
-        return;
-    }
-    // Ensure content is up-to-date if dynamic loading were added, but here it's pre-rendered.
-    // Forcing a check and potential rebuild if table is missing.
-    const heroName = modal.dataset.heroName; // Assumes heroName is stored in data-hero-name
-    const table = modal.querySelector('table.hero-villains-table');
-    const noDataRow = modal.querySelector('td[colspan="5"]'); // Check for "No villain data" message
-    const villainStatsForHero = window.villainStatsCache ? (window.villainStatsCache[heroName] || []) : [];
-
-    if (!table || (noDataRow && villainStatsForHero.length > 0)) {
-        console.warn(`Hero modal ${id} ("${heroName}") table missing or incorrect. Forcing rebuild. Cached stats count: ${villainStatsForHero.length}`);
-        const bodyDiv = modal.querySelector('.hero-modal-body');
-        if (bodyDiv) {
-            let villainRowsHtml = '';
-            if (villainStatsForHero.length > 0) {
-                villainRowsHtml = villainStatsForHero.map(vStat => `
-                    <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
-                        <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${escapeHTML(vStat.villain) || 'Unknown'}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.plays || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.wins || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${vStat.winRate || 0}%</td>
-                    </tr>
-                `).join('');
-            } else {
-                villainRowsHtml = `
-                    <tr style="background-color: white !important;">
-                        <td colspan="5" style="padding: 15px; text-align: center; color: black !important;">
-                            No villain data available for this hero (${escapeHTML(heroName)})
-                        </td>
-                    </tr>
-                `;
-            }
-            bodyDiv.innerHTML = `
-                <div class="table-container">
-                    <table class="hero-villains-table" style="width: 100%; border-collapse: collapse; background-color: white;">
-                        <thead style="background-color: #cccccc;">
-                            <tr>
-                                <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Villain</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero Wins</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero Win %</th>
-                            </tr>
-                        </thead>
-                        <tbody>${villainRowsHtml}</tbody>
-                    </table>
-                </div>
-            `;
-            console.log(`Hero modal ${id} ("${heroName}") emergency table rebuild complete.`);
-        }
-    }
-    modal.style.display = 'block';
-    console.log(`Hero modal found for ID ${id}, displaying it`);
-}
-
-function hideHeroDetail(id, event) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    
-    // The first div child of the modal is assumed to be the content container
-    const contentContainer = modal.querySelector('div'); 
-    
-    if (event && event.relatedTarget && contentContainer &&
-        (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
-        
-        const handlerId = `handler-${id}`; // Unique ID for the handler
-        
-        if (!contentContainer[handlerId]) { // Attach mouseout only once
-            contentContainer[handlerId] = function(e) {
-                if (contentContainer._hideTimeout) { // Debounce
-                    clearTimeout(contentContainer._hideTimeout);
-                }
-                contentContainer._hideTimeout = setTimeout(() => {
-                    // Check if the mouse has truly left the content container
-                    if (!contentContainer.contains(e.relatedTarget)) {
-                        requestAnimationFrame(() => {
-                            modal.style.display = 'none';
-                        });
-                        // Clean up listener
-                        contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
-                        delete contentContainer[handlerId]; // Remove stored handler
-                        delete contentContainer._hideTimeout; // Remove timeout reference
-                    }
-                }, 50); // Small delay
-            };
-            contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
-        }
-        return; // Don't hide yet, mouse is over content
-    }
-    
-    // If not hovering over content, hide immediately
-    requestAnimationFrame(() => {
-        modal.style.display = 'none';
-    });
-}
-
-// Functions to show/hide villain detail modals
-function showVillainDetail(id, event) {
-    console.log(`SHOW_DETAIL: Showing villain detail for ID: ${id}`);
-    const modal = document.getElementById(id);
-    if (!modal) {
-        console.error(`SHOW_DETAIL: Modal NOT found for ID ${id}`);
+    if (!heroTableContainer || !villainTableContainer) {
+        console.log('Stats containers not found, will try again later');
         return;
     }
 
-    let villainName = modal.dataset.villainName; // Original case from data attribute
-
-    // Fallback logic for villainName if data attribute is missing
-    if (!villainName) {
-        console.warn(`SHOW_DETAIL: modal.dataset.villainName not found for ${id}. Attempting fallbacks.`);
-        const headerText = modal.querySelector('.villain-modal-header h3')?.textContent || '';
-        const headerMatch = headerText.match(/HEROES FACED BY (.+)/i);
-        const parsedNameFromHeader = headerMatch ? headerMatch[1].trim() : null; // UPPERCASE
-
-        if (parsedNameFromHeader && currentVillainData) { // currentVillainData should be available globally
-            const foundVillain = currentVillainData.find(v => v.name.toUpperCase() === parsedNameFromHeader.toUpperCase());
-            if (foundVillain) {
-                villainName = foundVillain.name; // Original case
-                console.log(`SHOW_DETAIL: Matched header to original name: "${villainName}" for ${id}`);
-            }
-        }
-        // Add more specific fallbacks if necessary, e.g., for names with slashes
-        if (!villainName && id.includes('Crossbones12')) villainName = 'Crossbones1/2'; // Example
-        if (!villainName && id.includes('Crossbones23')) villainName = 'Crossbones 2/3'; // Example
+    if (currentTab === 'solo') {
+        // Show solo hero stats
+        displayHeroStats(heroes, allHits);
+        displayVillainStats(villains, allHits);
+    } else if (currentTab === 'team') {
+        // Show team stats (for now, aggregate team data into hero-like format)
+        displayTeamStats(allHits);
+        displayVillainStats(villains, allHits);
     }
-
-    if (!villainName) {
-        console.error(`SHOW_DETAIL: CRITICAL - Cannot determine original-cased villain name for modal ${id}. Displaying error.`);
-        const bodyDiv = modal.querySelector('.villain-modal-body');
-        if (bodyDiv) {
-            bodyDiv.innerHTML = `<p style="color:red; text-align:center;">Error: Could not identify villain for modal ${id}.</p>`;
-        }
-        modal.style.display = 'block';
-        return;
-    }
-    
-    const table = modal.querySelector('table.villain-heroes-table');
-    const noDataRow = modal.querySelector('td[colspan="5"]'); // Check for "No hero data" message
-    const heroStatsForModal = window.heroStatsCache ? (window.heroStatsCache[villainName] || []) : [];
-
-    if (!table || (noDataRow && heroStatsForModal.length > 0)) {
-        console.warn(`SHOW_DETAIL: Table missing or incorrect for ${id} ("${villainName}"). Forcing rebuild. Cached stats count: ${heroStatsForModal.length}`);
-        
-        const bodyDiv = modal.querySelector('.villain-modal-body');
-        if (bodyDiv) {
-            let heroRowsHtml = '';
-            if (heroStatsForModal.length > 0) {
-                heroRowsHtml = heroStatsForModal.map(h => `
-                    <tr style="background-color: white !important; border-bottom: 1px solid #dddddd;">
-                        <td style="padding: 8px; text-align: left; color: black !important; border: 1px solid #eeeeee;">${escapeHTML(h.hero) || 'Unknown'}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.plays || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.wins || 0}</td>
-                        <td style="padding: 8px; text-align: right; color: black !important; border: 1px solid #eeeeee;">${h.winRate || 0}%</td>
-                    </tr>
-                `).join('');
-            } else {
-                heroRowsHtml = `
-                    <tr style="background-color: white !important;">
-                        <td colspan="5" style="padding: 15px; text-align: center; color: black !important;">
-                            No hero data available for this villain (${escapeHTML(villainName)})
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            bodyDiv.innerHTML = `
-                <div class="table-container">
-                    <table class="villain-heroes-table" style="width: 100%; border-collapse: collapse; background-color: white;">
-                        <thead style="background-color: #cccccc;">
-                            <tr>
-                                <th style="padding: 8px; text-align: left; color: black; border: 1px solid #cccccc; font-weight: bold;">Hero</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Plays</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Wins</th>
-                                <th style="padding: 8px; text-align: right; color: black; border: 1px solid #cccccc; font-weight: bold;">Win%</th>
-                            </tr>
-                        </thead>
-                        <tbody>${heroRowsHtml}</tbody>
-                    </table>
-                </div>
-            `;
-            console.log(`SHOW_DETAIL: Emergency table rebuild for ${id} ("${villainName}") complete.`);
-        }
-    }
-    
-    // Position the modal to the left of the triggering element if event is provided
-    if (event && event.target) {
-        const triggerElement = event.target.closest('.villain-name') || event.target;
-        const triggerRect = triggerElement.getBoundingClientRect();
-        const modalContent = modal.querySelector('.villain-modal-content');
-        
-        if (modalContent) {
-            // Reset the transform to default position first
-            modalContent.style.transform = 'none'; // Remove the centering transform
-            
-            // Temporarily show modal to get accurate dimensions
-            modal.style.display = 'block';
-            modal.style.visibility = 'hidden'; // Hide visually but allow measurement
-            
-            // Get actual modal dimensions after rendering
-            const modalRect = modalContent.getBoundingClientRect();
-            const modalWidth = modalRect.width;
-            const modalHeight = modalRect.height;
-            
-            // Hide modal again before positioning
-            modal.style.visibility = 'visible';
-            modal.style.display = 'none';
-            
-            console.log(`DEBUG: Modal dimensions for ${id}: ${modalWidth}x${modalHeight}`);
-            
-            // Calculate horizontal position (to the left)
-            const leftPosition = triggerRect.left - modalWidth - 20; // 20px margin from trigger
-            const finalLeftPosition = Math.max(10, leftPosition);
-            
-            // Calculate optimal vertical position within viewport
-            const viewportHeight = window.innerHeight;
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
-            // Available viewport height (accounting for margins)
-            const availableHeight = viewportHeight - 20; // 10px margin top and bottom
-            
-            // If modal is taller than available viewport height, constrain it
-            let constrainedHeight = modalHeight;
-            if (modalHeight > availableHeight) {
-                constrainedHeight = availableHeight;
-                modalContent.style.maxHeight = `${constrainedHeight}px`;
-                modalContent.style.overflowY = 'auto';
-                console.log(`DEBUG: Modal ${id} height constrained from ${modalHeight}px to ${constrainedHeight}px`);
-            }
-            
-            // Try to center the modal vertically in the viewport
-            let optimalTop = scrollTop + (viewportHeight - constrainedHeight) / 2;
-            
-            // Ensure modal doesn't go off the top
-            optimalTop = Math.max(scrollTop + 10, optimalTop);
-            
-            // Ensure modal doesn't go off the bottom
-            const maxTop = scrollTop + viewportHeight - constrainedHeight - 10;
-            optimalTop = Math.min(optimalTop, maxTop);
-            
-            // Final safety check - if still not enough space, position at top of viewport
-            if (optimalTop < scrollTop + 10) {
-                optimalTop = scrollTop + 10;
-            }
-            
-            console.log(`DEBUG: Final positioning for ${id}: top=${optimalTop}px, left=${finalLeftPosition}px`);
-            
-            modalContent.style.top = `${optimalTop}px`;
-            modalContent.style.left = `${finalLeftPosition}px`;
-        }
-    }
-    
-    modal.style.display = 'block';
-    console.log(`SHOW_DETAIL: Modal displayed for ID ${id} ("${villainName}")`);
 }
 
-function hideVillainDetail(id, event) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    
-    const contentContainer = modal.querySelector('div'); // Assuming the first div is the main content wrapper
-    
-    // Check if we're moving to the modal content itself
-    if (event && event.relatedTarget && contentContainer &&
-        (contentContainer.contains(event.relatedTarget) || contentContainer === event.relatedTarget)) {
-        
-        const handlerId = `handler-${id}`;
-        
-        // Debounce the mouseout handler to avoid excessive processing
-        if (!contentContainer[handlerId]) {
-            contentContainer[handlerId] = function(e) {
-                // Debounce the actual hiding
-                if (contentContainer._hideTimeout) {
-                    clearTimeout(contentContainer._hideTimeout);
-                }
-                
-                contentContainer._hideTimeout = setTimeout(() => {
-                    if (!contentContainer.contains(e.relatedTarget)) {
-                        requestAnimationFrame(() => {
-                            modal.style.display = 'none';
-                        });
-                        contentContainer.removeEventListener('mouseout', contentContainer[handlerId]);
-                        delete contentContainer[handlerId];
-                        delete contentContainer._hideTimeout;
-                    }
-                }, 50); // Small delay to reduce processing
-            };
-            
-            contentContainer.addEventListener('mouseout', contentContainer[handlerId]);
-        }
+/**
+ * Display hero statistics table
+ */
+function displayHeroStats(heroes, allHits) {
+    const container = document.getElementById('hero-stats-table');
+    if (!container) return;
+
+    if (heroes.length === 0) {
+        container.innerHTML = '<p>No hero data available</p>';
         return;
     }
+
+    // Generate hero table
+    const { tableRowsHtml, modalsHtml } = renderSortedHeroStats(heroes, currentHeroSortState, allHits);
     
-    // Use requestAnimationFrame for DOM updates
-    requestAnimationFrame(() => {
-        modal.style.display = 'none';
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // ... (search.start(), fetch hero_images.json, overlay/box creation, style element) ...
-    // (Assuming these parts are as per your existing file and don't need collation here unless specified)
-    search.start();
-
-    // Load both hero and villain images before rendering tables
-    Promise.all([
-        fetch('hero_images.json')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            }),
-        fetch('villain_images_final.json')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-    ])
-    .then(([heroData, villainData]) => {
-        heroImageData = heroData;
-        villainImageData = villainData;
-        console.log('Hero image data loaded successfully for in-row display.');
-        console.log('Villain image data loaded successfully for in-row display.');
-        console.log(`Loaded ${Object.keys(heroImageData).length} hero images and ${Object.keys(villainImageData).length} villain images`);
-        
-        // Now render the initial tables with image data available
-        setTimeout(() => {
-            const hits = search.helper?.lastResults?.hits || [];
-            const stats = computeStats(hits);
-            
-            const { tableRowsHtml, modalsHtml } = renderSortedHeroStats(stats.heroes, currentSortState, hits);
-            const heroTableHtml = `
-              <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Direct Render)</div>
-              <table class="stats-table sortable">
-                <thead>
-                  <tr>
-                    <th data-sort="string" class="hero-col" style="width: 35%;">Hero</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Wins</th>
-                    <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
-                    <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
-                  </tr>
-                </thead>
-                <tbody>${tableRowsHtml}</tbody>
-              </table>
-              ${modalsHtml}
-            `;
-            if (leftBox) leftBox.innerHTML = heroTableHtml;
-
-            const { tableRowsHtml: villainRowsHtml, modalsHtml: villainModalsHtml } = renderSortedVillainStats(stats.villains, currentVillainSortState, hits);
-            const villainTableHtml = `
-              <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Direct Render)</div>
-              <table class="stats-table sortable">
-                <thead>
-                  <tr>
-                    <th data-sort="string" class="villain-col" style="width: 35%;">Villain</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Hero Wins</th>
-                    <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
-                    <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
-                  </tr>
-                </thead>
-                <tbody>${villainRowsHtml}</tbody>
-              </table>
-              ${villainModalsHtml}
-            `;
-            if (rightBox) rightBox.innerHTML = villainTableHtml;
-            
-            if (typeof initTableSort === 'function') {
-              initTableSort();
-            }
-
-            // Apply initial sort indicators
-            console.log(`DEBUG: DOMContentLoaded - Applying initial indicators. Hero asc: ${currentSortState.asc}, Villain asc: ${currentVillainSortState.asc}`);
-            if (leftBox) {
-                const heroTableElement = leftBox.querySelector('table.stats-table');
-                if (heroTableElement) {
-                    const headerCells = heroTableElement.querySelectorAll('thead tr th');
-                    headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-                    const targetHeroHeader = headerCells[currentSortState.column];
-                    if (targetHeroHeader) {
-                        targetHeroHeader.classList.add(currentSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
-                    }
-                }
-            }
-            if (rightBox) {
-                const villainTableElement = rightBox.querySelector('table.stats-table');
-                if (villainTableElement) {
-                    const headerCells = villainTableElement.querySelectorAll('thead tr th');
-                    headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-                    const targetVillainHeader = headerCells[currentVillainSortState.column];
-                    if (targetVillainHeader) {
-                        targetVillainHeader.classList.add(currentVillainSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
-                    }
-                }
-            }
-        }, 500);
-    })
-    .catch(error => {
-        console.error('Error loading image data:', error);
-        // Fallback: render tables without images
-        setTimeout(() => {
-            const hits = search.helper?.lastResults?.hits || [];
-            const stats = computeStats(hits);
-            
-            const { tableRowsHtml, modalsHtml } = renderSortedHeroStats(stats.heroes, currentSortState, hits);
-            const heroTableHtml = `
-              <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Direct Render - No Images)</div>
-              <table class="stats-table sortable">
-                <thead>
-                  <tr>
-                    <th data-sort="string" class="hero-col" style="width: 35%;">Hero</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Wins</th>
-                    <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
-                    <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
-                  </tr>
-                </thead>
-                <tbody>${tableRowsHtml}</tbody>
-              </table>
-              ${modalsHtml}
-            `;
-            if (leftBox) leftBox.innerHTML = heroTableHtml;
-
-            const { tableRowsHtml: villainRowsHtml, modalsHtml: villainModalsHtml } = renderSortedVillainStats(stats.villains, currentVillainSortState, hits);
-            const villainTableHtml = `
-              <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Direct Render - No Images)</div>
-              <table class="stats-table sortable">
-                <thead>
-                  <tr>
-                    <th data-sort="string" class="villain-col" style="width: 35%;">Villain</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
-                    <th data-sort="number" class="number-col" style="width: 15%;">Hero Wins</th>
-                    <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
-                    <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
-                  </tr>
-                </thead>
-                <tbody>${villainRowsHtml}</tbody>
-              </table>
-              ${villainModalsHtml}
-            `;
-            if (rightBox) rightBox.innerHTML = villainTableHtml;
-            
-            if (typeof initTableSort === 'function') {
-              initTableSort();
-            }
-        }, 500);
-    });
-
-    const staticTestContainer = document.getElementById('static-hero-image-test-container');
-    if (staticTestContainer) {
-        staticTestContainer.remove();
-    }
-
-    const overlay = document.getElementById('side-by-side-experiment') || document.createElement('div');
-    if (!overlay.id) { // If newly created
-        overlay.id = 'side-by-side-experiment';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.left = '50%';
-        overlay.style.width = '50vw';
-        overlay.style.transform = 'translateX(-50%)';
-        overlay.style.height = '100vh';
-        overlay.style.minHeight = '80px';
-        overlay.style.zIndex = '9999';
-        overlay.style.background = 'rgba(255,255,255,0.95)';
-        overlay.style.display = 'flex';
-        overlay.style.flexDirection = 'row';
-        overlay.style.justifyContent = 'space-between';
-        overlay.style.alignItems = 'flex-start';
-        overlay.style.gap = '20px';
-        overlay.style.borderBottom = '2px solid #aaa';
-        overlay.style.padding = '10px 0';
-        document.body.appendChild(overlay);
-    }
-
-
-    const leftBox = overlay.querySelector('.left-box-sbs') || document.createElement('div');
-    if (!leftBox.classList.contains('left-box-sbs')) {
-        leftBox.classList.add('left-box-sbs');
-        leftBox.style.flex = '1 1 50%';
-        leftBox.style.height = '100%';
-        leftBox.style.overflowY = 'auto';
-        leftBox.innerHTML = ''; // Clear if re-attaching
-        if (!overlay.contains(leftBox)) overlay.appendChild(leftBox);
-    }
-
-
-    const rightBox = overlay.querySelector('.right-box-sbs') || document.createElement('div');
-     if (!rightBox.classList.contains('right-box-sbs')) {
-        rightBox.classList.add('right-box-sbs');
-        rightBox.style.flex = '1 1 50%';
-        rightBox.style.height = '100%';
-        rightBox.style.overflowY = 'auto';
-        rightBox.innerHTML = ''; // Clear if re-attaching
-        if (!overlay.contains(rightBox)) overlay.appendChild(rightBox);
-    }
-
-    // Ensure leftBox is first child, rightBox is second if they were just created/found
-    if (overlay.children[0] !== leftBox && overlay.contains(leftBox)) overlay.insertBefore(leftBox, overlay.firstChild);
-    if (overlay.children[1] !== rightBox && overlay.contains(rightBox)) {
-        if (overlay.children[0] === leftBox) overlay.insertBefore(rightBox, leftBox.nextSibling);
-        else overlay.appendChild(rightBox);
-    }
-
-
-    const style = document.getElementById('sbs-styles') || document.createElement('style');
-    if(!style.id) {
-        style.id = 'sbs-styles';
-        style.textContent = `
-          #side-by-side-experiment {
-            border-left: 2px solid #aaa;
-            border-right: 2px solid #aaa;
-            transition: width 0.2s;
-          }
-          @media (max-width: 900px) {
-            #side-by-side-experiment {
-              width: 100vw !important;
-              left: 0 !important;
-              transform: none !important;
-              border-left: none;
-              border-right: none;
-            }
-          }
-          .statistics { /* This is your main stats container for flex */
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: flex-start !important;
-            width: 100% !important;
-            flex-wrap: nowrap !important;
-            gap: 20px !important;
-            box-sizing: border-box !important;
-            min-height: 100px !important;
-            margin-bottom: 20px !important;
-          }
-          .hero-stats, .villain-stats { /* These are children of .statistics */
-            flex: 1 1 50% !important;
-            min-width: 300px !important; /* Or your preferred min-width */
-            max-width: 48% !important; /* Allows for gap */
-            box-sizing: border-box !important;
-            overflow: auto !important; /* Important for content scroll */
-            padding: 10px !important;
-            border: 1px solid #eee !important;
-            border-radius: 5px !important;
-          }
-          .stats-table {
-            width: 100% !important;
-            table-layout: fixed !important;
-            margin-bottom: 0 !important;
-            border-collapse: collapse !important;
-          }
-          .stats-table thead th {
-            position: sticky;
-            top: 0;
-            background: #f5f5f5; /* Or your theme's header background */
-            z-index: 2; /* Keeps header above scrolling content */
-          }
-        `;
-        document.head.appendChild(style);
-    }
-
-    const hitsContainer = document.querySelector('.hits');
-    if (hitsContainer) {
-        hitsContainer.innerHTML = '';
-        hitsContainer.style.display = 'none';
-    }
-    const aisHits = document.querySelector('.ais-Hits');
-    if (aisHits) aisHits.style.display = 'none';
-    const aisHitsList = document.querySelector('.ais-Hits-list');
-    if (aisHitsList) aisHitsList.style.display = 'none';
-    const aisHitsItems = document.querySelectorAll('.ais-Hits-item');
-    aisHitsItems.forEach(item => item.style.display = 'none');
-});
-
-search.on('render', () => {
-    const results = search.helper?.lastResults;
-    if (results?.hits) {
-        const allHits = results.hits;
-        const statsData = computeStats(allHits);
-
-        currentHeroData = statsData.heroes;
-        currentVillainData = statsData.villains;
-
-        console.log(`DEBUG: search.on('render') - BEFORE hero render. currentSortState.asc: ${currentSortState.asc} (type: ${typeof currentSortState.asc})`);
-        console.log(`DEBUG: search.on('render') - BEFORE villain render. currentVillainSortState.asc: ${currentVillainSortState.asc} (type: ${typeof currentVillainSortState.asc})`);
-
-        setTimeout(() => {
-            const leftBox = document.querySelector('#side-by-side-experiment .left-box-sbs');
-            const rightBox = document.querySelector('#side-by-side-experiment .right-box-sbs');
-
-            if (leftBox && rightBox) {
-                const { tableRowsHtml: heroRows, modalsHtml: heroModals } = renderSortedHeroStats(statsData.heroes, currentSortState, allHits);
-                const heroTableHtml = `
-                  <div style="font-weight:bold;margin-bottom:8px;">Hero Table (Render Event)</div>
-                  <table class="stats-table sortable">
+    container.innerHTML = `
+        <div>
+            <h3>Hero Statistics</h3>
+            <div class="table-container">
+                <table class="stats-table hero-stats">
                     <thead>
-                      <tr>
-                        <th data-sort="string" class="hero-col" style="width: 35%;">Hero</th>
-                        <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
-                        <th data-sort="number" class="number-col" style="width: 15%;">Wins</th>
-                        <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
-                        <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
-                      </tr>
+                        <tr>
+                            <th class="hero-col sortable" data-column="0" data-sort-type="string">Hero</th>
+                            <th class="number-col sortable" data-column="1" data-sort-type="number">Plays</th>
+                            <th class="number-col sortable" data-column="2" data-sort-type="number">Wins</th>
+                            <th class="number-col sortable" data-column="3" data-sort-type="number">Win %</th>
+                            <th class="date-col sortable" data-column="4" data-sort-type="date">Last Played</th>
+                        </tr>
                     </thead>
-                    <tbody>${heroRows}</tbody>
-                  </table>
-                  ${heroModals}
-                `;
-                leftBox.innerHTML = heroTableHtml;
-
-                const { tableRowsHtml: villainRows, modalsHtml: villainModals } = renderSortedVillainStats(statsData.villains, currentVillainSortState, allHits);
-                const villainTableHtml = `
-                  <div style="font-weight:bold;margin-bottom:8px;">Villain Table (Render Event)</div>
-                  <table class="stats-table sortable">
-                    <thead>
-                      <tr>
-                        <th data-sort="string" class="villain-col" style="width: 35%;">Villain</th>
-                        <th data-sort="number" class="number-col" style="width: 15%;">Plays</th>
-                        <th data-sort="number" class="number-col" style="width: 15%;">Hero Wins</th>
-                        <th data-sort="number" class="number-col win-rate-col" style="width: 15%; display: table-cell;">Win %</th>
-                        <th data-sort="string" class="date-col" style="width: 20%;">Played</th>
-                      </tr>
-                    </thead>
-                    <tbody>${villainRows}</tbody>
-                  </table>
-                  ${villainModals}
-                `;
-                rightBox.innerHTML = villainTableHtml;
-            }
-            
-            initTableSort();
-
-            console.log(`DEBUG: search.on('render') - Applying indicators. Hero asc: ${currentSortState.asc}, Villain asc: ${currentVillainSortState.asc}`);
-            if (leftBox) {
-                const heroTableElement = leftBox.querySelector('table.stats-table');
-                if (heroTableElement) {
-                    const headerCells = heroTableElement.querySelectorAll('thead tr th');
-                    headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-                    const targetHeroHeader = headerCells[currentSortState.column];
-                    if (targetHeroHeader) {
-                        targetHeroHeader.classList.add(currentSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
-                    }
-                }
-            }
-            if (rightBox) {
-                const villainTableElement = rightBox.querySelector('table.stats-table');
-                if (villainTableElement) {
-                    const headerCells = villainTableElement.querySelectorAll('thead tr th');
-                    headerCells.forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-                    const targetVillainHeader = headerCells[currentVillainSortState.column];
-                    if (targetVillainHeader) {
-                        targetVillainHeader.classList.add(currentVillainSortState.asc === true ? 'th-sort-asc' : 'th-sort-desc');
-                    }
-                }
-            }
-
-            if (typeof fixVillainModals === 'function') {
-                fixVillainModals(statsData.villains, allHits);
-            }
-            
-            // --- BEGIN DIAGNOSTIC FLEXBOX DEBUG ---
-            const statsContainer = document.querySelector('.statistics'); // This is the main flex container for stats
-            if (statsContainer) {
-                // ... (your flexbox debug code) ...
-            }
-            // --- END DIAGNOSTIC FLEXBOX DEBUG ---
-        }, 500);
-    } else {
-        const leftBox = document.querySelector('#side-by-side-experiment .left-box-sbs');
-        const rightBox = document.querySelector('#side-by-side-experiment .right-box-sbs');
-        if (leftBox) leftBox.innerHTML = '<p style="text-align:center; padding-top:20px;">No hero data to display.</p>';
-        if (rightBox) rightBox.innerHTML = '<p style="text-align:center; padding-top:20px;">No villain data to display.</p>';
-    }
-});
-
-// Add this CSS for the custom tooltip (insert near the top or in a <style> block)
-(function() {
-    const style = document.createElement('style');
-    style.textContent = `
-    .custom-tooltip {
-        position: absolute;
-        background: #222;
-        color: #fff;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 13px;
-        pointer-events: none;
-        z-index: 99999;
-        white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        opacity: 0.97;
-        transition: opacity 0.05s;
-    }
+                    <tbody>
+                        ${tableRowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        ${modalsHtml}
     `;
-    document.head.appendChild(style);
-})();
+    
+    // Reinitialize table sorting
+    initTableSort();
+}
 
-// Add this after your DOMContentLoaded event or after table rendering
+/**
+ * Display villain statistics table
+ */
+function displayVillainStats(villains, allHits) {
+    const container = document.getElementById('villain-stats-table');
+    if (!container) return;
+
+    if (villains.length === 0) {
+        container.innerHTML = '<p>No villain data available</p>';
+        return;
+    }
+
+    // Generate villain table
+    const { tableRowsHtml, modalsHtml } = renderSortedVillainStats(villains, currentVillainSortState, allHits);
+    
+    container.innerHTML = `
+        <div>
+            <h3>Villain Statistics</h3>
+            <div class="table-container">
+                <table class="stats-table villain-stats">
+                    <thead>
+                        <tr>
+                            <th class="villain-col sortable" data-column="0" data-sort-type="string">Villain</th>
+                            <th class="number-col sortable" data-column="1" data-sort-type="number">Plays</th>
+                            <th class="number-col sortable" data-column="2" data-sort-type="number">Hero Wins</th>
+                            <th class="number-col sortable" data-column="3" data-sort-type="number">Hero Win %</th>
+                            <th class="date-col sortable" data-column="4" data-sort-type="date">Last Played</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        ${modalsHtml}
+    `;
+    
+    // Reinitialize table sorting
+    initTableSort();
+}
+
+/**
+ * Display team statistics (aggregated team compositions)
+ */
+function displayTeamStats(allHits) {
+    const container = document.getElementById('hero-stats-table');
+    if (!container) return;
+
+    // Group hits by team composition
+    const teamStats = {};
+    
+    allHits.forEach(hit => {
+        const teamComposition = hit.team_composition || hit.hero || 'Unknown Team';
+        
+        if (!teamStats[teamComposition]) {
+            teamStats[teamComposition] = {
+                name: teamComposition,
+                plays: 0,
+                wins: 0,
+                winRate: 0,
+                lastPlayedDate: 0
+            };
+        }
+        
+        teamStats[teamComposition].plays++;
+        if (hit.win) {
+            teamStats[teamComposition].wins++;
+        }
+        
+        const hitDate = hit.date ? new Date(hit.date).getTime() : 0;
+        if (hitDate > teamStats[teamComposition].lastPlayedDate) {
+            teamStats[teamComposition].lastPlayedDate = hitDate;
+        }
+    });
+    
+    // Calculate win rates and convert to array
+    const teams = Object.values(teamStats).map(team => {
+        team.winRate = team.plays > 0 ? Math.round((team.wins / team.plays) * 100) : 0;
+        return team;
+    });
+    
+    // Sort teams by plays (descending)
+    teams.sort((a, b) => b.plays - a.plays);
+    
+    if (teams.length === 0) {
+        container.innerHTML = '<p>No team data available</p>';
+        return;
+    }
+    
+    // Generate team table rows
+    const tableRowsHtml = teams.map((team, index) => {
+        const lastPlayedFormatted = formatMonthYear(team.lastPlayedDate);
+        const lastPlayedTooltip = formatDayMonthYear(team.lastPlayedDate);
+        const highlightLastPlayed = isWithinLastMonth(team.lastPlayedDate) ? ' style="color: red;"' : '';
+        
+        return `
+            <tr class="team-row">
+                <td class="team-name" style="padding: 8px;">
+                    <span style="font-weight: bold;">${escapeHTML(team.name)}</span>
+                </td>
+                <td class="number-col">${team.plays}</td>
+                <td class="number-col">${team.wins}</td>
+                <td class="number-col">${team.winRate}%</td>
+                <td class="date-col"${highlightLastPlayed} data-timestamp="${team.lastPlayedDate}" title="${lastPlayedTooltip}">${lastPlayedFormatted}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    container.innerHTML = `
+        <div>
+            <h3>Team Statistics</h3>
+            <div class="table-container">
+                <table class="stats-table team-stats">
+                    <thead>
+                        <tr>
+                            <th class="team-col sortable" data-column="0" data-sort-type="string">Team Composition</th>
+                            <th class="number-col sortable" data-column="1" data-sort-type="number">Plays</th>
+                            <th class="number-col sortable" data-column="2" data-sort-type="number">Wins</th>
+                            <th class="number-col sortable" data-column="3" data-sort-type="number">Win %</th>
+                            <th class="date-col sortable" data-column="4" data-sort-type="date">Last Played</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    // Reinitialize table sorting
+    initTableSort();
+}
+
+/**
+ * Initialize table sorting functionality
+ */
+function initTableSort() {
+    // Remove existing event listeners to prevent duplicates
+    document.querySelectorAll('.sortable').forEach(header => {
+        const newHeader = header.cloneNode(true);
+        header.parentNode.replaceChild(newHeader, header);
+    });
+    
+    // Add new event listeners
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', function() {
+            const column = parseInt(this.getAttribute('data-column'));
+            const sortType = this.getAttribute('data-sort-type');
+            const table = this.closest('table');
+            
+            if (table.classList.contains('hero-stats') || table.classList.contains('team-stats')) {
+                // Hero/Team table sorting
+                const currentAsc = currentHeroSortState.column === column ? !currentHeroSortState.asc : false;
+                currentHeroSortState = {
+                    column: column,
+                    asc: currentAsc,
+                    sortType: sortType
+                };
+                
+                // Re-render with new sort state
+                console.log('Hero table sort:', currentHeroSortState);
+                const hits = getCurrentHits();
+                if (hits.length > 0) {
+                    const stats = computeStats(hits);
+                    if (currentTab === 'team') {
+                        displayTeamStats(hits);
+                    } else {
+                        displayHeroStats(stats.heroes, hits);
+                    }
+                }
+            } else if (table.classList.contains('villain-stats')) {
+                // Villain table sorting
+                const currentAsc = currentVillainSortState.column === column ? !currentVillainSortState.asc : false;
+                currentVillainSortState = {
+                    column: column,
+                    asc: currentAsc,
+                    sortType: sortType
+                };
+                
+                // Re-render with new sort state
+                console.log('Villain table sort:', currentVillainSortState);
+                const hits = getCurrentHits();
+                if (hits.length > 0) {
+                    const stats = computeStats(hits);
+                    displayVillainStats(stats.villains, hits);
+                }
+            }
+            
+            // Update sort indicators
+            updateSortIndicators(table, column, currentHeroSortState.asc || currentVillainSortState.asc);
+        });
+    });
+}
+
+// Custom hit rendering function
+function renderHit(hit) {
+    if (hit.play_type === 'team') {
+        return `
+            <div class="play-card team-play">
+                <h2>${hit.villain}</h2>
+                <div class="play-details">
+                    <p>Team: ${hit.team_composition}</p>
+                    <p>Result: ${hit.win ? 'Victory! 🎉' : 'Defeat 💀'}</p>
+                    <p>Date: ${hit.date}</p>
+                </div>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="play-card">
+                <h2>${hit.villain}</h2>
+                <div class="play-details">
+                    <p>Hero: ${hit.hero}</p>
+                    <p>Result: ${hit.win ? 'Victory! 🎉' : 'Defeat 💀'}</p>
+                    <p>Date: ${hit.date}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Tab functionality for solo vs team games
+let currentTab = 'solo';
+
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Update search filters
+    updateSearchFilters();
+}
+
+function updateSearchFilters() {
+    // Update the search instance with tab-specific filters
+    if (currentTab === 'solo') {
+        search.setUiState({
+            [ALGOLIA_INDEX_NAME]: {
+                ...search.getUiState()[ALGOLIA_INDEX_NAME],
+                configure: {
+                    filters: 'play_type:solo',
+                    hitsPerPage: 1000
+                }
+            }
+        });
+    } else if (currentTab === 'team') {
+        search.setUiState({
+            [ALGOLIA_INDEX_NAME]: {
+                ...search.getUiState()[ALGOLIA_INDEX_NAME],
+                configure: {
+                    filters: 'play_type:team',
+                    hitsPerPage: 1000
+                }
+            }
+        });
+    }
+}
+
+// Use existing currentTab variable (defined earlier)
+
+function switchTab(tabName) {
+    currentTab = tabName;
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Update search filters
+    updateSearchFilters();
+}
+
+// Add missing functions
 function enableFastDateTooltips() {
+    // Fast tooltip functionality
     let tooltipDiv = null;
     document.body.addEventListener('mouseover', function(e) {
         const td = e.target.closest('.date-col');
         if (td && td.hasAttribute('title')) {
-            // Remove default title to prevent browser tooltip
-            const tip = td.getAttribute('title');
-            td.setAttribute('data-tooltip', tip);
+            td.setAttribute('data-tooltip', td.getAttribute('title'));
             td.removeAttribute('title');
             tooltipDiv = document.createElement('div');
-            tooltipDiv.className = 'custom-tooltip';
+            tooltipDiv.className = 'fast-tooltip';
+            const tip = td.getAttribute('data-tooltip');
             tooltipDiv.textContent = tip;
             document.body.appendChild(tooltipDiv);
             const rect = td.getBoundingClientRect();
@@ -2117,8 +1656,89 @@ function enableFastDateTooltips() {
     });
 }
 
+
+function updateSortIndicators(table, activeColumn, ascending) {
+    // Remove all existing sort indicators
+    table.querySelectorAll('.sortable').forEach((header, index) => {
+        header.classList.remove('sort-asc', 'sort-desc');
+        if (index === activeColumn) {
+            header.classList.add(ascending ? 'sort-asc' : 'sort-desc');
+        }
+    });
+}
+
+function getCurrentHits() {
+    // Get current hits from InstantSearch
+    const uiState = search.getUiState();
+    const results = search.helper.lastResults;
+    if (results && results.hits) {
+        return results.hits;
+    }
+    return [];
+}
+
+function initializeTabs() {
+    // Add tab click handlers
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+            switchTab(this.dataset.tab);
+        });
+    });
+    
+    // Initialize functions
+    initTableSort();
+    
+    // Don't call switchTab here - let InstantSearch start first
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     enableFastDateTooltips();
- 
+    initializeTabs();
+    
+    // Load image data when the page loads
+    loadImageData().then(() => {
+        imageDataLoaded = true;
+        console.log('Image data loaded, processing any pending stats update');
+        if (pendingStatsUpdate) {
+            computeStats(pendingStatsUpdate);
+            pendingStatsUpdate = null;
+        }
+    });
+    
+    // Set initial tab state after InstantSearch has started (it starts immediately after widgets are added)
+    setTimeout(() => {
+        switchTab('solo');
+    }, 100);
 });
+
+// Tab state management
+
+/**
+ * Switch between solo and team tabs
+ */
+function switchTab(tab) {
+    console.log('Switching to tab:', tab);
+    
+    // Update current tab
+    currentTab = tab;
+    
+    // Update tab button states
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+        if (button.dataset.tab === tab) {
+            button.classList.add('active');
+        }
+    });
+    
+    // Update search filters for the selected tab
+    updateSearchFilters();
+    
+    // Force refresh of stats after filter change
+    setTimeout(() => {
+        const hits = getCurrentHits();
+        if (hits.length > 0) {
+            computeStats(hits);
+        }
+    }, 100);
+}
 
