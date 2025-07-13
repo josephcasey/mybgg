@@ -52,6 +52,52 @@
    Groot & Rocket partnerships: Most frequent (4 games)
 ```
 
+## [v2.1.0] - 2025-07-13
+
+### 🎮 **Frontend Enhancement & Bug Fixes**
+
+**Team Statistics Overhaul:**
+- **Fixed Missing Function**: Restored `filterTeamPlays` function that was causing ReferenceError
+- **Enhanced Team Filtering**: Smart detection of team games using team_composition field
+- **Dual Hero Display**: Team stats now show separate columns for 1st & 2nd hero with images
+- **Composition Parsing**: Handles multiple separators (commas, semicolons, "and", "&")
+- **Debugging Integration**: Comprehensive console logging for team detection and parsing
+
+**Image Loading & Display Improvements:**
+- **CORS Resolution**: Local HTTP server setup for development testing (python3 -m http.server 8080)
+- **Hero Name Aliases**: Enhanced alias resolution (Dr. Strange → Doctor Strange, Spidey → Spider-Man)
+- **Villain Image Matching**: Improved difficulty level stripping (1/2, A, B, C, Expert, Heroic)
+- **Aspect Detection**: Better fuzzy matching for hero aspects with keyword recognition
+- **Synchronous Loading**: Fixed race condition between image data loading and stats computation
+
+**UI/UX Enhancements:**
+- **Side-by-Side Layout**: Restored proper grid layout for hero and villain stats tables
+- **Modal Popup Fixes**: Hero and villain detail modals working correctly on hover
+- **InstantSearch Stability**: Fixed initialization order to prevent search errors
+- **Stats Widget Template**: Improved container structure for consistent layout
+- **Error Handling**: Graceful fallbacks when image data or team compositions are missing
+
+**Developer Experience:**
+- **Local Testing Guide**: Clear instructions for CORS-free development environment
+- **Debug Console Output**: Detailed logging for troubleshooting team functionality
+- **Documentation Updates**: Enhanced deployment guide with frontend testing procedures
+
+### 🐛 **Bug Fixes**
+
+- Fixed `filterTeamPlays is not defined` ReferenceError
+- Resolved CORS errors when loading JSON files locally
+- Fixed empty image data objects causing lookup failures
+- Corrected stats widget template causing layout issues
+- Restored missing modal popup event handlers
+
+### 🔧 **Technical Improvements**
+
+- Enhanced team composition parsing with multiple separator support
+- Improved image data synchronization and error handling
+- Better hero name transformation and alias resolution
+- Strengthened villain difficulty detection patterns
+- Optimized stats computation timing and data flow
+
 ## [v2.1.0] - 2025-07-01
 
 ### 🐍 **Python Environment Management**

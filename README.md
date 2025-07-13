@@ -8,6 +8,7 @@ Advanced statistics tracker for Marvel Champions gameplay data from BoardGameGee
 - 🚀 **Automated Deployment**: GitHub Pages hosting with daily BGG sync automation
 - 🔧 **Robust Parsing**: Handles truncated names, special characters, and aspect variations
 - 📧 **Email Notifications**: Daily sync summaries with play statistics
+- 🎮 **Enhanced Frontend**: Fixed team stats, modal popups, image loading, and responsive design
 
 ## Enhanced Multi-Hero Parsing System
 
@@ -272,3 +273,38 @@ GitHub Pages_. Select your master branch as Source, and click Save.
 * Meeple icon (CC4 Attribtion): https://icon-icons.com/icon/meeple/38522#256
 * Algolia search client (MIT): https://github.com/algolia/algoliasearch-client-python
 * Mobile testing with: <a href="https://www.browserstack.com"><img src="https://raw.githubusercontent.com/EmilStenstrom/mybgg/master/Browserstack-logo@2x.png" height="25" alt="Browserstack" style="vertical-align: top"></a>
+
+## 🎮 Frontend Enhancements (v2.1.0)
+
+### ✅ Recent Fixes & Improvements
+
+**Team Statistics Enhancement:**
+- **Fixed Team Tab**: Missing `filterTeamPlays` function restored
+- **Dual Hero Display**: Team stats now show 1st & 2nd hero with images
+- **Smart Filtering**: Only shows actual team games (multiple heroes)
+- **Composition Parsing**: Handles commas, semicolons, "and", "&" separators
+
+**Image Loading & Display:**
+- **CORS-Friendly Loading**: Images load correctly via HTTP server
+- **Hero Name Aliases**: Supports "Dr. Strange" → "Doctor Strange", "Spidey" → "Spider-Man"
+- **Villain Difficulty Stripping**: Removes "1/2", "A", "B", etc. for image matching
+- **Aspect Detection**: Enhanced hero aspect recognition with fuzzy matching
+
+**UI/UX Improvements:**
+- **Side-by-Side Layout**: Hero and villain stats display in grid layout
+- **Modal Popups**: Hover details for heroes/villains working correctly
+- **Responsive Tables**: Better sorting and visual feedback
+- **Error Handling**: Graceful fallbacks when data/images missing
+
+### 🧪 Local Development
+
+```bash
+# Start local HTTP server for testing
+python3 -m http.server 8080
+
+# Open in browser
+open http://localhost:8080
+
+# Check browser console for debugging info
+# F12 → Console → Click "Team" tab
+```

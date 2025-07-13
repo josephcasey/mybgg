@@ -247,17 +247,75 @@ This section tracks major updates and improvements to your Marvel Champions BGG 
 - **GitHub Pages Hosting**: Fast, reliable, free static site hosting
 - **Launch Agent Automation**: macOS system-level scheduling for reliability
 
-### 📈 **Deployment Metrics:**
-- **Hosting Cost**: $0 (GitHub Pages free tier)
-- **Update Frequency**: Daily automatic sync + manual on-demand
-- **Email Notifications**: 3 types (Success, No New Plays, Already Synced)
-- **Data Sources**: BoardGameGeek API + Algolia search index
-- **Automation**: macOS Launch Agent (8:00 AM daily + login triggers)
+## 🔧 Frontend Development & Testing
 
----
+### ✅ Recent Frontend Improvements (v2.1.0)
 
-**🔗 Quick Links:**
-- 🌐 **Live Site**: https://josephcasey.github.io/mybgg/
-- 📚 **Full Documentation**: This deployment guide
-- 📊 **Version History**: [`release_notes.md`](release_notes.md)
-- 🔧 **Source Code**: [GitHub Repository](https://github.com/josephcasey/mybgg)
+**Team Statistics Enhancements:**
+- ✅ **Fixed missing `filterTeamPlays` function** - Team tab now properly filters team games
+- ✅ **Enhanced team composition parsing** - Handles commas, semicolons, "and", "&" separators
+- ✅ **Two-hero column display** - Team stats show 1st & 2nd hero with images
+- ✅ **Modal popup fixes** - Hero/villain detail modals working correctly
+- ✅ **Side-by-side layout restored** - Hero and villain stats display properly
+
+**Image Loading & Display:**
+- ✅ **CORS-friendly image loading** - Images load correctly from JSON files
+- ✅ **Hero image matching** - Improved name resolution with alias support
+- ✅ **Villain image matching** - Better difficulty level stripping
+- ✅ **Aspect detection** - Enhanced hero aspect recognition
+- ✅ **Error handling** - Graceful fallbacks when images missing
+
+### 🧪 Local Testing Setup
+
+For full frontend development and testing:
+
+```bash
+# Start local HTTP server (avoids CORS issues)
+python3 -m http.server 8080
+
+# Open in browser
+open http://localhost:8080
+```
+
+**Why local server?** 
+- ✅ Prevents CORS errors when loading JSON files
+- ✅ Mimics GitHub Pages environment exactly
+- ✅ Enables full app functionality during development
+- ✅ Tests image loading, search, and team functionality
+
+### 🐛 Debugging Team Functionality
+
+The team tab includes comprehensive debugging output:
+
+```javascript
+// Check browser console (F12) for:
+🔍 filterTeamPlays: Starting with 483 total hits
+🔍 filterTeamPlays: Found 42 team plays out of 483 total
+🔍 Sample team plays: [...]
+📊 displayTeamStats called with 42 hits
+```
+
+**Common debugging steps:**
+1. Open browser console (F12 → Console)
+2. Click "Team" tab
+3. Look for filtering and parsing debug messages
+4. Verify team composition format in data
+
+### 📱 App Features Status
+
+**✅ Working Features:**
+- Hero stats table with images and sorting
+- Villain stats table with images and sorting  
+- Team stats table with dual hero columns
+- Modal popups on hover (hero/villain details)
+- Search functionality via Algolia
+- Time period filtering
+- Responsive design
+
+**🔧 Key Fixes Applied:**
+- `filterTeamPlays` function implementation
+- Image data loading synchronization
+- InstantSearch initialization order
+- Stats widget template structure
+- Team composition parsing logic
+- Modal event handler restoration

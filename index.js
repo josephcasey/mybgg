@@ -1394,11 +1394,33 @@ function displayTeamStats(allHits) {
     const container = document.getElementById('hero-stats-table');
     if (!container) return;
 
+    console.log('📊 displayTeamStats called with', allHits.length, 'hits');
+    
+    // Filter to only team plays
+    const teamHits = filterTeamPlays(allHits);
+    
+    if (teamHits.length === 0) {
+        console.log('❌ No team plays found');
+        container.innerHTML = `
+            <div>
+                <h3>Team Statistics</h3>
+                <p>No team data available. Team games should have team_composition field with multiple heroes.</p>
+                <p><strong>Debug Info:</strong></p>
+                <ul>
+                    <li>Total plays checked: ${allHits.length}</li>
+                    <li>Team plays found: ${teamHits.length}</li>
+                    <li>Looking for format: "Hero1 + Hero2" or similar</li>
+                </ul>
+            </div>
+        `;
+        return;
+    }
+
     // Group hits by team composition
     const teamStats = {};
     
-    allHits.forEach(hit => {
-        const teamComposition = hit.team_composition || hit.hero || 'Unknown Team';
+    teamHits.forEach(hit => {
+        const teamComposition = hit.team_composition;
         
         if (!teamStats[teamComposition]) {
             teamStats[teamComposition] = {
@@ -1406,7 +1428,8 @@ function displayTeamStats(allHits) {
                 plays: 0,
                 wins: 0,
                 winRate: 0,
-                lastPlayedDate: 0
+                lastPlayedDate: 0,
+                heroes: parseTeamComposition(teamComposition) // Parse individual heroes
             };
         }
         
@@ -1427,24 +1450,28 @@ function displayTeamStats(allHits) {
         return team;
     });
     
+    console.log('🎯 Team stats calculated:', teams.length, 'teams');
+    
     // Sort teams by plays (descending)
     teams.sort((a, b) => b.plays - a.plays);
     
-    if (teams.length === 0) {
-        container.innerHTML = '<p>No team data available</p>';
-        return;
-    }
-    
-    // Generate team table rows
+    // Generate team table rows with hero images
     const tableRowsHtml = teams.map((team, index) => {
         const lastPlayedFormatted = formatMonthYear(team.lastPlayedDate);
         const lastPlayedTooltip = formatDayMonthYear(team.lastPlayedDate);
         const highlightLastPlayed = isWithinLastMonth(team.lastPlayedDate) ? ' style="color: red;"' : '';
         
+        // Generate hero image cells
+        const hero1Html = generateHeroImageCell(team.heroes[0] || '', 0);
+        const hero2Html = generateHeroImageCell(team.heroes[1] || '', 1);
+        
         return `
             <tr class="team-row">
-                <td class="team-name" style="padding: 8px;">
-                    <span style="font-weight: bold;">${escapeHTML(team.name)}</span>
+                <td class="hero-cell" style="padding: 4px; width: 80px;">
+                    ${hero1Html}
+                </td>
+                <td class="hero-cell" style="padding: 4px; width: 80px;">
+                    ${hero2Html}
                 </td>
                 <td class="number-col">${team.plays}</td>
                 <td class="number-col">${team.wins}</td>
@@ -1461,11 +1488,12 @@ function displayTeamStats(allHits) {
                 <table class="stats-table team-stats">
                     <thead>
                         <tr>
-                            <th class="team-col sortable" data-column="0" data-sort-type="string">Team Composition</th>
-                            <th class="number-col sortable" data-column="1" data-sort-type="number">Plays</th>
-                            <th class="number-col sortable" data-column="2" data-sort-type="number">Wins</th>
-                            <th class="number-col sortable" data-column="3" data-sort-type="number">Win %</th>
-                            <th class="date-col sortable" data-column="4" data-sort-type="date">Last Played</th>
+                            <th class="hero-col" style="width: 80px;">Hero 1</th>
+                            <th class="hero-col" style="width: 80px;">Hero 2</th>
+                            <th class="number-col sortable" data-column="2" data-sort-type="number">Plays</th>
+                            <th class="number-col sortable" data-column="3" data-sort-type="number">Wins</th>
+                            <th class="number-col sortable" data-column="4" data-sort-type="number">Win %</th>
+                            <th class="date-col sortable" data-column="5" data-sort-type="date">Last Played</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1475,14 +1503,67 @@ function displayTeamStats(allHits) {
             </div>
         </div>
     `;
-    
-    // Reinitialize table sorting
-    initTableSort();
+
+    console.log('✅ Team stats table rendered with', teams.length, 'teams');
 }
 
-/**
- * Initialize table sorting functionality
- */
+// Filter team plays function
+function filterTeamPlays(allHits) {
+    console.log('🔍 filterTeamPlays: Starting with', allHits.length, 'total hits');
+    
+    const teamPlays = allHits.filter(hit => {
+        const teamComp = hit.team_composition;
+        
+        // Debug individual record
+        if (hit.id && (hit.id.includes('11') || hit.id.includes('12'))) { // Sample a few records
+            console.log('🔍 Sample hit:', {
+                id: hit.id,
+                team_composition: teamComp,
+                hasTeamComp: !!teamComp,
+                type: typeof teamComp
+            });
+        }
+        
+        // Check if team_composition exists and has content
+        if (!teamComp) return false;
+        
+        // If it's a string, check if it contains multiple heroes (commas or semicolons)
+        if (typeof teamComp === 'string') {
+            const trimmed = teamComp.trim();
+            if (!trimmed) return false;
+            
+            // Look for separators that indicate multiple heroes
+            const hasMultipleHeroes = trimmed.includes(',') || 
+                                    trimmed.includes(';') || 
+                                    trimmed.includes(' and ') ||
+                                    trimmed.includes(' & ');
+            
+            return hasMultipleHeroes;
+        }
+        
+        // If it's an array, check if it has multiple elements
+        if (Array.isArray(teamComp)) {
+            return teamComp.length > 1;
+        }
+        
+        return false;
+    });
+    
+    console.log('🔍 filterTeamPlays: Found', teamPlays.length, 'team plays out of', allHits.length, 'total');
+    
+    // Sample some team plays for debugging
+    if (teamPlays.length > 0) {
+        console.log('🔍 Sample team plays:', teamPlays.slice(0, 3).map(hit => ({
+            id: hit.id,
+            team_composition: hit.team_composition,
+            hero1: hit.hero1,
+            hero2: hit.hero2
+        })));
+    }
+    
+    return teamPlays;
+}
+
 function initTableSort() {
     // Remove existing event listeners to prevent duplicates
     document.querySelectorAll('.sortable').forEach(header => {
@@ -1711,34 +1792,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
-// Tab state management
+// Modal functionality for hero and villain details
+function showHeroDetail(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
 
-/**
- * Switch between solo and team tabs
- */
-function switchTab(tab) {
-    console.log('Switching to tab:', tab);
-    
-    // Update current tab
-    currentTab = tab;
-    
-    // Update tab button states
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('active');
-        if (button.dataset.tab === tab) {
-            button.classList.add('active');
-        }
-    });
-    
-    // Update search filters for the selected tab
-    updateSearchFilters();
-    
-    // Force refresh of stats after filter change
+function hideHeroDetail(modalId, event) {
+    // Add a small delay to prevent hiding when moving between hero cell and modal
     setTimeout(() => {
-        const hits = getCurrentHits();
-        if (hits.length > 0) {
-            computeStats(hits);
+        const modal = document.getElementById(modalId);
+        if (modal && !modal.matches(':hover') && !event.relatedTarget?.closest(`#${modalId}`)) {
+            modal.style.display = 'none';
         }
     }, 100);
 }
+
+function showVillainDetail(modalId, event) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function hideVillainDetail(modalId, event) {
+    // Add a small delay to prevent hiding when moving between villain cell and modal
+    setTimeout(() => {
+        const modal = document.getElementById(modalId);
+        if (modal && !modal.matches(':hover') && !event.relatedTarget?.closest(`#${modalId}`)) {
+            modal.style.display = 'none';
+        }
+    }, 100);
+}
+
+/**
+ * Initialize table sorting functionality
+ */
 
