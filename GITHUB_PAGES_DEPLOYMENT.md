@@ -307,6 +307,8 @@ This section tracks major updates and improvements to your Marvel Champions BGG 
 - ✅ **Two-hero column display** - Team stats show 1st & 2nd hero with images
 - ✅ **Modal popup fixes** - Hero/villain detail modals working correctly
 - ✅ **Side-by-side layout restored** - Hero and villain stats display properly
+- ✅ **InstantSearch tab syncing** - Solo/Team tab switches now update backend filters automatically, so team plays load without manual refresh
+- ✅ **Team composition parser** - Normalizes hero nicknames (Spidey, Rocket, etc.), strips aspect suffixes, and falls back to hero1/hero2 fields so team images render reliably
 
 **Image Loading & Display:**
 - ✅ **CORS-friendly image loading** - Images load correctly from JSON files

@@ -108,6 +108,95 @@ const HERO_ASPECT_MAPPING = {
     'forge': 'leadership'
 };
 
+const HERO_ALIASES = {
+    'Dr. Strange': 'Doctor Strange',
+    'Dr Strange': 'Doctor Strange',
+    'Dr. Strange (Stephen Strange)': 'Doctor Strange',
+    'Spidey': 'Spider-Man',
+    'Spidey (Peter Parker)': 'Spider-Man',
+    'Wolvie': 'Wolverine',
+    'Rocket Ra': 'Rocket Raccoon',
+    'Rocket Rac': 'Rocket Raccoon',
+    'Rocket': 'Rocket Raccoon'
+};
+
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function resolveHeroAlias(inputName) {
+    if (inputName == null) {
+        return { name: '', changed: false };
+    }
+
+    const original = String(inputName);
+    const trimmed = original.trim();
+    if (!trimmed) {
+        return { name: '', changed: trimmed !== original };
+    }
+
+    const lowered = trimmed.toLowerCase();
+
+    for (const alias in HERO_ALIASES) {
+        if (!Object.prototype.hasOwnProperty.call(HERO_ALIASES, alias)) continue;
+        if (lowered === alias.toLowerCase()) {
+            const canonical = HERO_ALIASES[alias];
+            return { name: canonical, changed: canonical !== trimmed };
+        }
+    }
+
+    for (const alias in HERO_ALIASES) {
+        if (!Object.prototype.hasOwnProperty.call(HERO_ALIASES, alias)) continue;
+        const canonical = HERO_ALIASES[alias];
+        const aliasPattern = new RegExp('^' + escapeRegex(alias) + '\\b', 'i');
+        if (aliasPattern.test(trimmed)) {
+            const remainder = trimmed.replace(aliasPattern, '').trimStart();
+            const combined = remainder ? `${canonical} ${remainder}` : canonical;
+            return { name: combined.trim(), changed: true };
+        }
+    }
+
+    return { name: trimmed, changed: trimmed !== original };
+}
+
+function normalizeNameForComparison(name) {
+    return name ? name.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+}
+
+function normalizeTeamHeroName(rawName) {
+    if (!rawName) return '';
+
+    let working = String(rawName)
+        .replace(/&amp;/gi, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!working) return '';
+
+    working = working.replace(/\([^)]*\)/g, '').trim();
+
+    const aliasResult = resolveHeroAlias(working);
+    let normalized = aliasResult.name || '';
+
+    if (!normalized) return '';
+
+    normalized = normalized.replace(/\b(Aggression|Leadership|Protection|Justice)\b$/i, '').trim();
+    normalized = normalized.replace(/\s{2,}/g, ' ').trim();
+
+    // Title-case words that remain lowercase (skip if alias mapping already provided casing)
+    if (normalized === normalized.toLowerCase()) {
+        normalized = normalized.split(' ').map(part => {
+            if (!part) return part;
+            if (part.includes('-')) {
+                return part.split('-').map(segment => segment.charAt(0).toUpperCase() + segment.slice(1)).join('-');
+            }
+            return part.charAt(0).toUpperCase() + part.slice(1);
+        }).join(' ');
+    }
+
+    return normalized;
+}
+
 // Function to detect aspect from hero name
 function detectAspectFromName(heroName) {
     const cleanName = heroName.toLowerCase().trim();
@@ -371,8 +460,7 @@ search.addWidgets([
     instantsearch.widgets.configure({
         hitsPerPage: 1000,
         distinct: true,
-        clickAnalytics: true,
-        filters: 'play_type:solo' // Default to solo games
+        clickAnalytics: true
     }),
     
     instantsearch.widgets.searchBox({
@@ -696,30 +784,13 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
         const originalHeroName = hero.name; // Store original for debugging
         
         // First apply hero aliases to handle nicknames
-        const heroAliases = {
-            "Dr. Strange": "Doctor Strange",
-            "Dr Strange": "Doctor Strange", 
-            "Spidey": "Spider-Man",
-            "Wolvie": "Wolverine"
-        };
-        
-        // Check for exact matches first
-        if (heroAliases[heroNameForImageLookup]) {
-            // console.log(`ALIAS: Exact match "${heroNameForImageLookup}" -> "${heroAliases[heroNameForImageLookup]}"`);
-            heroNameForImageLookup = heroAliases[heroNameForImageLookup];
-            heroNameForDisplay = heroAliases[heroNameForDisplay];
-        } else {
-            // Check for partial matches (nickname followed by aspect or other text)
-            for (const nickname in heroAliases) {
-                if (heroNameForImageLookup.startsWith(nickname + " ")) {
-                    // Replace the nickname part while keeping any suffix
-                    console.log(`✓ Alias resolved: "${heroNameForImageLookup}" → "${heroNameForImageLookup.replace(nickname, heroAliases[nickname])}"`);
-                    heroNameForImageLookup = heroNameForImageLookup.replace(nickname, heroAliases[nickname]);
-                    heroNameForDisplay = heroNameForDisplay.replace(nickname, heroAliases[nickname]);
-                    break;
-                }
-            }
+        const aliasBefore = heroNameForImageLookup;
+        const aliasResult = resolveHeroAlias(heroNameForImageLookup);
+        if (aliasResult.changed) {
+            console.log(`✓ Alias resolved: "${aliasBefore}" → "${aliasResult.name}"`);
         }
+        heroNameForImageLookup = aliasResult.name;
+        heroNameForDisplay = aliasResult.name;
         
         // Then strip aspects and detect which one was found (with fuzzy matching)
         const aspects = [
@@ -1420,27 +1491,64 @@ function displayTeamStats(allHits) {
     const teamStats = {};
     
     teamHits.forEach(hit => {
-        const teamComposition = hit.team_composition;
-        
-        if (!teamStats[teamComposition]) {
-            teamStats[teamComposition] = {
-                name: teamComposition,
+        const parsedHeroes = parseTeamComposition(hit);
+        const displayHeroes = parsedHeroes.slice(0, 2);
+        const heroList = displayHeroes.length > 0 ? [...displayHeroes] : [];
+        while (heroList.length < 2) {
+            heroList.push('');
+        }
+
+        const fallbackTeamName = (() => {
+            if (typeof hit.team_composition === 'string' && hit.team_composition.trim()) {
+                return hit.team_composition.trim();
+            }
+            if (Array.isArray(hit.team_composition) && hit.team_composition.length > 0) {
+                const normalized = hit.team_composition
+                    .map(normalizeTeamHeroName)
+                    .filter(Boolean);
+                if (normalized.length > 0) {
+                    return normalized.join(' + ');
+                }
+                return hit.team_composition.map(part => String(part).trim()).filter(Boolean).join(' + ');
+            }
+            if (displayHeroes.length > 0) {
+                return displayHeroes.join(' + ');
+            }
+            const fallbackFromHeroFields = [hit.hero1, hit.hero2, hit.hero]
+                .map(normalizeTeamHeroName)
+                .filter(Boolean);
+            if (fallbackFromHeroFields.length > 0) {
+                return fallbackFromHeroFields.join(' + ');
+            }
+            return hit.id ? `Team ${hit.id}` : 'Unknown Team';
+        })();
+
+        const displayHeroNames = displayHeroes.filter(Boolean);
+        const teamName = displayHeroNames.length >= 2
+            ? displayHeroNames.join(' + ')
+            : fallbackTeamName;
+
+        if (!teamStats[teamName]) {
+            teamStats[teamName] = {
+                name: teamName,
                 plays: 0,
                 wins: 0,
                 winRate: 0,
                 lastPlayedDate: 0,
-                heroes: parseTeamComposition(teamComposition) // Parse individual heroes
+                heroes: heroList
             };
+        } else if (!teamStats[teamName].heroes || teamStats[teamName].heroes.every(hero => !hero)) {
+            teamStats[teamName].heroes = heroList;
         }
-        
-        teamStats[teamComposition].plays++;
+
+        teamStats[teamName].plays++;
         if (hit.win) {
-            teamStats[teamComposition].wins++;
+            teamStats[teamName].wins++;
         }
         
         const hitDate = hit.date ? new Date(hit.date).getTime() : 0;
-        if (hitDate > teamStats[teamComposition].lastPlayedDate) {
-            teamStats[teamComposition].lastPlayedDate = hitDate;
+        if (hitDate > teamStats[teamName].lastPlayedDate) {
+            teamStats[teamName].lastPlayedDate = hitDate;
         }
     });
     
@@ -1510,20 +1618,38 @@ function displayTeamStats(allHits) {
 // Filter team plays function
 function filterTeamPlays(allHits) {
     console.log('🔍 filterTeamPlays: Starting with', allHits.length, 'total hits');
-    
+    const debugTeamCompSamples = [];
+
     const teamPlays = allHits.filter(hit => {
         const teamComp = hit.team_composition;
         
-        // Debug individual record
-        if (hit.id && (hit.id.includes('11') || hit.id.includes('12'))) { // Sample a few records
-            console.log('🔍 Sample hit:', {
-                id: hit.id,
-                team_composition: teamComp,
-                hasTeamComp: !!teamComp,
-                type: typeof teamComp
-            });
+        // Debug individual record - coerce id to string before searching to avoid TypeError
+        if (hit.id != null) {
+            const idStr = String(hit.id);
+            if (idStr.includes('11') || idStr.includes('12')) { // Sample a few records
+                console.log('🔍 Sample hit:', {
+                    id: hit.id,
+                    team_composition: teamComp,
+                    hasTeamComp: !!teamComp,
+                    type: typeof teamComp
+                });
+            }
         }
         
+        if (debugTeamCompSamples.length < 10) {
+            debugTeamCompSamples.push({
+                id: hit.id,
+                team_composition: teamComp,
+                team_comp_type: typeof teamComp,
+                play_type: hit.play_type,
+                hero: hit.hero,
+                hero1: hit.hero1,
+                hero2: hit.hero2,
+                heroes: hit.heroes,
+                participants: hit.participants
+            });
+        }
+
         // Check if team_composition exists and has content
         if (!teamComp) return false;
         
@@ -1532,11 +1658,19 @@ function filterTeamPlays(allHits) {
             const trimmed = teamComp.trim();
             if (!trimmed) return false;
             
-            // Look for separators that indicate multiple heroes
-            const hasMultipleHeroes = trimmed.includes(',') || 
-                                    trimmed.includes(';') || 
-                                    trimmed.includes(' and ') ||
-                                    trimmed.includes(' & ');
+            // Normalize separator characters and look for separators that indicate multiple heroes
+            // Common separators: comma, semicolon, plus, ampersand, 'and', fullwidth slash, forward slash
+            const normalized = trimmed.replace(/\uFF0F/g, '/') // fullwidth slash to regular
+                                     .replace(/\s*\+\s*/g, '+')
+                                     .replace(/\s*&\s*/g, '&')
+                                     .replace(/\s+and\s+/ig, ' and ');
+
+            const hasMultipleHeroes = normalized.includes(',') ||
+                                     normalized.includes(';') ||
+                                     normalized.includes(' and ') ||
+                                     normalized.includes(' & ') ||
+                                     normalized.includes('+') ||
+                                     normalized.includes('/');
             
             return hasMultipleHeroes;
         }
@@ -1550,6 +1684,11 @@ function filterTeamPlays(allHits) {
     });
     
     console.log('🔍 filterTeamPlays: Found', teamPlays.length, 'team plays out of', allHits.length, 'total');
+    if (debugTeamCompSamples.length > 0) {
+        console.log('🔍 Sample team_composition values:', debugTeamCompSamples);
+    } else {
+        console.log('🔍 No hits with team_composition captured in samples.');
+    }
     
     // Sample some team plays for debugging
     if (teamPlays.length > 0) {
@@ -1562,6 +1701,140 @@ function filterTeamPlays(allHits) {
     }
     
     return teamPlays;
+}
+
+function parseTeamComposition(hit) {
+    if (!hit) return [];
+
+    const names = [];
+    const seen = new Set();
+    const addName = candidate => {
+        if (!candidate) return;
+        const normalized = normalizeTeamHeroName(candidate);
+        if (!normalized) return;
+        const key = normalizeNameForComparison(normalized);
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        names.push(normalized);
+    };
+
+    const teamComp = hit.team_composition;
+
+    if (Array.isArray(teamComp)) {
+        teamComp.forEach(addName);
+    } else if (typeof teamComp === 'string') {
+        const cleaned = teamComp.replace(/&amp;/gi, '&').trim();
+        if (cleaned) {
+            const segments = cleaned.split(/\s*(?:\+|&|\/|,|;|\band\b)\s*/i).filter(Boolean);
+            if (segments.length > 0) {
+                segments.forEach(addName);
+            } else {
+                addName(cleaned);
+            }
+        }
+    } else if (teamComp && typeof teamComp === 'object') {
+        if (Array.isArray(teamComp.names)) {
+            teamComp.names.forEach(addName);
+        } else if (teamComp.name) {
+            addName(teamComp.name);
+        }
+    }
+
+    if (Array.isArray(hit.heroes)) {
+        hit.heroes.forEach(entry => {
+            if (typeof entry === 'string') {
+                addName(entry);
+            } else if (entry && typeof entry === 'object') {
+                addName(entry.name || entry.hero || entry.alias);
+            }
+        });
+    }
+
+    addName(hit.hero1);
+    addName(hit.hero2);
+    addName(hit.hero3);
+    addName(hit.hero);
+
+    if (Array.isArray(hit.participants)) {
+        hit.participants.forEach(addName);
+    } else if (typeof hit.participants === 'string') {
+        hit.participants.split(/\s*(?:,|;|\/|\+|&|\band\b)\s*/i).forEach(addName);
+    }
+
+    return names;
+}
+
+function findHeroImageKey(heroName) {
+    if (!heroName || !heroImageData) return null;
+
+    const target = normalizeNameForComparison(heroName);
+    if (!target) return null;
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const key in heroImageData) {
+        if (!Object.prototype.hasOwnProperty.call(heroImageData, key)) continue;
+        const normalizedKey = normalizeNameForComparison(key);
+        if (!normalizedKey) continue;
+
+        if (normalizedKey === target) {
+            return key;
+        }
+
+        if (target.startsWith(normalizedKey) || normalizedKey.startsWith(target)) {
+            if (normalizedKey.length > bestScore) {
+                bestScore = normalizedKey.length;
+                bestMatch = key;
+            }
+        }
+    }
+
+    return bestMatch;
+}
+
+function generateHeroImageCell(heroName, slotIndex) {
+    const positionLabel = slotIndex + 1;
+
+    if (!heroName) {
+        return `
+            <div class="team-hero-card team-hero-card--empty" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 0.65rem;">
+                Hero ${positionLabel}
+            </div>
+        `;
+    }
+
+    let normalizedHero = normalizeTeamHeroName(heroName);
+    if (!normalizedHero) {
+        normalizedHero = String(heroName).trim();
+    }
+
+    if (!normalizedHero) {
+        return `
+            <div class="team-hero-card team-hero-card--empty" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 0.65rem;">
+                Hero ${positionLabel}
+            </div>
+        `;
+    }
+
+    const displayName = escapeHTML(normalizedHero);
+    const imageKey = findHeroImageKey(normalizedHero);
+
+    if (imageKey && heroImageData && heroImageData[imageKey] && heroImageData[imageKey].image) {
+        const imageUrl = escapeHTML(heroImageData[imageKey].image);
+        return `
+            <div class="team-hero-card" title="${displayName}" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.3); display: flex; align-items: flex-end; justify-content: center;">
+                <div style="position: absolute; inset: 0; background-image: url('${imageUrl}'); background-size: cover; background-position: center;"></div>
+                <span style="position: relative; z-index: 1; font-size: 0.65rem; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 0 5px rgba(0,0,0,0.85); padding: 0 4px 2px; text-align: center;">${displayName}</span>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="team-hero-card team-hero-card--fallback" title="${displayName}" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 4px;">
+            <span style="font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.85); text-align: center;">${displayName}</span>
+        </div>
+    `;
 }
 
 function initTableSort() {
@@ -1666,43 +1939,28 @@ function switchTab(tabName) {
 }
 
 function updateSearchFilters() {
-    // Update the search instance with tab-specific filters
-    if (currentTab === 'solo') {
-        search.setUiState({
-            [ALGOLIA_INDEX_NAME]: {
-                ...search.getUiState()[ALGOLIA_INDEX_NAME],
-                configure: {
-                    filters: 'play_type:solo',
-                    hitsPerPage: 1000
-                }
-            }
-        });
-    } else if (currentTab === 'team') {
-        search.setUiState({
-            [ALGOLIA_INDEX_NAME]: {
-                ...search.getUiState()[ALGOLIA_INDEX_NAME],
-                configure: {
-                    filters: 'play_type:team',
-                    hitsPerPage: 1000
-                }
-            }
-        });
-    }
-}
+    const targetFilter = currentTab === 'team' ? 'play_type:team' : 'play_type:solo';
+    const existingState = search.getUiState()[ALGOLIA_INDEX_NAME] || {};
+    const nextConfigure = {
+        ...(existingState.configure || {}),
+        filters: targetFilter,
+        hitsPerPage: 1000
+    };
 
-// Use existing currentTab variable (defined earlier)
-
-function switchTab(tabName) {
-    currentTab = tabName;
-    
-    // Update tab buttons
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
+    search.setUiState({
+        [ALGOLIA_INDEX_NAME]: {
+            ...existingState,
+            configure: nextConfigure
+        }
     });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    
-    // Update search filters
-    updateSearchFilters();
+
+    if (search.helper) {
+        search.helper.setQueryParameter('filters', targetFilter);
+        search.helper.setQueryParameter('hitsPerPage', 1000);
+        search.helper.search();
+    } else {
+        console.warn('Search helper not ready; queued filter update for', targetFilter);
+    }
 }
 
 // Add missing functions
