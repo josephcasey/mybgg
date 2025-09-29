@@ -1,15 +1,35 @@
 {
-    
     "version": "0.2.0",
     "configurations": [
-        
         {
             "name": "Python Debugger: Current File",
-            "type": "debugpy",
+            "type": "python",
             "request": "launch",
             "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Download & Index (Full)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/download_and_index.py",
             "console": "integratedTerminal",
-            "args": ["--apikey", "7dd12c83cfd51484dbb5c479ff1d7462"]
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "APIKEY": "7dd12c83cfd51484dbb5c479ff1d7462"
+            }
+        },
+        {
+            "name": "Download & Index (No Indexing - Test)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/download_and_index.py",
+            "args": ["--no_indexing"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "APIKEY": "7dd12c83cfd51484dbb5c479ff1d7462"
+            }
         }
     ]
 }

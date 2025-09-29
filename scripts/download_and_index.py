@@ -128,6 +128,7 @@ def main(args):
 
 if __name__ == '__main__':
     import argparse
+    import os
 
     setup_logging()
 
@@ -135,8 +136,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--apikey',
         type=str,
-        required=True,
-        help='The admin api key for your algolia site'
+        required=False,
+        default=os.environ.get('APIKEY'),
+        help='The admin api key for your algolia site (or set APIKEY environment variable)'
     )
     parser.add_argument(
         '--no_indexing',
@@ -157,5 +159,10 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+    
+    # Validate that we have an API key
+    if not args.apikey:
+        print("Error: No API key provided. Either use --apikey argument or set APIKEY environment variable.")
+        sys.exit(1)
 
     main(args)

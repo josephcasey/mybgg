@@ -41,7 +41,7 @@ Our system successfully decodes complex BGG play data with 95.2% accuracy:
 
 1. **Fork this repository** to your GitHub account
 2. **Set up Python environment**: `./setup_venv.sh`
-3. **Configure BGG/Algolia credentials** in `.vscode/launch.json`
+3. **Configure BGG/Algolia credentials** in `config.json` and set up environment variables
 4. **Deploy**: `./update_and_deploy.sh`
 5. **Set up automation**: `./setup_login_agent.sh` (optional)
 
@@ -207,16 +207,28 @@ Using this project, you can set up your own site for searching and filtering you
    </details>
 
 4. **Download your games from boardgamegeek and send them to algolia**:<br>
-   ```python3 scripts/download_and_index.py --apikey YOUR_ALGOLIA_ADMIN_API_KEY```
+   ```bash
+   # Set up your admin API key as environment variable (one-time setup)
+   echo 'export APIKEY="YOUR_ALGOLIA_ADMIN_API_KEY"' >> ~/.zshrc
+   source ~/.zshrc
+   
+   # Run the script (uses environment variable automatically)
+   python3 scripts/download_and_index.py
+   
+   # Or specify key manually if needed
+   python3 scripts/download_and_index.py --apikey YOUR_ALGOLIA_ADMIN_API_KEY
+   ```
 
-   (_Note that this API KEY is NOT the same as the one you put in config.json. Never share your admin api key publicly_)
+   (_Note: The admin API key is separate from the search-only key in config.json. Never share your admin API key publicly or commit it to your repository._)
 
    <details>
       <summary>Details</summary>
 
       * This step requires that you have (at least) Python 3.6 installed. You can download it from https://python.org if you need to.
       * Python could be installed as either "python", or "python3.6". Try the other version if the first doesn't work for you. You'll probably get "Invalid syntax"-errors if you run the script with the wrong version.
-      * The Algolia API key needed here can be found under the "API Keys" menu option, when logged in to Algolias dashboard. Pick the one called "Admin API Key", since this one will need permission to add games to your index. Never share this key publicly, since it can be used to delete your whole search index. Don't commit it to your project!
+      * The Algolia admin API key can be found under the "API Keys" menu option in Algolia's dashboard. This key needs permission to add games to your index. 
+      * **Security Best Practice**: Store this key as an environment variable (`APIKEY`) rather than in code files. The script will automatically use the environment variable.
+      * **Never share this key publicly** - it can be used to delete your entire search index. Don't commit it to your project!
       * Running this command might give strange errors from time to time. It seems the boardgamegeek API is somewhat shaking. Just trying to run the command again usually works. If you get other errors, please post an issue here: https://github.com/EmilStenstrom/mybgg/issues
    </details>
 

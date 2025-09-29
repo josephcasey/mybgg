@@ -46,6 +46,41 @@ Before running any scripts, set up your Python virtual environment:
 
 **✨ Important**: All scripts now consistently use `python3` and `pip3` commands for maximum compatibility across macOS systems.
 
+### 🔐 **API Key Management & Security Setup**
+
+**Environment Variable Configuration:**
+Your Algolia admin API key is now securely managed via environment variables:
+
+```bash
+# This is automatically done during setup, but for reference:
+export APIKEY="your_admin_api_key_here"
+```
+
+**Security Features:**
+- ✅ **Admin API key** stored as environment variable (not in code)
+- ✅ **Search-only API key** safely committed in config files
+- ✅ **GitHub Secrets** integration for CI/CD workflows
+- ✅ **Automatic key detection** in Python scripts
+
+**Development Workflow:**
+```bash
+# Run with environment variable (recommended)
+python scripts/download_and_index.py
+
+# Or specify key manually if needed
+python scripts/download_and_index.py --apikey YOUR_ADMIN_KEY
+
+# Test mode (no indexing, saves Algolia quota)
+python scripts/download_and_index.py --no_indexing
+```
+
+**VS Code Debugger Integration:**
+- ✅ Launch configurations use environment variables
+- ✅ Multiple debug profiles available:
+  - "Download & Index (Full)" - Complete indexing
+  - "Download & Index (No Indexing - Test)" - Development mode
+- ✅ Automatic virtual environment detection
+
 ### 🤖 Automated Update Script
 
 I've created `update_and_deploy.sh` for you! This script:
@@ -171,6 +206,12 @@ git push origin master
 - If missing, run: `./setup_venv.sh`
 - If packages are missing: Re-run `./setup_venv.sh`
 
+**If API key errors occur:**
+- Check environment variable: `echo $APIKEY`
+- If empty, re-run: `source ~/.zshrc` or restart terminal
+- Verify GitHub secret is set in repository Settings → Secrets → Actions
+- For VS Code debugging, check `.vscode/launch.json` has correct env settings
+
 **If site doesn't load:**
 - Check GitHub Pages is enabled in Settings → Pages
 - Wait 1-2 minutes for deployment
@@ -181,12 +222,14 @@ git push origin master
 - Check files exist in GitHub web interface
 
 **If Algolia search fails:**
-- Verify credentials in `config.json`
-- Check browser console for errors
+- Verify search-only API key in `config.json` and `config.js` match
+- Check browser console for authentication errors
+- Ensure admin API key is only used for indexing (not in frontend files)
 
 **If daily sync fails:**
 - Check email logs for error details
 - Ensure virtual environment is working: `source venv/bin/activate && python3 --version`
+- Test API key setup: `python scripts/download_and_index.py --no_indexing`
 - Test manually: `./daily_sync.sh`
 
 ## Part 5: Benefits of This Setup
@@ -227,6 +270,13 @@ Your Marvel Champions BGG Statistics Tracker will be live at:
 ### 🔄 **Recent Deployments:**
 
 This section tracks major updates and improvements to your Marvel Champions BGG app:
+
+#### **September 2025 - Security & Development Experience Improvements**
+- ✅ **API Key Security Enhancement** - Admin keys moved to environment variables
+- ✅ **GitHub Secrets Integration** - Secure CI/CD with repository secrets
+- ✅ **VS Code Debug Configuration** - Enhanced development workflow with launch configs
+- ✅ **Environment Variable Automation** - Scripts automatically detect API keys
+- ✅ **Improved Error Handling** - Better validation and user feedback
 
 #### **June 2025 - Full Automation & Email System**
 - ✅ **GitHub Pages Deployment Setup** - Complete static hosting solution
