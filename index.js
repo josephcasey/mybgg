@@ -1521,18 +1521,20 @@ function displayTeamStats(allHits) {
             if (Array.isArray(hit.team_composition) && hit.team_composition.length > 0) {
                 const normalized = hit.team_composition
                     .map(normalizeTeamHeroName)
-                    .filter(Boolean);
+                    .filter(Boolean)
+                    .sort(); // Sort alphabetically for consistent team names
                 if (normalized.length > 0) {
                     return normalized.join(' + ');
                 }
-                return hit.team_composition.map(part => String(part).trim()).filter(Boolean).join(' + ');
+                return hit.team_composition.map(part => String(part).trim()).filter(Boolean).sort().join(' + ');
             }
             if (displayHeroes.length > 0) {
                 return displayHeroes.join(' + ');
             }
             const fallbackFromHeroFields = [hit.hero1, hit.hero2, hit.hero]
                 .map(normalizeTeamHeroName)
-                .filter(Boolean);
+                .filter(Boolean)
+                .sort(); // Sort alphabetically for consistent team names
             if (fallbackFromHeroFields.length > 0) {
                 return fallbackFromHeroFields.join(' + ');
             }
@@ -1829,7 +1831,9 @@ function parseTeamComposition(hit) {
         hit.participants.split(/\s*(?:,|;|\/|\+|&|\band\b)\s*/i).forEach(addName);
     }
 
-    return names;
+    // Sort heroes alphabetically to ensure consistent team composition keys
+    // This means "Silk, Winter Soldier" and "Winter Soldier, Silk" will be treated as the same team
+    return names.sort();
 }
 
 function findHeroImageKey(heroName) {
