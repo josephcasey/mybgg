@@ -32,6 +32,12 @@ let currentHeroSortState = {
     sortType: 'number'
 };
 
+let currentTeamSortState = {
+    column: 2, // Default to Plays column in team table
+    asc: false,
+    sortType: 'number'
+};
+
 let currentVillainData = [];
 let currentVillainSortState = {
     column: 1, // Default sort by Plays
@@ -1414,6 +1420,11 @@ function displayHeroStats(heroes, allHits) {
     
     // Reinitialize table sorting
     initTableSort();
+
+    const heroTableElement = container.querySelector('.hero-stats');
+    if (heroTableElement) {
+        updateSortIndicators(heroTableElement, currentHeroSortState.column, currentHeroSortState.asc);
+    }
 }
 
 /**
@@ -1456,6 +1467,11 @@ function displayVillainStats(villains, allHits) {
     
     // Reinitialize table sorting
     initTableSort();
+
+    const villainTableElement = container.querySelector('.villain-stats');
+    if (villainTableElement) {
+        updateSortIndicators(villainTableElement, currentVillainSortState.column, currentVillainSortState.asc);
+    }
 }
 
 /**
@@ -1559,12 +1575,57 @@ function displayTeamStats(allHits) {
     });
     
     console.log('🎯 Team stats calculated:', teams.length, 'teams');
-    
-    // Sort teams by plays (descending)
-    teams.sort((a, b) => b.plays - a.plays);
+
+    const sortState = currentTeamSortState || { column: 2, asc: false, sortType: 'number' };
+
+    const sortedTeams = [...teams].sort((a, b) => {
+        let aVal;
+        let bVal;
+
+        switch (sortState.column) {
+            case 2:
+                aVal = a.plays;
+                bVal = b.plays;
+                break;
+            case 3:
+                aVal = a.wins;
+                bVal = b.wins;
+                break;
+            case 4:
+                aVal = a.winRate;
+                bVal = b.winRate;
+                break;
+            case 5:
+                aVal = a.lastPlayedDate || 0;
+                bVal = b.lastPlayedDate || 0;
+                break;
+            default:
+                aVal = a.plays;
+                bVal = b.plays;
+        }
+
+        let comparison;
+        if (sortState.sortType === 'string') {
+            comparison = String(aVal ?? '').localeCompare(String(bVal ?? ''));
+        } else {
+            const safeA = Number(aVal ?? 0);
+            const safeB = Number(bVal ?? 0);
+            comparison = safeA - safeB;
+        }
+
+        if (!sortState.asc) {
+            comparison = -comparison;
+        }
+
+        if (comparison === 0) {
+            comparison = a.name.localeCompare(b.name);
+        }
+
+        return comparison;
+    });
     
     // Generate team table rows with hero images
-    const tableRowsHtml = teams.map((team, index) => {
+    const tableRowsHtml = sortedTeams.map(team => {
         const lastPlayedFormatted = formatMonthYear(team.lastPlayedDate);
         const lastPlayedTooltip = formatDayMonthYear(team.lastPlayedDate);
         const highlightLastPlayed = isWithinLastMonth(team.lastPlayedDate) ? ' style="color: red;"' : '';
@@ -1612,7 +1673,14 @@ function displayTeamStats(allHits) {
         </div>
     `;
 
-    console.log('✅ Team stats table rendered with', teams.length, 'teams');
+    console.log('✅ Team stats table rendered with', sortedTeams.length, 'teams');
+
+    initTableSort();
+
+    const teamTableElement = container.querySelector('.team-stats');
+    if (teamTableElement) {
+        updateSortIndicators(teamTableElement, currentTeamSortState.column, currentTeamSortState.asc);
+    }
 }
 
 // Filter team plays function
@@ -1847,50 +1915,53 @@ function initTableSort() {
     // Add new event listeners
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', function() {
-            const column = parseInt(this.getAttribute('data-column'));
-            const sortType = this.getAttribute('data-sort-type');
+            const column = parseInt(this.getAttribute('data-column'), 10);
+            const sortType = this.getAttribute('data-sort-type') || 'number';
             const table = this.closest('table');
-            
-            if (table.classList.contains('hero-stats') || table.classList.contains('team-stats')) {
-                // Hero/Team table sorting
-                const currentAsc = currentHeroSortState.column === column ? !currentHeroSortState.asc : false;
-                currentHeroSortState = {
-                    column: column,
-                    asc: currentAsc,
-                    sortType: sortType
+            const hits = getCurrentHits();
+
+            if (table.classList.contains('team-stats')) {
+                const nextAsc = currentTeamSortState.column === column ? !currentTeamSortState.asc : false;
+                currentTeamSortState = {
+                    column,
+                    asc: nextAsc,
+                    sortType
                 };
-                
-                // Re-render with new sort state
-                console.log('Hero table sort:', currentHeroSortState);
-                const hits = getCurrentHits();
+
+                if (hits.length > 0) {
+                    displayTeamStats(hits);
+                }
+                return;
+            }
+
+            if (table.classList.contains('hero-stats')) {
+                const nextAsc = currentHeroSortState.column === column ? !currentHeroSortState.asc : false;
+                currentHeroSortState = {
+                    column,
+                    asc: nextAsc,
+                    sortType
+                };
+
                 if (hits.length > 0) {
                     const stats = computeStats(hits);
-                    if (currentTab === 'team') {
-                        displayTeamStats(hits);
-                    } else {
-                        displayHeroStats(stats.heroes, hits);
-                    }
+                    displayHeroStats(stats.heroes, hits);
                 }
-            } else if (table.classList.contains('villain-stats')) {
-                // Villain table sorting
-                const currentAsc = currentVillainSortState.column === column ? !currentVillainSortState.asc : false;
+                return;
+            }
+
+            if (table.classList.contains('villain-stats')) {
+                const nextAsc = currentVillainSortState.column === column ? !currentVillainSortState.asc : false;
                 currentVillainSortState = {
-                    column: column,
-                    asc: currentAsc,
-                    sortType: sortType
+                    column,
+                    asc: nextAsc,
+                    sortType
                 };
-                
-                // Re-render with new sort state
-                console.log('Villain table sort:', currentVillainSortState);
-                const hits = getCurrentHits();
+
                 if (hits.length > 0) {
                     const stats = computeStats(hits);
                     displayVillainStats(stats.villains, hits);
                 }
             }
-            
-            // Update sort indicators
-            updateSortIndicators(table, column, currentHeroSortState.asc || currentVillainSortState.asc);
         });
     });
 }
@@ -1997,11 +2068,15 @@ function enableFastDateTooltips() {
 
 
 function updateSortIndicators(table, activeColumn, ascending) {
-    // Remove all existing sort indicators
-    table.querySelectorAll('.sortable').forEach((header, index) => {
+    if (!table) return;
+
+    const isAscending = Boolean(ascending);
+
+    table.querySelectorAll('.sortable').forEach(header => {
+        const headerColumn = parseInt(header.getAttribute('data-column'), 10);
         header.classList.remove('sort-asc', 'sort-desc');
-        if (index === activeColumn) {
-            header.classList.add(ascending ? 'sort-asc' : 'sort-desc');
+        if (headerColumn === activeColumn) {
+            header.classList.add(isAscending ? 'sort-asc' : 'sort-desc');
         }
     });
 }
