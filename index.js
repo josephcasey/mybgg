@@ -466,6 +466,9 @@ async function cacheOverlayImages(heroData) {
 }
 // Image sizing configuration
 const HERO_IMAGE_HEIGHT = 50; // Height in pixels for hero cards
+// Match the visual footprint used by single-hero and villain image cells
+// Wider card improves artwork rendering within available table space
+const TEAM_HERO_IMAGE_WIDTH = 150; // Width in pixels for team hero cards/columns
 const VILLAIN_IMAGE_HEIGHT = 50; // Height in pixels for villain cards
 
 // Initialize a global map to manage table sort event handlers
@@ -964,7 +967,7 @@ function renderSortedHeroStats(heroes, sortState, allHits) {
             }
         }
 
-        let tdCellStyles = `position: relative; height: ${HERO_IMAGE_HEIGHT}px; min-height: ${HERO_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle; cursor: pointer;`; // Base styles for the TD
+    let tdCellStyles = `position: relative; height: ${HERO_IMAGE_HEIGHT}px; min-height: ${HERO_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle; cursor: pointer;`; // Base styles for the TD
         let imageOverlayHtml = ''; // Will contain the hoverable image overlay
 
         if (matchedKeyFromImageData) {
@@ -1713,10 +1716,10 @@ function displayTeamStats(allHits) {
         
         return `
             <tr class="team-row">
-                <td class="hero-cell" style="padding: 4px; width: 80px;">
+                <td class="hero-cell" style="padding: 4px; width: ${TEAM_HERO_IMAGE_WIDTH}px;">
                     ${hero1Html}
                 </td>
-                <td class="hero-cell" style="padding: 4px; width: 80px;">
+                <td class="hero-cell" style="padding: 4px; width: ${TEAM_HERO_IMAGE_WIDTH}px;">
                     ${hero2Html}
                 </td>
                 <td class="number-col">${team.plays}</td>
@@ -1945,7 +1948,7 @@ function generateHeroImageCell(heroName, slotIndex) {
 
     if (!heroName) {
         return `
-            <div class="team-hero-card team-hero-card--empty" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 0.65rem;">
+            <div class="team-hero-card team-hero-card--empty" style="position: relative; width: ${TEAM_HERO_IMAGE_WIDTH}px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 0.65rem;">
                 Hero ${positionLabel}
             </div>
         `;
@@ -1958,7 +1961,7 @@ function generateHeroImageCell(heroName, slotIndex) {
 
     if (!normalizedHero) {
         return `
-            <div class="team-hero-card team-hero-card--empty" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 0.65rem;">
+            <div class="team-hero-card team-hero-card--empty" style="position: relative; width: ${TEAM_HERO_IMAGE_WIDTH}px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 0.65rem;">
                 Hero ${positionLabel}
             </div>
         `;
@@ -1973,15 +1976,15 @@ function generateHeroImageCell(heroName, slotIndex) {
     if (imageKey && heroImageData && heroImageData[imageKey] && heroImageData[imageKey].image) {
         const imageUrl = escapeHTML(heroImageData[imageKey].image);
         return `
-            <div class="team-hero-card" title="${displayName}" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.3); display: flex; align-items: flex-end; justify-content: center;">
-                <div style="position: absolute; inset: 0; background-image: url('${imageUrl}'); background-size: cover; background-position: center;"></div>
+            <div class="team-hero-card" title="${displayName}" style="position: relative; width: ${TEAM_HERO_IMAGE_WIDTH}px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.3); display: flex; align-items: flex-end; justify-content: center;">
+                <div style="position: absolute; inset: 0; background-image: url('${imageUrl}'); background-repeat: no-repeat; background-size: 110% auto; background-position: 10% 18%;"></div>
                 <span style="position: relative; z-index: 1; font-size: 0.65rem; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 0 5px rgba(0,0,0,0.85); padding: 0 4px 2px; text-align: center;">${displayName}</span>
             </div>
         `;
     }
 
     return `
-        <div class="team-hero-card team-hero-card--fallback" title="${displayName}" style="position: relative; width: 72px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 4px;">
+    <div class="team-hero-card team-hero-card--fallback" title="${displayName}" style="position: relative; width: ${TEAM_HERO_IMAGE_WIDTH}px; height: ${HERO_IMAGE_HEIGHT}px; border-radius: 6px; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 4px;">
             <span style="font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.85); text-align: center;">${displayName}</span>
         </div>
     `;
