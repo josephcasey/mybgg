@@ -218,10 +218,43 @@ class Downloader():
                 print("Players:", play["players"])
                 
                 if ("Marvel Champions" in play["game"]["gamename"] and not 'parent play' in play["gamecomments"]): #or "Marvel Champions" in play["gamecomments"]):
-                    # Omit plays with more than one hero
-                    if len(play["players"]) > 1:
+                    raw_players = play["players"] or []
+
+                    processed_players = []
+                    if len(raw_players) == 0:
                         continue
-                    
+                    elif len(raw_players) == 1:
+                        single_player = dict(raw_players[0])
+                        color_value = (single_player.get("color") or "").strip()
+                        if color_value:
+                            single_player["color"] = re.sub(r"(?i)^team\s*\d*\s*[-:]\s*", "", color_value).strip() or color_value
+                        processed_players = [single_player]
+                    else:
+                        hero_components = []
+                        win_flags = []
+                        team_label = None
+
+                        for player_entry in raw_players:
+                            team_label = team_label or (player_entry.get("team") or "").strip()
+                            color_value = (player_entry.get("color") or "").strip()
+                            if color_value:
+                                normalized_color = re.sub(r"(?i)^team\s*\d*\s*[-:]\s*", "", color_value).strip()
+                                normalized_color = re.sub(r"(?i)^team\s*[-:]\s*", "", normalized_color).strip()
+                                hero_components.append(normalized_color or color_value)
+                            win_flags.append(int(player_entry.get("win", 0) or 0))
+
+                        if not hero_components:
+                            continue
+
+                        team_label = team_label or "Team 1"
+                        team_match = re.search(r"\d+", team_label)
+                        team_number = team_match.group(0) if team_match else "1"
+                        team_prefix = f"Team {team_number} - "
+
+                        combined_hero = f"{team_prefix}{'／'.join(hero_components)}"
+                        team_win = 1 if any(win_flags) else 0
+                        processed_players = [{"color": combined_hero, "win": team_win}]
+
                     champions_plays += 1
                     print("\n\nPlayID Game & GameName:",champions_plays,play["playid"],play["playdate"],play["game"]["gamename"])
                     print("\nstartcomment--",play["gamecomments"],"--endcomment\n")
@@ -243,12 +276,12 @@ class Downloader():
                         else:
                             # Extract the heros from the fragments
                             
-                            for player in play["players"]:
+                            for player in processed_players:
                                 print(f"{Colors.OKGREEN}Hero:", player["color"])
                                 print(f"{Colors.ENDC}")
                                 hero = player["color"]
                                 play_id = play["playid"]
-                                win = player["win"]  # Get the win status, default to 0 if not present
+                                win = int(player.get("win", 0) or 0)  # Get the win status, default to 0 if not present
                                 # Update the villain dictionary
                                 if found_villain not in villain_dictionary:
                                     villain_dictionary[found_villain] = {}

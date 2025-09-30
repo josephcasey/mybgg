@@ -58,11 +58,57 @@
     <script src="hero-direct-click.js"></script>
     <script src="index.js"></script>
     <script src="debug-click.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize sorting for any tables already in the DOM
-            initTableSort();
-        });
-    </script>
+        <!-- initTableSort is called from index.js after InstantSearch loads; avoid calling it here to prevent a race -->
+
+        <!-- Temporary global error catcher: shows JS errors on-page and logs them to console. Remove when debugging is complete. -->
+        <script>
+            (function(){
+                function showBanner(msg, bg) {
+                    try {
+                        const existing = document.getElementById('__global_js_error__');
+                        if (existing) existing.remove();
+                        const div = document.createElement('div');
+                        div.id = '__global_js_error__';
+                        div.style.background = bg || 'rgba(200,20,20,0.95)';
+                        div.style.color = 'white';
+                        div.style.padding = '8px';
+                        div.style.position = 'fixed';
+                        div.style.bottom = '8px';
+                        div.style.right = '8px';
+                        div.style.zIndex = 2147483647;
+                        div.style.maxWidth = '480px';
+                        div.style.fontFamily = 'monospace';
+                        div.style.fontSize = '12px';
+                        div.style.wordBreak = 'break-word';
+                        div.textContent = msg;
+                        document.body.appendChild(div);
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                window.addEventListener('error', function(e) {
+                    try {
+                        const filename = e.filename || (e?.error && e.error.fileName) || '';
+                        const lineno = e.lineno || (e?.error && e.error.lineNumber) || '';
+                        const message = `${e.message} (${filename}:${lineno})`;
+                        console.error('GlobalError:', message, e.error || e);
+                        showBanner('JS Error: ' + message, 'rgba(200,20,20,0.95)');
+                    } catch (ex) {
+                        console.error('Error while reporting error', ex);
+                    }
+                });
+
+                window.addEventListener('unhandledrejection', function(ev) {
+                    try {
+                        const reason = ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason);
+                        console.error('UnhandledRejection:', reason, ev.reason);
+                        showBanner('UnhandledRejection: ' + reason, 'rgba(200,80,20,0.95)');
+                    } catch (ex) {
+                        console.error('Error while reporting rejection', ex);
+                    }
+                });
+            })();
+        </script>
 </body>
 </html>

@@ -296,6 +296,7 @@ This section tracks major updates and improvements to your Marvel Champions BGG 
 - **Smart Detection**: Tracks new heroes, play counts, and collection growth
 - **GitHub Pages Hosting**: Fast, reliable, free static site hosting
 - **Launch Agent Automation**: macOS system-level scheduling for reliability
+- **Team Play Aggregation Fix**: `scripts/mybgg/downloader.py` now merges multi-hero Marvel Champions plays into a single team entry, so Algolia receives full team data. Re-run `python scripts/download_and_index.py` (with your admin API key loaded) or `./update_and_deploy.sh` to refresh the index after pulling this update.
 
 ## 🔧 Frontend Development & Testing
 
