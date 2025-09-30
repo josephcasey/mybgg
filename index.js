@@ -120,14 +120,91 @@ const HERO_ALIASES = {
     'Dr. Strange (Stephen Strange)': 'Doctor Strange',
     'Spidey': 'Spider-Man',
     'Spidey (Peter Parker)': 'Spider-Man',
+    'Spider-man': 'Spider-Man',
     'Wolvie': 'Wolverine',
     'Rocket Ra': 'Rocket Raccoon',
     'Rocket Rac': 'Rocket Raccoon',
-    'Rocket': 'Rocket Raccoon'
+    'Rocket': 'Rocket Raccoon',
+    'Groot / Rocket': 'Groot',
+    'Justice / Rocket': 'Rocket Raccoon',
+    'Justice / Groot': 'Groot',
+    'Aggression / Wolverine': 'Wolverine',
+    'Leadership / Cable': 'Cable',
+    'Protection / Colossus': 'Colossus',
+    'Scarlet / Witch': 'Scarlet Witch',
+    'Iron / Man': 'Iron Man',
+    'Black / Widow': 'Black Widow',
+    'Captain / America': 'Captain America',
+    'Ms. / Marvel': 'Ms. Marvel',
+    'Ant / Man': 'Ant-Man',
+    'Star / Lord': 'Star-Lord',
+    'Ghost / Spider': 'Ghost-Spider',
+    // Handle specific problematic cases from BGG data
+    'Groot Justice': 'Groot',
+    'Iron-heart Leadership': 'Ironheart',
+    'Scarlet Justice': 'Scarlet Witch',
+    'Cable Leadership': 'Cable',
+    'Ironheart': 'Ironheart',
+    'Iron-heart': 'Ironheart'
 };
 
 function escapeRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// --- Robust team/hero parsing helpers ---
+const ASPECT_WORDS = ['Aggression', 'Leadership', 'Protection', 'Justice'];
+const DELIMITER_REGEX = /\s*(?:\+|&|\/|,|;|\band\b|\bwith\b|\bvs\.?\b)\s*/i;
+
+function stripHtmlEntities(s) {
+    return s.replace(/&amp;/gi, '&');
+}
+
+function stripParentheticals(s) {
+    return s.replace(/\([^)]*\)/g, '');
+}
+
+function stripAspectsAnywhere(s) {
+    if (!s) return s;
+    const re = new RegExp(`\\b(?:${ASPECT_WORDS.join('|')})\\b`, 'gi');
+    return s.replace(re, ' ');
+}
+
+function splitOnDelimiters(s) {
+    if (!s) return [];
+    return s.split(DELIMITER_REGEX).map(p => p && p.trim()).filter(Boolean);
+}
+
+function cleanupTokenBasic(s) {
+    if (!s) return '';
+    let t = stripHtmlEntities(String(s)).replace(/\s+/g, ' ').trim();
+    t = stripParentheticals(t).trim();
+    t = stripAspectsAnywhere(t).trim();
+    // Remove trailing joiner hyphen fragments like "Spider-"
+    t = t.replace(/-+$/g, '').trim();
+    // Collapse multiple spaces again after removals
+    t = t.replace(/\s{2,}/g, ' ').trim();
+    return t;
+}
+
+function titleCaseIfLower(s) {
+    if (!s) return s;
+    if (s === s.toLowerCase()) {
+        return s.split(' ').map(part => {
+            if (!part) return part;
+            if (part.includes('-')) {
+                return part.split('-').map(seg => seg.charAt(0).toUpperCase() + seg.slice(1)).join('-');
+            }
+            return part.charAt(0).toUpperCase() + part.slice(1);
+        }).join(' ');
+    }
+    return s;
+}
+
+function canonicalizeByImageKey(name) {
+    // Use hero_images.json keys as canonical source when possible
+    const key = findHeroImageKey(name);
+    return key || name;
 }
 
 function resolveHeroAlias(inputName) {
@@ -172,33 +249,31 @@ function normalizeNameForComparison(name) {
 function normalizeTeamHeroName(rawName) {
     if (!rawName) return '';
 
-    let working = String(rawName)
-        .replace(/&amp;/gi, '&')
-        .replace(/\s+/g, ' ')
-        .trim();
-
+    // Basic cleanup and aspect stripping
+    let working = cleanupTokenBasic(rawName);
     if (!working) return '';
 
-    working = working.replace(/\([^)]*\)/g, '').trim();
+    // If delimiters remain, keep the first token that looks like a hero name
+    if (/[+&/,;]|\band\b|\bwith\b|\bvs\.?\b/i.test(working)) {
+        const parts = splitOnDelimiters(working);
+        if (parts.length > 0) {
+            // prefer a token with length > 2 after cleanup
+            working = parts.find(p => cleanupTokenBasic(p).length > 2) || parts[0];
+            working = cleanupTokenBasic(working);
+        }
+    }
 
+    // Alias resolution
     const aliasResult = resolveHeroAlias(working);
     let normalized = aliasResult.name || '';
-
     if (!normalized) return '';
 
-    normalized = normalized.replace(/\b(Aggression|Leadership|Protection|Justice)\b$/i, '').trim();
-    normalized = normalized.replace(/\s{2,}/g, ' ').trim();
+    // Final polish
+    normalized = cleanupTokenBasic(normalized);
+    normalized = titleCaseIfLower(normalized);
 
-    // Title-case words that remain lowercase (skip if alias mapping already provided casing)
-    if (normalized === normalized.toLowerCase()) {
-        normalized = normalized.split(' ').map(part => {
-            if (!part) return part;
-            if (part.includes('-')) {
-                return part.split('-').map(segment => segment.charAt(0).toUpperCase() + segment.slice(1)).join('-');
-            }
-            return part.charAt(0).toUpperCase() + part.slice(1);
-        }).join(' ');
-    }
+    // Canonicalize to known hero key when possible
+    normalized = canonicalizeByImageKey(normalized);
 
     return normalized;
 }
@@ -1793,9 +1868,9 @@ function parseTeamComposition(hit) {
     if (Array.isArray(teamComp)) {
         teamComp.forEach(addName);
     } else if (typeof teamComp === 'string') {
-        const cleaned = teamComp.replace(/&amp;/gi, '&').trim();
+        const cleaned = stripHtmlEntities(teamComp).trim();
         if (cleaned) {
-            const segments = cleaned.split(/\s*(?:\+|&|\/|,|;|\band\b)\s*/i).filter(Boolean);
+            const segments = splitOnDelimiters(cleaned);
             if (segments.length > 0) {
                 segments.forEach(addName);
             } else {
@@ -1828,7 +1903,7 @@ function parseTeamComposition(hit) {
     if (Array.isArray(hit.participants)) {
         hit.participants.forEach(addName);
     } else if (typeof hit.participants === 'string') {
-        hit.participants.split(/\s*(?:,|;|\/|\+|&|\band\b)\s*/i).forEach(addName);
+        splitOnDelimiters(hit.participants).forEach(addName);
     }
 
     // Sort heroes alphabetically to ensure consistent team composition keys
@@ -1889,7 +1964,10 @@ function generateHeroImageCell(heroName, slotIndex) {
         `;
     }
 
-    const displayName = escapeHTML(normalizedHero);
+    // Ensure no aspect or delimiter artifacts leak into display
+    let displayNameClean = cleanupTokenBasic(normalizedHero).replace(/\b(?:Aggression|Leadership|Protection|Justice)\b/gi, '').trim();
+    if (!displayNameClean) displayNameClean = normalizedHero;
+    const displayName = escapeHTML(displayNameClean);
     const imageKey = findHeroImageKey(normalizedHero);
 
     if (imageKey && heroImageData && heroImageData[imageKey] && heroImageData[imageKey].image) {

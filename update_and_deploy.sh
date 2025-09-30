@@ -2,27 +2,30 @@
 
 # Marvel Champions BGG Data Update & Deploy Script
 # This script updates data locally and pushes to GitHub Pages
-# Usage: ./update_and_deploy.sh [commit_message] [--no-bgg-update]
+# Usage: ./update_and_deploy.sh [commit_message] [--no-bgg-update|--bgg-update]
 #   commit_message: Optional commit message to use instead of prompting
-#   --no-bgg-update: Skip BGG data update prompt and go straight to deployment
+#   --no-bgg-update: Skip BGG data update (non-interactive)
+#   --bgg-update: Force BGG data update (non-interactive)
 
 set -e  # Exit on any error
 
 # Parse command line arguments
 PRESET_COMMIT_MSG=""
 SKIP_BGG_UPDATE=false
+FORCE_BGG_UPDATE=false
 
 for arg in "$@"; do
     case $arg in
         --no-bgg-update)
             SKIP_BGG_UPDATE=true
-            shift
+            ;;
+        --bgg-update)
+            FORCE_BGG_UPDATE=true
             ;;
         *)
             if [ -z "$PRESET_COMMIT_MSG" ]; then
                 PRESET_COMMIT_MSG="$arg"
             fi
-            shift
             ;;
     esac
 done
@@ -43,6 +46,9 @@ echo ""
 if [ "$SKIP_BGG_UPDATE" = true ]; then
     echo "⏭️  Skipping BGG data update (--no-bgg-update flag provided)."
     update_data="N"
+elif [ "$FORCE_BGG_UPDATE" = true ]; then
+    echo "✅ Forcing BGG data update (--bgg-update flag provided)."
+    update_data="Y"
 else
     read -p "🔄 Do you want to update BGG data? (y/N): " update_data
 fi
