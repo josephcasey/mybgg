@@ -157,15 +157,18 @@ Use conventional commits format (feat:, fix:, docs:, etc.) when appropriate."
             esac
         else
             echo "⚠️  AI suggestion failed, falling back to manual input"
-            read -p "💬 Enter commit message: " commit_msg
+            read -p "💬 Enter commit message (or press Enter for default): " commit_msg
         fi
     else
         echo "⚠️  GitHub CLI with Copilot not available, falling back to manual input"
         read -p "💬 Enter commit message (or press Enter for default): " commit_msg
     fi
     
-    # Fallback to default if still empty
-    if [ -z "$commit_msg" ]; then
+    # Clean up commit message - if it's empty or just whitespace, use default
+    commit_msg=$(echo "$commit_msg" | xargs)  # Trim whitespace
+    
+    # Fallback to default if still empty or user literally typed "Enter"
+    if [ -z "$commit_msg" ] || [ "$commit_msg" = "Enter" ]; then
         commit_msg="Update Marvel Champions BGG data - $(date '+%Y-%m-%d %H:%M')"
     fi
     
