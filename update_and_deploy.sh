@@ -111,9 +111,60 @@ if [[ -n $(git status --porcelain) ]]; then
     echo "🔍 Changed files:"
     git status --short
     
-    # Ask for commit message
+    # Generate AI commit message based on changes
     echo ""
-    read -p "💬 Enter commit message (or press Enter for default): " commit_msg
+    echo "🤖 Generating AI commit message based on changes..."
+    
+    # Get a summary of changes for AI analysis
+    changed_files=$(git status --porcelain | head -10)
+    git_diff_summary=$(git diff --cached --stat 2>/dev/null || git diff --stat)
+    
+    # Create a prompt for AI commit message generation
+    ai_prompt="Based on these git changes, generate a concise commit message (50 chars max):
+
+Changed files:
+$changed_files
+
+Diff summary:
+$git_diff_summary
+
+Focus on: data updates, feature additions, bug fixes, or documentation changes.
+Use conventional commits format (feat:, fix:, docs:, etc.) when appropriate."
+    
+    # Try to get AI-generated commit message (requires GitHub CLI with Copilot)
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        echo "🔍 Using GitHub Copilot CLI for commit message..."
+        ai_suggested_msg=$(echo "$ai_prompt" | gh copilot suggest -t shell 2>/dev/null | grep -E "^(feat|fix|docs|chore|update)" | head -1 | sed 's/^[[:space:]]*//')
+        
+        if [ -n "$ai_suggested_msg" ]; then
+            echo "💡 AI suggests: $ai_suggested_msg"
+            echo ""
+            read -p "💬 Use this message? (Y/n) or enter custom: " user_choice
+            
+            case "$user_choice" in
+                [nN]|[nN][oO])
+                    read -p "💬 Enter your commit message: " commit_msg
+                    ;;
+                "")
+                    commit_msg="$ai_suggested_msg"
+                    ;;
+                [yY]|[yY][eE][sS])
+                    commit_msg="$ai_suggested_msg"
+                    ;;
+                *)
+                    commit_msg="$user_choice"
+                    ;;
+            esac
+        else
+            echo "⚠️  AI suggestion failed, falling back to manual input"
+            read -p "💬 Enter commit message: " commit_msg
+        fi
+    else
+        echo "⚠️  GitHub CLI with Copilot not available, falling back to manual input"
+        read -p "💬 Enter commit message (or press Enter for default): " commit_msg
+    fi
+    
+    # Fallback to default if still empty
     if [ -z "$commit_msg" ]; then
         commit_msg="Update Marvel Champions BGG data - $(date '+%Y-%m-%d %H:%M')"
     fi
