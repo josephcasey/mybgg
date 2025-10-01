@@ -466,9 +466,10 @@ async function cacheOverlayImages(heroData) {
 }
 // Image sizing configuration
 const HERO_IMAGE_HEIGHT = 50; // Height in pixels for hero cards
-// Match the visual footprint used by single-hero and villain image cells
-// Wider card improves artwork rendering within available table space
-const TEAM_HERO_IMAGE_WIDTH = 150; // Width in pixels for team hero cards/columns
+// Shared width used by both team hero tiles and the villain name tile for exact parity
+const TILE_IMAGE_WIDTH = 160;
+// Team hero width (alias of shared width)
+const TEAM_HERO_IMAGE_WIDTH = TILE_IMAGE_WIDTH;
 const VILLAIN_IMAGE_HEIGHT = 50; // Height in pixels for villain cards
 
 // Initialize a global map to manage table sort event handlers
@@ -1288,7 +1289,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
         // Detect villain difficulty first (before generating image overlay)
         const detectedDifficulty = detectVillainDifficulty(villain.name);
         
-        let tdCellStyles = `position: relative; height: ${VILLAIN_IMAGE_HEIGHT}px; min-height: ${VILLAIN_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle; cursor: pointer;`;
+    let tdCellStyles = `position: relative; height: ${VILLAIN_IMAGE_HEIGHT}px; min-height: ${VILLAIN_IMAGE_HEIGHT}px; display: table-cell; vertical-align: middle; cursor: pointer; width: ${TILE_IMAGE_WIDTH}px;`;
         let imageOverlayHtml = '';
         
         if (matchedKeyFromImageData) {
@@ -1342,7 +1343,7 @@ function renderSortedVillainStats(villains, sortState, allHits) {
 
         tableRowsHtml += `
             <tr class="villain-row">
-                <td class="villain-name" style="${tdCellStyles} padding: 8px;">
+                <td class="villain-name" style="${tdCellStyles} padding: 4px;">
                     ${imageOverlayHtml}
                     <span style="font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 1px 1px 3px rgba(0,0,0,0.9), 0 0 5px rgba(0,0,0,0.7); position: absolute; bottom: 0; left: 0; z-index: 2; pointer-events: none; font-size: 0.9em; background-color: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 0 3px 0 0;">${escapeHTML(villainNameForDisplay)}</span>
                 </td>
@@ -1527,7 +1528,7 @@ function displayVillainStats(villains, allHits) {
                 <table class="stats-table villain-stats">
                     <thead>
                         <tr>
-                            <th class="villain-col sortable" data-column="0" data-sort-type="string">Villain</th>
+                            <th class="villain-col sortable" data-column="0" data-sort-type="string" style="width: ${TILE_IMAGE_WIDTH}px;">Villain</th>
                             <th class="number-col sortable" data-column="1" data-sort-type="number">Plays</th>
                             <th class="number-col sortable" data-column="2" data-sort-type="number">Hero Wins</th>
                             <th class="number-col sortable" data-column="3" data-sort-type="number">Hero Win %</th>
@@ -1737,8 +1738,8 @@ function displayTeamStats(allHits) {
                 <table class="stats-table team-stats">
                     <thead>
                         <tr>
-                            <th class="hero-col" style="width: 80px;">Hero 1</th>
-                            <th class="hero-col" style="width: 80px;">Hero 2</th>
+                            <th class="hero-col" style="width: ${TEAM_HERO_IMAGE_WIDTH}px;">Hero 1</th>
+                            <th class="hero-col" style="width: ${TEAM_HERO_IMAGE_WIDTH}px;">Hero 2</th>
                             <th class="number-col sortable" data-column="2" data-sort-type="number">Plays</th>
                             <th class="number-col sortable" data-column="3" data-sort-type="number">Wins</th>
                             <th class="number-col sortable" data-column="4" data-sort-type="number">Win %</th>
