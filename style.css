@@ -49,14 +49,7 @@ body {
     align-items: center;
     padding: 1em;
 }
-    .statistics {
-         display: grid;
-         /* Favor a wider left column (team/hero stats) and a slightly narrower right column (villain stats).
-             On narrow viewports (< ~880px), the min widths cause stacking into a single column automatically. */
-         grid-template-columns: minmax(520px, 1.4fr) minmax(360px, 1fr);
-         gap: 2rem;
-    }
-}
+ 
 .header {
     margin-bottom: 20px;
 }
@@ -172,12 +165,11 @@ body {
         opacity: 1;
     }
 
-.hits {}
-    .hits:after {
-        clear: both;
-        content: "";
-        display: table;
-    }
+.hits:after {
+    clear: both;
+    content: "";
+    display: table;
+}
     .ais-Hits-list {
         margin: 0;
         padding: 0;
@@ -282,7 +274,6 @@ body {
 .facets .heading {
     margin-top: 0;
 }
-.facets .clear-all {}
     .ais-ClearRefinements-button {
         background: #b71c1c;
         color: white;
@@ -294,7 +285,6 @@ body {
         display: none;
     }
 
-.facet {}
     .facet .ais-Panel-header {
         white-space: nowrap;
     }
